@@ -23,23 +23,15 @@ DELETE_X_FILES=12
 FILE_PATTERN_TO_DELETE=*hdf5*
 
 # Date, time and other stuff
-STARTTIME=`date +%s`
 DATE=`date +%Y%m%d`
-DATE_TIME=`date +%Y%m%d.%H%M`
 DATE_UTC=`date -u`
-CURDAY=`date +%d`
-CURHOUR=`date +%H`
-CURMIN=`date +%M`
 CURYEAR=`date +%Y`
-CURMONTHNAME=`date +%B`
 CURMONTH=`date +%m`
-MONTHNAME=`date --date=${YEAR}${MONTH}01 +%B`
 HOSTNAME=`hostname`
 
 # What directory should be used for logging?
 LOGGINGDIR=/home/radar/logs/file_rotations/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
-ROTATION_FILE=${LOGGINGDIR}/${DATE}.rotations
 LOGFILE=${LOGGINGDIR}/${DATE}.log
 EMAILFLAG=0
 EMAILBODY=
