@@ -38,7 +38,8 @@ EMAILFLAG=0
 EMAILBODY=
 EMAILSUBJECT="File Rotations ${HOSTNAME} borealis: [${DATE}]"
 
-# How many times should we loop before exiting? And a variable to count loops
+# If each loop is over capacity, how many times should we loop and 
+# delete files before exiting? And a variable to count loops
 MAX_LOOPS=5
 safety_count=0
 
