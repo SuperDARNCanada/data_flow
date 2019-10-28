@@ -1,5 +1,6 @@
 #!/bin/bash
-# Copyright 2019 SuperDARN Canada
+# Copyright 2019 SuperDARN Canada, University of Saskatchewan
+# Author: Kevin Krieger
 
 # A singleton script to rotate borealis data files that follow a specific pattern
 # on a filesystem. It will search for and remove the oldest files
