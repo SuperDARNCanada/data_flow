@@ -1,5 +1,6 @@
 #!/bin/bash
-# Copyright 2019 SuperDARN Canada
+# Copyright 2019 SuperDARN Canada, University of Saskatchewan
+# Author: Kevin Krieger
 
 # A singleton script to copy the data FILES to the on-site linux computer, removing them locally after
 # a successful copy. Dependencies include 'jq' (installed via zypper), 
