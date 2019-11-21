@@ -38,6 +38,33 @@ EMAILFLAG=0
 EMAILBODY=
 EMAILSUBJECT="File Rotations ${HOSTNAME} borealis: [${DATE}]"
 
+##############################################################################
+# First convert files from yesterday to array restructured to save space before
+# checking for the files to delete.
+##############################################################################
+
+YESTERDATE=`date -d '-1 day' '+%Y%m%d'`
+# What file pattern should be converted?
+FILE_PATTERN_TO_CONVERT=${YESTERDATE}/*antennas_iq.hdf5.site
+
+echo "" >> ${LOGFILE} 2>&1
+echo ${DATE_UTC} >> ${LOGFILE} 2>&1
+echo "Restructuring antennas_iq from ${YESTERDATE}" >> ${LOGFILE} 2>&1
+
+CONVERT_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_CONVERT}" -type f`
+
+for f in ${CONVERT_FILES}
+do
+    echo "" >> ${LOGFILE} 2>&1
+    echo "python3 ${BOREALISPATH}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
+    python3 ${BOREALISPATH}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        echo "rm ${f}"
+        rm ${f}
+    fi
+done
+
 # If each loop is over capacity, how many times should we loop and 
 # delete files before exiting? And a variable to count loops
 MAX_LOOPS=5
