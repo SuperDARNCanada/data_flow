@@ -31,6 +31,10 @@ ARRAY_DEST=/data/rawacf_array
 BFIQ_ARRAY_DEST=/data/bfiq_array
 HOME=/home/transfer
 
+LOGGINGDIR=/home/transfer/logs/file_conversions/${CURYEAR}/${CURMONTH}
+mkdir -p ${LOGGINGDIR}
+LOGFILE=${LOGGINGDIR}/${DATE}.log
+
 ##############################################################################
 # Email function. Called if any files fail conversion. 
 # Argument 1 should be the subject
