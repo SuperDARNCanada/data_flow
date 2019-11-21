@@ -15,7 +15,7 @@
 # 32 5,17 * * * . $HOME/.profile; $HOME/data_flow/borealis/rotate_borealis_files.sh >> $HOME/rotate_borealis_files.log 2>&1
 
 # prevent copying of files
-echo 1 > ${HOME}convert_daily_borealis_running
+echo 1 > ${HOME}/convert_daily_borealis_running
 
 # Date, time and other stuff
 DATE=`date +%Y%m%d`
@@ -118,4 +118,4 @@ if [ ! -z "$EMAILBODY" ]; then # check if not empty
 fi
 
 echo Rawdata directory has `du -k $DEST |cut -f1` KBytes
-rm -v ${HOME}convert_daily_borealis_running
+rm -v ${HOME}/convert_daily_borealis_running
