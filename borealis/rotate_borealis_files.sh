@@ -45,23 +45,25 @@ EMAILSUBJECT="File Rotations ${HOSTNAME} borealis: [${DATE}]"
 
 YESTERDATE=`date -d '-1 day' '+%Y%m%d'`
 # What file pattern should be converted?
-FILE_PATTERN_TO_CONVERT=${YESTERDATE}/*antennas_iq.hdf5.site
+FILE_PATTERN_TO_CONVERT=*antennas_iq.hdf5.site
+YESTERDATE_DIR=${FILESYSTEM}/${YESTERDATE}
 
 echo "" >> ${LOGFILE} 2>&1
 echo ${DATE_UTC} >> ${LOGFILE} 2>&1
 echo "Restructuring antennas_iq from ${YESTERDATE}" >> ${LOGFILE} 2>&1
 
-CONVERT_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_CONVERT}" -type f`
+CONVERT_FILES=`find "${YESTERDATE_DIR}" -name "${FILE_PATTERN_TO_CONVERT}" -type f`
+source ${HOME}/pydarn-env/bin/activate
 
 for f in ${CONVERT_FILES}
 do
     echo "" >> ${LOGFILE} 2>&1
-    echo "python3 ${BOREALISPATH}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
-    python3 ${BOREALISPATH}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
+    echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
+    python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
     ret=$?
     if [ $ret -eq 0 ]; then
-        echo "rm ${f}"
-        rm ${f}
+        echo "rm ${f}" >> ${LOGFILE} 2>&1 
+        rm ${f} >> ${LOGFILE} 2>&1
     fi
 done
 
