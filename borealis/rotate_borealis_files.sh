@@ -9,6 +9,7 @@
 # delete 12 files on the /data partition)
 #
 # Dependencies include BOREALISPATH being in the environment variables in $HOME/.profile
+# and pydarn being installed in a virtualenv at $HOME/pydarn-env
 #
 # The script should be run via crontab like so:
 # 32 5,17 * * * . $HOME/.profile; $HOME/data_flow/borealis/rotate_borealis_files.sh >> $HOME/rotate_borealis_files.log 2>&1
@@ -43,7 +44,7 @@ EMAILSUBJECT="File Rotations ${HOSTNAME} borealis: [${DATE}]"
 # checking for the files to delete.
 ##############################################################################
 
-YESTERDATE=`date -d '-1 day' '+%Y%m%d'`
+YESTERDATE=`date -u -d '-1 day' '+%Y%m%d'`
 # What file pattern should be converted?
 FILE_PATTERN_TO_CONVERT=*antennas_iq.hdf5.site
 YESTERDATE_DIR=${FILESYSTEM}/${YESTERDATE}
@@ -66,11 +67,6 @@ do
         rm ${f} >> ${LOGFILE} 2>&1
     fi
 done
-
-# If each loop is over capacity, how many times should we loop and 
-# delete files before exiting? And a variable to count loops
-MAX_LOOPS=5
-safety_count=0
 
 ##############################################################################
 # Email function. Called before any abnormal exit, or at the end of the
@@ -117,6 +113,12 @@ fi
 # Proceed if filesystem capacity is over the value of CAPACITY (using 
 # df POSIX syntax).
 ##############################################################################
+
+# If each loop is over capacity, how many times should we loop and 
+# delete files before exiting? And a variable to count loops
+MAX_LOOPS=5
+safety_count=0
+
 while true
 do
 	if [[ $safety_count -gt ${MAX_LOOPS} ]]
