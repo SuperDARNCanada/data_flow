@@ -2,17 +2,17 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Marci Detwiller
 
-# A singleton script to rotate borealis data files that follow a specific pattern
-# on a filesystem. It will search for and remove the oldest files
-# in a loop to keep making room for new files, if the filesystem usage is above 
-# a certain threshold (example: if usage is above 90%, 
-# delete 12 files on the /data partition)
+# A script that uses pydarn to convert Borealis files to SDARN DMap files
+# as well as restructures the hdf5 files to be multidimensional arrays
+# for better file readability. Backs up the source site files before it 
+# begins.
 #
 # Dependencies include pydarn being installed in a virtualenv at $HOME/pydarn-env
 # and RADARNAME being in environment variable
 #
 # The script should be run via crontab like so:
-# 32 5,17 * * * . $HOME/.profile; $HOME/data_flow/borealis/rotate_borealis_files.sh >> $HOME/rotate_borealis_files.log 2>&1
+# 10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * /home/transfer/data_flow/site-linux/convert_and_restructure_daily.sh >> /home/transfer/convert_and_restructure_borealis_log.txt 2>&1
+
 
 # prevent copying of files
 echo 1 > ${HOME}/convert_daily_borealis_running
@@ -50,7 +50,7 @@ send_email () {
 
 # Copy the source rawacf file to backup.
 cp -v ${DAILY_DIR}/*rawacf.hdf5* /data/backup
-
+cp -v ${DAILY_DIR}/*bfiq.hdf5* /data/backup
 ##############################################################################
 # Convert the files to SDARN format and to array format for storage.
 ##############################################################################
