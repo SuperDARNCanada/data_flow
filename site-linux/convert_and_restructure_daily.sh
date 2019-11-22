@@ -121,5 +121,4 @@ if [ ! -z "$EMAILBODY" ]; then # check if not empty
     send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
 
-echo Rawdata directory has `du -k $DEST |cut -f1` KBytes
 rm -v ${HOME}/convert_daily_borealis_running
