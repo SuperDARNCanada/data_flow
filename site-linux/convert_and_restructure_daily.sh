@@ -59,12 +59,6 @@ cp -v ${DAILY_DIR}/*bfiq.hdf5.site /data/backup
 RAWACF_FILE_PATTERN_TO_CONVERT=*rawacf.hdf5.site
 BFIQ_FILE_PATTERN_TO_CONVERT=*bfiq.hdf5.site
 
-# What files patterns need to be moved?
-RAWACF_DMAP_PATTERN=*.rawacf.dmap.bz2
-RAWACF_ARRAY_PATTERN=*.rawacf.hdf5
-BFIQ_ARRAY_PATTERN=*.bfiq.hdf5
-BFIQ_DMAP_PATTERN=*.iqdat.bz2
-
 echo "" >> ${LOGFILE} 2>&1
 echo ${DATE_UTC} >> ${LOGFILE} 2>&1
 echo "Restructuring files in ${DAILY_DIR}" >> ${LOGFILE} 2>&1
