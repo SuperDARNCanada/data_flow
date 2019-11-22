@@ -182,7 +182,7 @@ def main():
         # Most efficient way to do this is to only read once and write 
         # using the arrays from the BorealisConvert class.
         dmap_filetype = dmap_filetypes[borealis_filetype]
-        dmap_filename = create_dmap_filename(borealis_site_file, borealis_filetype)
+        dmap_filename = create_dmap_filename(borealis_site_file, dmap_filetype)
 
         written_array_filename, written_dmap_filename = \
             borealis_site_to_array_and_dmap_files(borealis_site_file, 

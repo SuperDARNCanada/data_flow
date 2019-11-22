@@ -85,10 +85,9 @@ do
     	# move the resulting files if all was successful
     	# then remove the source site file.
     	dmap_file="${f%hdf5.site}dmap.bz2"
-    	mv -v ${DAILY_DIR}/${dmap_file} ${DMAP_DEST}/ >> ${LOGFILE} 2>&1
+    	mv -v ${dmap_file} ${DMAP_DEST}/ >> ${LOGFILE} 2>&1
     	array_file="${f%.site}"
-    	mv -v ${DAILY_DIR}/${array_file} ${ARRAY_DEST} >> ${LOGFILE} 2>&1
-        echo "rm -v ${f}" >> ${LOGFILE} 2>&1 
+    	mv -v ${array_file} ${ARRAY_DEST} >> ${LOGFILE} 2>&1
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
@@ -107,8 +106,7 @@ do
     	dmap_file="${f%bfiq.hdf5.site}iqdat.dmap.bz2"
     	rm -v ${dmap_file} >> ${LOGFILE} 2>&1
     	array_file="${f%.site}"
-    	mv -v ${DAILY_DIR}/${array_file} ${BFIQ_ARRAY_DEST}
-        echo "rm -v ${f}" >> ${LOGFILE} 2>&1 
+    	mv -v ${array_file} ${BFIQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
