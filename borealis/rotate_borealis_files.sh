@@ -121,44 +121,44 @@ safety_count=0
 
 while true
 do
-	if [[ $safety_count -gt ${MAX_LOOPS} ]]
-	then
-		EMAILFLAG=1
-		EMAILBODY="${EMAILBODY}\nReached maximum (${MAX_LOOPS}) number of loops, exiting!"
-		EMAILSUBJECT="${EMAILSUBJECT} Max loops reached"
-		break
-	fi
-	safety_count=$((safety_count+1))
+    if [[ $safety_count -gt ${MAX_LOOPS} ]]
+    then
+        EMAILFLAG=1
+        EMAILBODY="${EMAILBODY}\nReached maximum (${MAX_LOOPS}) number of loops, exiting!"
+        EMAILSUBJECT="${EMAILSUBJECT} Max loops reached"
+        break
+    fi
+    safety_count=$((safety_count+1))
 
-	CAP=`df -P ${FILESYSTEM} | awk '{ gsub("%",""); capacity = $5 }; END { print capacity }'` 2>> ${LOGFILE}
-	echo "${FILESYSTEM} utilization: ${CAP}% of ${CAPACITY_LIMIT}% limit" >> ${LOGFILE} 2>&1
-	if [ $CAP -gt $CAPACITY_LIMIT ]
-	then
-		EMAILFLAG=1
-		# Find the oldest files for deletion 
-		DEL_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_DELETE}" -type f -printf '%T+ %p\n' | sort | head -n "${DELETE_X_FILES}" | awk '{print $2}'` 2>> ${LOGFILE}
-		if [[ "${DEL_FILES}" =~ ^\ +$ ]]
-		then
-			echo "DEL FILES is just whitespace, breaking"
-			break
-		elif [[ "${DEL_FILES}" == "" ]]
-		then
-			echo "DEL FILES is null, breaking"
-			break
-		fi
-		
-		echo "${DEL_FILES}" >>  ${LOGFILE} 2>&1
-		
-		for f in ${DEL_FILES}
-		do
-			echo Deleting ${f}... >> ${LOGFILE} 2>&1
-			rm -v ${f} >> ${LOGFILE} 2>&1
-		done
-		EMAILBODY="${EMAILBODY}\nFiles deleted:\n${DEL_FILES}"
-	else
-		# Not above the threshold, so break and do nothing.
-		break
-	fi
+    CAP=`df -P ${FILESYSTEM} | awk '{ gsub("%",""); capacity = $5 }; END { print capacity }'` 2>> ${LOGFILE}
+    echo "${FILESYSTEM} utilization: ${CAP}% of ${CAPACITY_LIMIT}% limit" >> ${LOGFILE} 2>&1
+    if [ $CAP -gt $CAPACITY_LIMIT ]
+    then
+        EMAILFLAG=1
+        # Find the oldest files for deletion 
+        DEL_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_DELETE}" -type f -printf '%T+ %p\n' | sort | head -n "${DELETE_X_FILES}" | awk '{print $2}'` 2>> ${LOGFILE}
+        if [[ "${DEL_FILES}" =~ ^\ +$ ]]
+        then
+            echo "DEL FILES is just whitespace, breaking"
+            break
+        elif [[ "${DEL_FILES}" == "" ]]
+        then
+            echo "DEL FILES is null, breaking"
+            break
+        fi
+        
+        echo "${DEL_FILES}" >>  ${LOGFILE} 2>&1
+        
+        for f in ${DEL_FILES}
+        do
+            echo Deleting ${f}... >> ${LOGFILE} 2>&1
+            rm -v ${f} >> ${LOGFILE} 2>&1
+        done
+        EMAILBODY="${EMAILBODY}\nFiles deleted:\n${DEL_FILES}"
+    else
+        # Not above the threshold, so break and do nothing.
+        break
+    fi
 done
 
 if [[ ${EMAILFLAG} -eq 1 ]];
