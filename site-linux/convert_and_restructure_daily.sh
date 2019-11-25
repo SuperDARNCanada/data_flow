@@ -78,7 +78,7 @@ do
     if [ $ret -eq 0 ]; then
         # move the resulting files if all was successful
         # then remove the source site file.
-        dmap_file="${f%hdf5.site}dmap.bz2"
+        dmap_file="${f%hdf5.site}bz2"
         mv -v ${dmap_file} ${DMAP_DEST}/ >> ${LOGFILE} 2>&1
         array_file="${f%.site}"
         mv -v ${array_file} ${ARRAY_DEST} >> ${LOGFILE} 2>&1
@@ -97,7 +97,7 @@ do
     if [ $ret -eq 0 ]; then
         # remove iqdat and move bfiq array file if successful.
         # then remove source site file.
-        dmap_file="${f%bfiq.hdf5.site}iqdat.dmap.bz2"
+        dmap_file="${f%bfiq.hdf5.site}iqdat.bz2"
         rm -v ${dmap_file} >> ${LOGFILE} 2>&1
         array_file="${f%.site}"
         mv -v ${array_file} ${BFIQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
