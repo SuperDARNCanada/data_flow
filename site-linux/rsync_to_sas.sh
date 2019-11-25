@@ -35,7 +35,7 @@ if [[ "$RSYNCRUNNING" == *"/home/transfer/rsync_to_sas"*"/home/transfer/rsync_to
   exit
 fi
 
-files=`find ${DMAP_SOURCE} -name '*rawacf.dmap*' -printf '%p\n'`
+files=`find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n'`
 for file in $files
 do
         datafile=`basename $file`
