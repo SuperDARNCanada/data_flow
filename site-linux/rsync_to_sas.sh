@@ -31,7 +31,7 @@ fi
 
 RSYNCRUNNING="`ps aux | grep rsync_to_sas | awk '$11 !~ /grep/ {print $12}'`" #if only this one running, will be /home/transfer/rsync_to_sas /home/transfer/rsync_to_sas
 
-if [[ "$RSYNCRUNNING" == *"/home/transfer/rsync_to_sas"*"/home/transfer/rsync_to_sas"*"/home/transfer/rsync_to_sas"* ]] ; then #must be three times because the first two will be this instance of rsync_to_sas
+if [[ "$RSYNCRUNNING" == *"/home/transfer/data_flow/site-linux/rsync_to_sas"*"/home/transfer/data_flow/site-linux/rsync_to_sas"*"/home/transfer/data_flow/site-linux/rsync_to_sas"* ]] ; then #must be three times because the first two will be this instance of rsync_to_sas
   exit
 fi
 
