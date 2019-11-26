@@ -95,7 +95,7 @@ echo "Restructuring all antennas_iq except from today ${DATE}" >> ${LOGFILE} 2>&
 CONVERT_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_CONVERT}" -type f | grep -v "${DATE} | tac"`
 source ${HOME}/pydarn-env/bin/activate
 
-MAX_FILES_TO_CONVERT=10
+MAX_FILES_TO_CONVERT=13
 converted_files_count=0
 
 for f in ${CONVERT_FILES}
