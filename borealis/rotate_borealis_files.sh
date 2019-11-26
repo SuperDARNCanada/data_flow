@@ -101,6 +101,7 @@ for f in ${CONVERT_FILES}
 do
     if [[ $converted_files_count -gt ${MAX_FILES_TO_CONVERT} ]]
     then
+        echo "Converted MAX NUMBER OF FILES (25)"
         break
     fi
 

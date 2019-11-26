@@ -158,7 +158,6 @@ def main():
 
     time_now = datetime.datetime.utcnow().strftime('%Y%m%d %H:%M:%S')
     sys_call = ' '.join(sys.argv[:])
-    print('')
     print(time_now)
     print(sys_call)
 
