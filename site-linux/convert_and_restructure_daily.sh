@@ -11,7 +11,7 @@
 # and RADARNAME being in environment variable
 #
 # The script should be run via crontab like so:
-# 10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * /home/transfer/data_flow/site-linux/convert_and_restructure_daily.sh >> /home/transfer/convert_and_restructure_borealis_log.txt 2>&1
+# 10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * ${HOME}/data_flow/site-linux/convert_and_restructure_daily.sh >> ${HOME}/convert_and_restructure_borealis_log.txt 2>&1
 
 
 # prevent copying of files
@@ -29,9 +29,8 @@ DAILY_DIR=/data/daily # this is the source
 DMAP_DEST=/data/rawacf_dmap
 ARRAY_DEST=/data/rawacf_array
 BFIQ_ARRAY_DEST=/data/bfiq_array
-HOME=/home/transfer
 
-LOGGINGDIR=/home/transfer/logs/file_conversions/${CURYEAR}/${CURMONTH}
+LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
 LOGFILE=${LOGGINGDIR}/${DATE}.log
 

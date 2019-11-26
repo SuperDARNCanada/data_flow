@@ -40,35 +40,6 @@ EMAILBODY=
 EMAILSUBJECT="File Rotations ${HOSTNAME} borealis: [${DATE}]"
 
 ##############################################################################
-# First convert files from yesterday to array restructured to save space before
-# checking for the files to delete.
-##############################################################################
-
-YESTERDATE=`date -u -d '-1 day' '+%Y%m%d'`
-# What file pattern should be converted?
-FILE_PATTERN_TO_CONVERT=*antennas_iq.hdf5.site
-YESTERDATE_DIR=${FILESYSTEM}/${YESTERDATE}
-
-echo "" >> ${LOGFILE} 2>&1
-echo ${DATE_UTC} >> ${LOGFILE} 2>&1
-echo "Restructuring antennas_iq from ${YESTERDATE}" >> ${LOGFILE} 2>&1
-
-CONVERT_FILES=`find "${YESTERDATE_DIR}" -name "${FILE_PATTERN_TO_CONVERT}" -type f`
-source ${HOME}/pydarn-env/bin/activate
-
-for f in ${CONVERT_FILES}
-do
-    echo "" >> ${LOGFILE} 2>&1
-    echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
-    python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
-    ret=$?
-    if [ $ret -eq 0 ]; then
-        echo "rm ${f}" >> ${LOGFILE} 2>&1 
-        rm ${f} >> ${LOGFILE} 2>&1
-    fi
-done
-
-##############################################################################
 # Email function. Called before any abnormal exit, or at the end of the
 # script if the email flag was set.
 # Argument 1 should be the subject
@@ -108,6 +79,41 @@ then
         send_email "${EMAILSUBJECT}" "${EMAILBODY}"
         exit
 fi
+
+##############################################################################
+# First convert all antennas_iq site files from previous days (excluding today)
+# array restructured to save space before checking for the files to delete.
+##############################################################################
+
+# What file pattern should be converted?
+FILE_PATTERN_TO_CONVERT=*antennas_iq.hdf5.site
+
+echo "Restructuring all antennas_iq except from today ${DATE}" >> ${LOGFILE} 2>&1
+
+# find all site files, remove the files from today from the list.
+CONVERT_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_CONVERT}" -type f | grep -v "${DATE}"`
+source ${HOME}/pydarn-env/bin/activate
+
+MAX_FILES_TO_CONVERT=25
+converted_files_count=0
+
+for f in ${CONVERT_FILES}
+do
+    if [[ $converted_files_count -gt ${MAX_FILES_TO_CONVERT} ]]
+    then
+        break
+    fi
+
+    convert_cmd="python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}"
+    echo ${convert_cmd} >> ${LOGFILE} 2>&1
+    ${convert_cmd} >> ${LOGFILE} 2>&1
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        echo "rm -v ${f}" >> ${LOGFILE} 2>&1 
+        rm -v ${f} >> ${LOGFILE} 2>&1
+    fi
+    converted_files_count=$((converted_files_count+1))
+done
 
 ##############################################################################
 # Proceed if filesystem capacity is over the value of CAPACITY (using 
