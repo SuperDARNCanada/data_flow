@@ -90,18 +90,19 @@ FILE_PATTERN_TO_CONVERT=*antennas_iq.hdf5.site
 
 echo "Restructuring all antennas_iq except from today ${DATE}" >> ${LOGFILE} 2>&1
 
-# find all site files, remove the files from today from the list.
-CONVERT_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_CONVERT}" -type f | grep -v "${DATE}"`
+# find all site files, remove the files from today from the list and reverse the list order
+# so that we convert the most recent files first (older files may get removed right away anyway)
+CONVERT_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_CONVERT}" -type f | grep -v "${DATE} | tac"`
 source ${HOME}/pydarn-env/bin/activate
 
-MAX_FILES_TO_CONVERT=25
+MAX_FILES_TO_CONVERT=10
 converted_files_count=0
 
 for f in ${CONVERT_FILES}
 do
     if [[ $converted_files_count -gt ${MAX_FILES_TO_CONVERT} ]]
     then
-        echo "Converted MAX NUMBER OF FILES (25)"
+        echo "Converted MAX NUMBER OF FILES (${MAX_FILES_TO_CONVERT})"
         break
     fi
 
