@@ -44,7 +44,7 @@ send_email () {
         # Argument 2 should be the body
         # What email address to send to?
         EMAILADDRESS="kevin.krieger@usask.ca, marci.detwiller@usask.ca"
-        echo -e "${2}" | mutt -s "${1}" ${EMAILADDRESS}
+        echo -e "${2}" | mutt -s "${1}" -- ${EMAILADDRESS}
 }
 
 # Copy the source rawacf file to backup.
