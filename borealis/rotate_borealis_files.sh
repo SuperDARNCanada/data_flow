@@ -92,7 +92,7 @@ echo "Restructuring all antennas_iq except from today ${DATE}" >> ${LOGFILE} 2>&
 
 # find all site files, remove the files from today from the list and reverse the list order
 # so that we convert the most recent files first (older files may get removed right away anyway)
-CONVERT_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_CONVERT}" -type f | grep -v "${DATE} | tac"`
+CONVERT_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_CONVERT}" -type f | grep -v "${DATE}" | tac`
 source ${HOME}/pydarn-env/bin/activate
 
 MAX_FILES_TO_CONVERT=13
