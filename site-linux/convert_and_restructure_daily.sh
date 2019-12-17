@@ -4,7 +4,7 @@
 
 # A script that uses pydarn to convert Borealis files to SDARN DMap files
 # as well as restructures the hdf5 files to be multidimensional arrays
-# for better file readability. Backs up the source site files before it 
+# for better file readability. Backs up the source site files before it
 # begins.
 #
 # Dependencies include pydarn being installed in a virtualenv at $HOME/pydarn-env
@@ -35,7 +35,7 @@ mkdir -p ${LOGGINGDIR}
 LOGFILE=${LOGGINGDIR}/${DATE}.log
 
 ##############################################################################
-# Email function. Called if any files fail conversion. 
+# Email function. Called if any files fail conversion.
 # Argument 1 should be the subject
 # Argument 2 should be the body
 ##############################################################################
@@ -107,7 +107,7 @@ do
 done
 
 if [ ! -z "$EMAILBODY" ]; then # check if not empty
-    EMAILSUBJECT="${DATE_UTC} ${RADARNAME} Files failed conversion"
+    EMAILSUBJECT="[Conversions ${RADARNAME}] ${DATE}: Files failed conversion"
     echo -e ${EMAILBODY} >> ${LOGFILE} 2>&1
     send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
