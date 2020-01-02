@@ -13,6 +13,7 @@
 # The script should be run via crontab like so:
 # 10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * ${HOME}/data_flow/site-linux/convert_and_restructure_daily.sh >> ${HOME}/convert_and_restructure_borealis_log.txt 2>&1
 
+source /home/transfer/.bashrc
 
 # prevent copying of files
 echo 1 > ${HOME}/convert_daily_borealis_running
