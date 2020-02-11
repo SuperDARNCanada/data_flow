@@ -30,6 +30,7 @@ DAILY_DIR=/data/daily # this is the source
 DMAP_DEST=/data/rawacf_dmap
 ARRAY_DEST=/data/rawacf_array
 BFIQ_ARRAY_DEST=/data/bfiq_array
+ERRORS_DEST=/data/hdf5_errors
 
 LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
@@ -84,6 +85,8 @@ do
         mv -v ${array_file} ${ARRAY_DEST} >> ${LOGFILE} 2>&1
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
+	echo "File failed to convert: ${f}" >> ${LOGFILE} 2>&1
+	mv -v ${f} ${ERRORS_DEST} >> ${LOFGILE} 2>&1
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
     fi
 done
@@ -103,6 +106,8 @@ do
         mv -v ${array_file} ${BFIQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
+	echo "File failed to convert: ${f}" >> ${LOGFILE} 2>&1
+	mv -v ${f} ${ERRORS_DEST} >> ${LOFGILE} 2>&1
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
     fi
 done
