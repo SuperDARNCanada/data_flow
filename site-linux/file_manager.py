@@ -40,7 +40,7 @@ CUR_FILE_THRESHOLD_MINUTES=5
 
 def execute_cmd(cmd):
     """
-    Execute a command and return the output
+    Execute a shell command and return the output
 
     :param      cmd:  The command
     :type       cmd:  string
@@ -332,7 +332,6 @@ backup_files()
 
 send_files_home()
 verify_files_are_home()
-
 
 
 
