@@ -23,6 +23,7 @@ DATA_FLOW_LOCATION = config['data_flow_location']
 REMOTE = config['remote']
 REMOTE_FOLDER = config['remote_folder']
 
+LOG_DIR = config['log_dir']
 MAX_LOOPS = 10
 
 # Delete files if filesystem usage is over this threshold
@@ -188,6 +189,18 @@ def backup_files():
         else:
             print("No files to back up")
 
+def compress_log_files():
+    """
+    Compress down the log files being produced by borealis.
+    """
+
+    compress_cmd = ('find {} -type f |'
+                    ' grep -v *.bz2 |'
+                    ' while read filename ; do fuser -s $filename || echo $filename ; done |'
+                    ' parallel "bzip2 -z {}/{{}}"').format(LOG_DIR)
+
+    execute_cmd(compress_cmd)
+
 
 def send_files_home():
     """
@@ -240,15 +253,12 @@ def verify_files_are_home():
 
         escapes = remote_md5.replace('$', '\\$').replace('*', '\\*')
         get_remote_hashes = 'ssh {} "{}"'.format(REMOTE, escapes)
-        #print(get_remote_hashes)
+
         output = execute_cmd(get_remote_hashes)
-        #print(output)
         remote_hashes.extend(output.splitlines())
 
         get_our_md5 = md5sum_cmd.format(STAGING_DIR)
-        #print(get_our_md5)
         output = execute_cmd(get_our_md5)
-        #print(output)
         our_hashes.extend(output.splitlines())
 
     #print(our_hashes, remote_hashes)
@@ -256,7 +266,6 @@ def verify_files_are_home():
         if has not in remote_hashes:
             print(has)
     if set(our_hashes).issubset(set(remote_hashes)):
-        #print("heregsdgfdsg")
         delete = 'rm -r {}/*'.format(STAGING_DIR)
         try:
             execute_cmd(delete)
@@ -329,6 +338,7 @@ clear_old_temp_files()
 move_new_files()
 restructure_files()
 backup_files()
+compress_log_files()
 
 send_files_home()
 verify_files_are_home()
