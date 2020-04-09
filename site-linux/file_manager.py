@@ -15,7 +15,9 @@ DATA_DIR = config['data_dir']
 STAGING_DIR = config['staging_dir']
 
 ANTENNA_IQ_BACKUP_DIR = config['antenna_iq_backup_dir']
-BFIQ_RAWACF_BACKUP_DIR = config['bfiq_rawacf_backup_dir']
+BFIQ_BACKUP_DIR = config['bfiq_backup_dir']
+RAWACF_BACKUP_DIR = config['rawacf_backup_dir']
+
 
 PYDARN_ENV = config['pydarn_env']
 DATA_FLOW_LOCATION = config['data_flow_location']
@@ -27,8 +29,8 @@ LOG_DIR = config['log_dir']
 MAX_LOOPS = 10
 
 # Delete files if filesystem usage is over this threshold
-CAPACITY_LIMIT = 10
-CAPACITY_TARGET = 8
+CAPACITY_LIMIT = 95
+CAPACITY_TARGET = 92
 
 # How many files should be deleted at a time in the loop?
 DELETE_X_FILES = 12
@@ -37,7 +39,6 @@ DELETE_X_FILES = 12
 # to move to the site linux computer. This is so that the script doesn't try to move the current data
 # file being written to.
 CUR_FILE_THRESHOLD_MINUTES=5
-
 
 def execute_cmd(cmd):
     """
@@ -52,8 +53,7 @@ def execute_cmd(cmd):
     output = sp.check_output(cmd, shell=True)
     return output.decode('utf-8')
 
-
-def do_rsync(source, dest, source_files):
+def do_rsync(source, dest, source_files, args=""):
     """
     Formats the list of files into an rsync command and then executes.
 
@@ -63,8 +63,10 @@ def do_rsync(source, dest, source_files):
     :type       dest:          string
     :param      source_files:  A string of files as an output from find.
     :type       source_files:  string
+    :param      args:          Additional arguments to rsync
+    :type       args:          string
     """
-    rsync = 'rsync -av --files-from=- --from0 {} {}'.format(source, dest)
+    rsync = 'rsync -av {} --files-from=- --from0 {} {}'.format(args, source, dest)
 
     fmt_src_files = source_files.replace(source+'/', '')
 
@@ -116,6 +118,7 @@ def do_delete(source_files):
         print(e)
 
 
+
 def clear_old_temp_files():
     """
     Removes any old borealis temp files that might exist if data write was killed before the file
@@ -144,8 +147,8 @@ def move_new_files():
     files_to_move = do_find(DATA_DIR, pattern, args)
 
     if files_to_move != "":
-        do_rsync(DATA_DIR, STAGING_DIR, files_to_move)
-        do_delete(files_to_move)
+        rsync_arg = "--remove-source-files"
+        do_rsync(DATA_DIR, STAGING_DIR, files_to_move, rsync_arg)
     else:
         print("No new data files to move")
 
@@ -175,8 +178,8 @@ def backup_files():
     """
     pattern = '*.{}.hdf5'
 
-    pattern_dir_pairs = [('rawacf', BFIQ_RAWACF_BACKUP_DIR),
-                         ('bfiq', BFIQ_RAWACF_BACKUP_DIR),
+    pattern_dir_pairs = [('rawacf', RAWACF_BACKUP_DIR),
+                         ('bfiq', BFIQ_BACKUP_DIR),
                          ('antennas_iq', ANTENNA_IQ_BACKUP_DIR)]
 
     for pd in pattern_dir_pairs:
@@ -194,6 +197,8 @@ def compress_log_files():
     Compress down the log files being produced by borealis.
     """
 
+    # Compress every file in the LOG_DIR that is: 1) Not compressed with bz2 already and 2)
+    # not in use (fuser will return 1 if a file is in use)
     compress_cmd = ('find {} -type f |'
                     ' grep -v *.bz2 |'
                     ' while read filename ; do fuser -s $filename || echo $filename ; done |'
@@ -208,28 +213,20 @@ def send_files_home():
     """
     remote_dest = REMOTE + ":" + REMOTE_FOLDER
 
-    copy_cmd = ('find {0} -name *.rawacf.{1} -printf %P\\\\0 |'
-                'rsync -av --append-verify --timeout=180 --files-from=- --from0 {0} ' + remote_dest)
-
-    verify_cmd = ('find {0} -name *.rawacf.{1} -printf %P\\\\0 |'
-                'rsync -av --checksum --timeout=180 --files-from=- --from0 {0} ' + remote_dest)
-
     try:
         for ext in ['hdf5', 'bz2']:
-            copy_ext = copy_cmd.format(STAGING_DIR, ext)
-            print(copy_ext)
-            execute_cmd(copy_ext)
+            pattern = "*.rawacf.{}".format(ext)
+            files_to_send = do_find(STAGING_DIR, p)
+            print("sending", files_to_send)
+
+            rsync_arg = '-append-verify --timeout=180'
+            do_rsync(STAGING_DIR, remote_dest, rsync_arg)
+
+            rsync_arg = '--checksum --timeout=180'
+            do_rsync(STAGING_DIR, remote_dest, rsync_arg)
+
     except sp.CalledProcessError as e:
         print(e)
-
-    try:
-        for ext in ['hdf5', 'bz2']:
-            verify_ext = verify_cmd.format(STAGING_DIR, ext)
-            print(verify_ext)
-            execute_cmd(verify_ext)
-    except sp.CalledProcessError as e:
-        print(e)
-
 
 def verify_files_are_home():
     """
@@ -261,7 +258,6 @@ def verify_files_are_home():
         output = execute_cmd(get_our_md5)
         our_hashes.extend(output.splitlines())
 
-    #print(our_hashes, remote_hashes)
     for has in our_hashes:
         if has not in remote_hashes:
             print(has)
@@ -283,20 +279,20 @@ def rotate_files():
 
     deleted_files = []
 
-    for backup_dir in [ANTENNA_IQ_BACKUP_DIR, BFIQ_RAWACF_BACKUP_DIR]:
+    for backup_dir in [ANTENNA_IQ_BACKUP_DIR, BFIQ_BACKUP_DIR, RAWACF_BACKUP_DIR]:
 
-        du = shutil.disk_usage(backup_dir)
-        total = float(du[0])
-        used = float(du[1])
-        utilization = math.ceil(used/total * 100)
+        def get_utilization()
+            du = shutil.disk_usage(backup_dir)
+            total = float(du[0])
+            used = float(du[1])
+            return math.ceil(used/total * 100)
+
+        utilization = get_utilization()
 
         if utilization > CAPACITY_LIMIT:
             loop = 0
             while loop < MAX_LOOPS:
-                du = shutil.disk_usage(backup_dir)
-                total = float(du[0])
-                used = float(du[1])
-                utilization = math.ceil(used/total * 100)
+                utilization = get_utilization()
 
                 if utilization > CAPACITY_TARGET:
                     files_to_remove = do_find(backup_dir, pattern, args)
@@ -319,7 +315,13 @@ def rotate_files():
 
                 loop += 1
 
+if not os.path.exists(DATA_DIR):
+    print("Data directory does not exist!")
+    sys.exit(-1)
 
+if not os.path.exists(LOG_DIR):
+    print("Log directory does not exist!")
+    sys.exit(-1)
 
 mkdir = 'mkdir -p ' + STAGING_DIR
 execute_cmd(mkdir)
@@ -327,7 +329,10 @@ execute_cmd(mkdir)
 mkdir = 'mkdir -p ' + ANTENNA_IQ_BACKUP_DIR
 execute_cmd(mkdir)
 
-mkdir = 'mkdir -p ' + BFIQ_RAWACF_BACKUP_DIR
+mkdir = 'mkdir -p ' + BFIQ_BACKUP_DIR
+execute_cmd(mkdir)
+
+mkdir = 'mkdir -p ' + RAWACF_BACKUP_DIR
 execute_cmd(mkdir)
 
 send_files_home()
