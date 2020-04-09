@@ -219,7 +219,7 @@ def send_files_home():
             files_to_send = do_find(STAGING_DIR, p)
             print("sending", files_to_send)
 
-            rsync_arg = '-append-verify --timeout=180'
+            rsync_arg = '--append-verify --timeout=180'
             do_rsync(STAGING_DIR, remote_dest, rsync_arg)
 
             rsync_arg = '--checksum --timeout=180'
