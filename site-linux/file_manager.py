@@ -362,11 +362,15 @@ def rotate_files():
 
 
 if not os.path.exists(DATA_DIR):
-    print("Data directory does not exist!")
+    subject = "Data directory does not exist"
+    body = "The radar data directory does not exist!"
+    do_mail(subject, body)
     sys.exit(-1)
 
 if not os.path.exists(LOG_DIR):
-    print("Log directory does not exist!")
+    subject = "Log directory does not exist"
+    body = "The radar log directory does not exist!"
+    do_mail(subject, body)
     sys.exit(-1)
 
 mkdir = 'mkdir -p ' + STAGING_DIR
