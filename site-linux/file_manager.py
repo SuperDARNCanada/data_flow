@@ -26,6 +26,9 @@ REMOTE = config['remote']
 REMOTE_FOLDER = config['remote_folder']
 
 LOG_DIR = config['log_dir']
+
+EMAILS = config['emails']
+
 MAX_LOOPS = 10
 
 # Delete files if filesystem usage is over this threshold
@@ -52,6 +55,20 @@ def execute_cmd(cmd):
     """
     output = sp.check_output(cmd, shell=True)
     return output.decode('utf-8')
+
+def do_mail(subject, body):
+    """
+    Sends an email with script results.
+
+    :param      subject:  The subject of the email.
+    :type       subject:  str
+    :param      body:     The body of the email.
+    :type       body:     str
+    """
+    subject_ = "[Data Flow] {}".format(subject)
+    mail_cmd = 'echo {} | mail -s {} {}'.format(body, subject_, EMAILS)
+
+    execute_cmd(mail_cmd)
 
 def do_rsync(source, dest, source_files, args=""):
     """
@@ -150,7 +167,10 @@ def move_new_files():
         rsync_arg = "--remove-source-files"
         do_rsync(DATA_DIR, STAGING_DIR, files_to_move, rsync_arg)
     else:
-        print("No new data files to move")
+        subject = "No new files to process and transfer"
+        body = "There are no new files to transfer in the output data directory"
+        do_mail(subject, body)
+        sys.exit(-1)
 
 
 def restructure_files():
@@ -169,7 +189,10 @@ def restructure_files():
         print(restructure_cmd)
         restructure_output = execute_cmd(restructure_cmd)
     else:
-        print("No files to restructure")
+        subject = "Unable to restructure files"
+        body = "Unable to restructure files. Files may be missing or corrupted."
+        do_mail(subject, body)
+        sys.exit(-1)
 
 
 def backup_files():
@@ -190,7 +213,10 @@ def backup_files():
         if files_to_backup != "":
             do_rsync(STAGING_DIR, pd[1], files_to_backup)
         else:
-            print("No files to back up")
+            subject = "Unable to backup files"
+            body = "Unable to backup files. Files may be missing or corrupted."
+            do_mail(subject, body)
+            sys.exit(-1)
 
 def compress_log_files():
     """
@@ -258,15 +284,29 @@ def verify_files_are_home():
         output = execute_cmd(get_our_md5)
         our_hashes.extend(output.splitlines())
 
-    for has in our_hashes:
-        if has not in remote_hashes:
-            print(has)
+
     if set(our_hashes).issubset(set(remote_hashes)):
+        body = "The following file hashes match after transfer.\n"
+        body += "\n".join(our_hashes)
+
         delete = 'rm -r {}/*'.format(STAGING_DIR)
         try:
             execute_cmd(delete)
+            subject = "Files were transfered successfully"
         except sp.CalledProcessError as e:
-            print(e)
+            subject = "Files were transfered but unable to delete staged files afterword"
+
+        do_mail(subject, body)
+
+    else:
+        differences = list(set(remote_hashes) - set(out_hashes))
+
+        subject = "Files failed to transfer"
+
+        body = "The following file hashes don't exist/match for files transfered to the server.\n"
+        body += "\n".join(differences)
+
+        do_mail(subject, body)
 
 
 def rotate_files():
@@ -279,6 +319,7 @@ def rotate_files():
 
     deleted_files = []
 
+    body = ""
     for backup_dir in [ANTENNA_IQ_BACKUP_DIR, BFIQ_BACKUP_DIR, RAWACF_BACKUP_DIR]:
 
         def get_utilization()
@@ -301,12 +342,12 @@ def rotate_files():
                     files_list = sorted(files_list)
                     files_list = files_list[:DELETE_X_FILES]
                     files_list = [file.split()[1] for file in files_list]
-                    print(files_list)
 
                     files_str = "\n".join(files_list)
 
                     if files_str != "":
                         do_delete(files_str)
+                        body += files_str + '\n'
                     else:
                         "No files to rotate"
 
@@ -314,6 +355,11 @@ def rotate_files():
                     break
 
                 loop += 1
+
+    if body != "":
+        subject = "The following old files were rotated"
+        do_mail(subject, body)
+
 
 if not os.path.exists(DATA_DIR):
     print("Data directory does not exist!")
