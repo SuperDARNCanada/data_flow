@@ -66,7 +66,7 @@ def do_mail(subject, body):
     :type       body:     str
     """
     subject_ = "[Data Flow] {}".format(subject)
-    mail_cmd = 'echo {} | mail -s {} {}'.format(body, subject_, EMAILS)
+    mail_cmd = 'echo "{}" | mail -s "{}" {}'.format(body, subject_, EMAILS)
 
     execute_cmd(mail_cmd)
 
@@ -213,10 +213,7 @@ def backup_files():
         if files_to_backup != "":
             do_rsync(STAGING_DIR, pd[1], files_to_backup)
         else:
-            subject = "Unable to backup files"
-            body = "Unable to backup files. Files may be missing or corrupted."
-            do_mail(subject, body)
-            sys.exit(-1)
+           print("No files to backup")
 
 def compress_log_files():
     """
@@ -242,14 +239,14 @@ def send_files_home():
     try:
         for ext in ['hdf5', 'bz2']:
             pattern = "*.rawacf.{}".format(ext)
-            files_to_send = do_find(STAGING_DIR, p)
+            files_to_send = do_find(STAGING_DIR, pattern)
             print("sending", files_to_send)
 
             rsync_arg = '--append-verify --timeout=180'
-            do_rsync(STAGING_DIR, remote_dest, rsync_arg)
+            do_rsync(STAGING_DIR, remote_dest, files_to_send, rsync_arg)
 
             rsync_arg = '--checksum --timeout=180'
-            do_rsync(STAGING_DIR, remote_dest, rsync_arg)
+            do_rsync(STAGING_DIR, remote_dest, files_to_send, rsync_arg)
 
     except sp.CalledProcessError as e:
         print(e)
@@ -284,6 +281,9 @@ def verify_files_are_home():
         output = execute_cmd(get_our_md5)
         our_hashes.extend(output.splitlines())
 
+
+    if not our_hashes:
+        return
 
     if set(our_hashes).issubset(set(remote_hashes)):
         body = "The following file hashes match after transfer.\n"
@@ -322,7 +322,7 @@ def rotate_files():
     body = ""
     for backup_dir in [ANTENNA_IQ_BACKUP_DIR, BFIQ_BACKUP_DIR, RAWACF_BACKUP_DIR]:
 
-        def get_utilization()
+        def get_utilization():
             du = shutil.disk_usage(backup_dir)
             total = float(du[0])
             used = float(du[1])
