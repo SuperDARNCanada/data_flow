@@ -25,7 +25,7 @@ import bz2
 import datetime
 import os
 import sys
-
+from pydarn.exceptions.borealis_exceptions import BorealisConvert2RawacfError, BorealisConvert2IqdatError
 from pydarn import BorealisRead, BorealisWrite, BorealisConvert
 
 
@@ -178,11 +178,11 @@ def main():
         dmap_filename = create_dmap_filename(borealis_site_file, dmap_filetype)
 
         try:
-            written_dmap_filename =  borealis_site_to_and_dmap_files(borealis_site_file,
+            written_dmap_filename =  borealis_site_to_dmap_files(borealis_site_file,
                                     borealis_filetype, slice_id,
-                                    dmap_filename, array_filename)
+                                    dmap_filename)
             print('Wrote dmap to : {}'.format(written_dmap_filename))
-        except pydarn.exceptions.borealis_exceptions.BorealisConvert2RawacfError as e:
+        except (BorealisConvert2RawacfError, BorealisConvert2IqdatError) as e:
             print("Unable to convert {} to DMAP file.".format(borealis_site_file))
 
 

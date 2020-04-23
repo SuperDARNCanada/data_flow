@@ -170,7 +170,7 @@ def move_new_files():
         subject = "No new files to process and transfer"
         body = "There are no new files to transfer in the output data directory"
         do_mail(subject, body)
-        sys.exit(-1)
+        sys.exit(1)
 
 
 def restructure_files():
@@ -188,6 +188,11 @@ def restructure_files():
 
         print(restructure_cmd)
         restructure_output = execute_cmd(restructure_cmd)
+        if restructure_output != "":
+            subject = "Some files were unable to be restructured"
+            body = restructure_output
+            do_mail(subject, body)
+
     else:
         subject = "Unable to restructure files"
         body = "Unable to restructure files. Files may be missing or corrupted."
@@ -222,10 +227,10 @@ def compress_log_files():
 
     # Compress every file in the LOG_DIR that is: 1) Not compressed with bz2 already and 2)
     # not in use (fuser will return 1 if a file is in use)
-    compress_cmd = ('find {} -type f |'
+    compress_cmd = ('find {0} -type f |'
                     ' grep -v *.bz2 |'
                     ' while read filename ; do fuser -s $filename || echo $filename ; done |'
-                    ' parallel "bzip2 -z {}/{{}}"').format(LOG_DIR)
+                    ' parallel "bzip2 -z {{}}"').format(LOG_DIR)
 
     execute_cmd(compress_cmd)
 
