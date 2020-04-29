@@ -108,7 +108,7 @@ def plot_files(data, date, radar, plot_path):
             print("Error: {}".format(err))
             plt.close()
 
-# check number of arguements
+# check number of arguments
 # if not print usage message
 if len(sys.argv) is not 5:
     print("Must supply one command line arguement")
@@ -132,4 +132,3 @@ except Exception as err:
         exit(-1)
 
 exit(0)
-
