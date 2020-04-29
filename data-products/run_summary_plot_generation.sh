@@ -55,7 +55,6 @@ mkdir -p ${TMPSUMMARYDIR}
 #      that don't have a matching summary plot 
 need_to_generate=$(sort <(find ${SUMMARYDIR} -type f -exec bash -c 'basename "${0%.*}"' {} \; | sed 's/pydarn_\(.*\)_\(.*\)_.*/\1 \2/' | sort | uniq) <(find ${FITACFDIR} -type f -exec bash -c 'basename "${0%.*}"' {} \; | sed -e 's/\([0-9]\+\)\.[0-9]\+\.[0-9]\+\.\([a-z]\+.*\)\..*/\1 \2/' | sort | uniq) | uniq -u)
 
-echo ${need_to_generate}
 # commented out as it is needed for job submission in cedar 
 #/opt/software/slurm/bin/srun /cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/bin/parallel --joblog /home/mschmidt/logs/summary_logs.log -j$(nproc) --max-args=2 python3 pydarn_generate_summary_plots.py {} ${FITACFDIR} ::: ${need_to_generate}
 
@@ -65,11 +64,13 @@ parallel -j${PROC} --max-args=2 python3 pydarn_generate_summary_plots.py {} ${FI
 #chgrp -R rpp-kam136 ${SUMMARYDIR}
 #chmod -R 664 ${SUMMARYDIR} 
 
-# see comment above, same command but now with borealis fitacf data
-need_to_generate=$(sort <(find ${SUMMARYDIR} -type f -exec bash -c 'basename "${0%.*}"' {} \; | sed 's/pydarn_\(.*\)_\(.*\)_.*/\1 \2/' | sort | uniq) <(find ${BOREALISFITACFDIR} -type f -exec bash -c 'basename "${0%.*}"' {} \; | sed -e 's/\([0-9]\+\)\.[0-9]\+\.[0-9]\+\.\([a-z]\+.*\)\..*/\1 \2/' | sort | uniq) | uniq -u)
-parallel -j${PROC} --max-args=2 python3 pydarn_generate_summary_plots.py {} ${BOREALISFITACFDIR} ${TMPSUMMARYDIR} ::: ${need_to_generate}
+# needed for cedar as borealis fitacf and ROS fitacf are seperate currently. This will be removed in the future 
+# when borealis data is allowed to be distributed
 
-echo ${need_to_generate}
+#need_to_generate=$(sort <(find ${SUMMARYDIR} -type f -exec bash -c 'basename "${0%.*}"' {} \; | sed 's/pydarn_\(.*\)_\(.*\)_.*/\1 \2/' | sort | uniq) <(find ${BOREALISFITACFDIR} -type f -exec bash -c 'basename "${0%.*}"' {} \; | sed -e 's/\([0-9]\+\)\.[0-9]\+\.[0-9]\+\.\([a-z]\+.*\)\..*/\1 \2/' | sort | uniq) | uniq -u)
+#parallel -j${PROC} --max-args=2 python3 pydarn_generate_summary_plots.py {} ${BOREALISFITACFDIR} ${TMPSUMMARYDIR} ::: ${need_to_generate}
+#
+#echo ${need_to_generate}
 # cedar code
 #/opt/software/slurm/bin/srun /cvmfs/soft.computecanada.ca/nix/var/nix/profiles/16.09/bin/parallel --joblog /home/mschmidt/logs/summary_logs.log -j$(nproc) --max-args=2 python3 pydarn_generate_summary_plots.py {} ${BOREALISFITACFDIR} ::: ${need_to_generate}
 #mv -v ${TMPSUMMARYDIR}/*.png ${BOREALISSUMMARYPLOTSDIR}/
