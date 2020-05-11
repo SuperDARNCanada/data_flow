@@ -18,7 +18,7 @@
 # What filesystem are we interested in?
 FILESYSTEM=`cat ${BOREALISPATH}/config.ini | jq -r '.data_directory'` 
 # Delete files if filesystem usage is over this threshold
-CAPACITY_LIMIT=93
+CAPACITY_LIMIT=90
 # How many files should be deleted at a time in the loop?
 DELETE_X_FILES=12
 # What file pattern should be deleted?
