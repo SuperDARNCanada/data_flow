@@ -122,7 +122,6 @@ def borealis_array_to_dmap_files(filename, borealis_filetype, slice_id, dmap_fil
 
     return bz2_filename
 
-
 def borealis_site_to_dmap_files(filename, borealis_filetype, slice_id, dmap_filename):
     """
     Takes a Borealis site structured file, and writes both the SDARN converted
