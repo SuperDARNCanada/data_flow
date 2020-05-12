@@ -247,10 +247,10 @@ def send_files_home():
             files_to_send = do_find(STAGING_DIR, pattern)
             print("sending", files_to_send)
 
-            rsync_arg = '--append-verify --timeout=180'
+            rsync_arg = '--append-verify --timeout=180 --partial-dir=.rsync_partial'
             do_rsync(STAGING_DIR, remote_dest, files_to_send, rsync_arg)
 
-            rsync_arg = '--checksum --timeout=180'
+            rsync_arg = '--checksum --timeout=180 --partial-dir=.rsync_partial'
             do_rsync(STAGING_DIR, remote_dest, files_to_send, rsync_arg)
 
     except sp.CalledProcessError as e:
@@ -297,9 +297,9 @@ def verify_files_are_home():
         delete = 'rm -r {}/*'.format(STAGING_DIR)
         try:
             execute_cmd(delete)
-            subject = "Files were transfered successfully"
+            subject = "Files were transferred successfully"
         except sp.CalledProcessError as e:
-            subject = "Files were transfered but unable to delete staged files afterword"
+            subject = "Files were transferred but unable to delete staged files afterword"
 
         do_mail(subject, body)
 
@@ -308,7 +308,7 @@ def verify_files_are_home():
 
         subject = "Files failed to transfer"
 
-        body = "The following file hashes don't exist/match for files transfered to the server.\n"
+        body = "The following file hashes don't exist/match for files transferred to the server.\n"
         body += "\n".join(differences)
 
         do_mail(subject, body)
@@ -354,7 +354,9 @@ def rotate_files():
                         do_delete(files_str)
                         body += files_str + '\n'
                     else:
-                        "No files to rotate"
+                        subject = "Error on disk"
+                        body = "{} is at capacity, but cannot find old files to rotate"
+                        do_mail(subject, body)
 
                 else:
                     break

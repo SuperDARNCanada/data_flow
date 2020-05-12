@@ -101,6 +101,25 @@ def compress_bz2(filename):
 
     return bz2_filename
 
+def borealis_array_to_dmap_files(filename, borealis_filetype, slice_id, dmap_filename):
+    """
+    Takes a Borealis array structured file, and writes both the SDARN converted
+    file to the same directory as the input site file.
+
+    Returns
+    -------
+    bz2_filename
+        bzipped dmap filename
+    """
+    borealis_converter = BorealisConvert(filename, borealis_filetype,
+                            dmap_filename, slice_id, borealis_file_structure='array')
+
+    dmap_filename = borealis_converter.sdarn_filename # overwrite to as generated
+
+    bz2_filename = compress_bz2(dmap_filename) # compress (and adds .bz2 to filename)
+    os.remove(dmap_filename) # remove uncompressed
+
+    return bz2_filename
 
 def borealis_site_to_dmap_files(filename, borealis_filetype, slice_id, dmap_filename):
     """
@@ -170,6 +189,10 @@ def main():
     slice_id = int(borealis_site_file.split('.')[-4]) # X.rawacf.hdf5.site
     array_filename = '.'.join(borealis_site_file.split('.')[0:-1]) # all but .site
 
+    written_array_filename = borealis_site_to_array_file(borealis_site_file,
+                                                        borealis_filetype,
+                                                        array_filename)
+
     dmap_filetypes = {'rawacf': 'rawacf', 'bfiq': 'iqdat'}
 
     if borealis_filetype in dmap_filetypes.keys():
@@ -178,17 +201,15 @@ def main():
         dmap_filename = create_dmap_filename(borealis_site_file, dmap_filetype)
 
         try:
-            written_dmap_filename =  borealis_site_to_dmap_files(borealis_site_file,
+            written_dmap_filename =  borealis_array_to_dmap_files(borealis_array_file,
                                     borealis_filetype, slice_id,
                                     dmap_filename)
             print('Wrote dmap to : {}'.format(written_dmap_filename))
         except (BorealisConvert2RawacfError, BorealisConvert2IqdatError) as e:
-            print("Unable to convert {} to DMAP file.".format(borealis_site_file))
+            print("Unable to convert {} to DMAP file.".format(borealis_array_file))
 
 
-    written_array_filename = borealis_site_to_array_file(borealis_site_file,
-                                                        borealis_filetype,
-                                                        array_filename)
+
     print('Wrote array to : {}'.format(written_array_filename))
 
     if __bzip2:
