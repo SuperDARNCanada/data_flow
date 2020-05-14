@@ -126,13 +126,9 @@ def do_delete(source_files):
     :param      source_files:  The list of source files.
     :type       source_files:  string
     """
-    remove = 'printf "{}" | tr \'\\n\' \'\\0\'| xargs -0 rm'.format(source_files)
-    print(remove)
 
-    try:
-        execute_cmd(remove)
-    except sp.CalledProcessError as e:
-        print(e)
+    files = source_files.splitlines()
+    map(os.remove, files)
 
 
 
@@ -142,7 +138,7 @@ def clear_old_temp_files():
     could be deleted.
     """
 
-    pattern = '*.*.*.*.*.*.*.*.site'
+    pattern = '*.*.*.*.*.*.*.hdf5'
     args = '-cmin +{}'.format(CUR_FILE_THRESHOLD_MINUTES)
 
     temp_files = do_find(DATA_DIR, pattern, args)
@@ -228,7 +224,7 @@ def compress_log_files():
     # Compress every file in the LOG_DIR that is: 1) Not compressed with bz2 already and 2)
     # not in use (fuser will return 1 if a file is in use)
     compress_cmd = ('find {0} -type f |'
-                    ' grep -v *.bz2 |'
+                    ' grep -v bz2 |'
                     ' while read filename ; do fuser -s $filename || echo $filename ; done |'
                     ' parallel "bzip2 -z {{}}"').format(LOG_DIR)
 
@@ -247,10 +243,10 @@ def send_files_home():
             files_to_send = do_find(STAGING_DIR, pattern)
             print("sending", files_to_send)
 
-            rsync_arg = '--append-verify --timeout=180 --partial-dir=.rsync_partial'
+            rsync_arg = '--append-verify --timeout=180'
             do_rsync(STAGING_DIR, remote_dest, files_to_send, rsync_arg)
 
-            rsync_arg = '--checksum --timeout=180 --partial-dir=.rsync_partial'
+            rsync_arg = '--checksum --timeout=180'
             do_rsync(STAGING_DIR, remote_dest, files_to_send, rsync_arg)
 
     except sp.CalledProcessError as e:

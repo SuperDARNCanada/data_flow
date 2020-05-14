@@ -201,12 +201,12 @@ def main():
         dmap_filename = create_dmap_filename(borealis_site_file, dmap_filetype)
 
         try:
-            written_dmap_filename =  borealis_array_to_dmap_files(borealis_array_file,
+            written_dmap_filename =  borealis_array_to_dmap_files(written_array_filename,
                                     borealis_filetype, slice_id,
                                     dmap_filename)
             print('Wrote dmap to : {}'.format(written_dmap_filename))
         except (BorealisConvert2RawacfError, BorealisConvert2IqdatError) as e:
-            print("Unable to convert {} to DMAP file.".format(borealis_array_file))
+            print("Unable to convert {} to DMAP file.".format(written_array_filename))
 
 
 
