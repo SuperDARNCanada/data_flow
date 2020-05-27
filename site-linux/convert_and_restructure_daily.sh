@@ -86,7 +86,7 @@ do
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
 	echo "File failed to convert: ${f}" >> ${LOGFILE} 2>&1
-	mv -v ${f} ${ERRORS_DEST} >> ${LOFGILE} 2>&1
+	mv -v ${f} ${ERRORS_DEST} >> ${LOGFILE} 2>&1
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
     fi
 done
@@ -107,7 +107,7 @@ do
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
 	echo "File failed to convert: ${f}" >> ${LOGFILE} 2>&1
-	mv -v ${f} ${ERRORS_DEST} >> ${LOFGILE} 2>&1
+	mv -v ${f} ${ERRORS_DEST} >> ${LOGFILE} 2>&1
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
     fi
 done
