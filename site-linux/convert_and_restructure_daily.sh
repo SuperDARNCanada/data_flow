@@ -13,6 +13,7 @@
 # The script should be run via crontab like so:
 # 10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * ${HOME}/data_flow/site-linux/convert_and_restructure_daily.sh >> ${HOME}/convert_and_restructure_borealis_log.txt 2>&1
 
+source /home/transfer/.bashrc
 
 # prevent copying of files
 echo 1 > ${HOME}/convert_daily_borealis_running
@@ -29,6 +30,7 @@ DAILY_DIR=/data/daily # this is the source
 DMAP_DEST=/data/rawacf_dmap
 ARRAY_DEST=/data/rawacf_array
 BFIQ_ARRAY_DEST=/data/bfiq_array
+ERRORS_DEST=/data/hdf5_errors
 
 LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
@@ -83,6 +85,8 @@ do
         mv -v ${array_file} ${ARRAY_DEST} >> ${LOGFILE} 2>&1
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
+	echo "File failed to convert: ${f}" >> ${LOGFILE} 2>&1
+	mv -v ${f} ${ERRORS_DEST} >> ${LOGFILE} 2>&1
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
     fi
 done
@@ -102,6 +106,8 @@ do
         mv -v ${array_file} ${BFIQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
+	echo "File failed to convert: ${f}" >> ${LOGFILE} 2>&1
+	mv -v ${f} ${ERRORS_DEST} >> ${LOGFILE} 2>&1
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
     fi
 done
