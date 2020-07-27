@@ -13,10 +13,6 @@
 # The script should be run via crontab like so:
 # 10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * ${HOME}/data_flow/site-linux/convert_and_restructure_daily.sh >> ${HOME}/convert_and_restructure_borealis_log.txt 2>&1
 
-
-# prevent copying of files
-echo 1 > ${HOME}/convert_daily_borealis_running
-
 # Date, time and other stuff
 DATE=`date +%Y%m%d`
 DATE_UTC=`date -u`
@@ -34,6 +30,14 @@ BACKUP_DEST=/borealis_nfs/borealis_data/backup
 LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
 LOGFILE=${LOGGINGDIR}/${DATE}.log
+
+# do not start if already running
+if [ -a ${HOME}convert_daily_borealis_running ] ; then
+  exit
+fi
+
+# prevent copying of files
+echo 1 > ${HOME}/convert_daily_borealis_running
 
 ##############################################################################
 # Email function. Called if any files fail conversion. 
