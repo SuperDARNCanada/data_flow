@@ -69,7 +69,7 @@ echo "Restructuring files in ${DAILY_DIR}" >> ${LOGFILE} 2>&1
 
 RAWACF_CONVERT_FILES=`find "${DAILY_DIR}" -name "${RAWACF_FILE_PATTERN_TO_CONVERT}" -type f`
 BFIQ_CONVERT_FILES=`find "${DAILY_DIR}" -name "${BFIQ_FILE_PATTERN_TO_CONVERT}" -type f`
-source ${HOME}/pydarn-env/bin/activate
+source ${HOME}/pydarnio-env/bin/activate
 
 EMAILBODY=""
 
