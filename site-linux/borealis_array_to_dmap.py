@@ -135,7 +135,7 @@ def main():
     dmap_filetypes = {'rawacf': 'rawacf', 'bfiq': 'iqdat'}
 
     if args.scaling_factor:
-        scaling_factor = args.scaling_factor
+        scaling_factor = int(args.scaling_factor)
     else:
         scaling_factor = 1
 
