@@ -12,6 +12,8 @@ write to file as the given filename, with extensions
 '.[borealis_filetype].hdf5' replaced with [dmap_filetype].dmap. 
 The script will also bzip the resulting dmap file.
 
+Requires pydarn v1.1 to make use of scaling factor.
+
 """
 
 import argparse
@@ -50,7 +52,7 @@ def borealis_conversion_parser():
     parser.add_argument("borealis_array_file", help="Path to the array file that you wish to "
                                                     "convert. "
                                                     "(e.g. 20190327.2210.38.sas.0.bfiq.hdf5)")
-
+    parser.add_argument("--scaling_factor", help="Scale to multiply by in conversion, default = 1")
     return parser
 
 
@@ -95,7 +97,7 @@ def compress_bz2(filename):
 
 
 def borealis_array_to_dmap_files(filename, borealis_filetype, slice_id,
-                       dmap_filename):
+                       dmap_filename, scaling_factor):
     """
     Takes a Borealis array structured file, and writes the SDARN converted
     file to the same directory as the input array file.
@@ -106,7 +108,8 @@ def borealis_array_to_dmap_files(filename, borealis_filetype, slice_id,
         bzipped dmap filename
     """
     borealis_converter = BorealisConvert(filename, borealis_filetype,
-                            dmap_filename, slice_id, borealis_file_structure='array')
+                            dmap_filename, slice_id, borealis_file_structure='array',
+                            scaling_factor=scaling_factor)
 
     dmap_filename = borealis_converter.sdarn_filename # overwrite to as generated
 
@@ -131,6 +134,11 @@ def main():
     
     dmap_filetypes = {'rawacf': 'rawacf', 'bfiq': 'iqdat'}
 
+    if args.scaling_factor:
+        scaling_factor = int(args.scaling_factor)
+    else:
+        scaling_factor = 1
+
     if borealis_filetype in dmap_filetypes.keys():
         # for 'rawacf' and 'bfiq' types, we can convert to arrays and to dmap.
         # Most efficient way to do this is to only read once and write 
@@ -141,7 +149,7 @@ def main():
         written_dmap_filename = \
             borealis_array_to_dmap_files(borealis_array_file, 
                                     borealis_filetype, slice_id, 
-                                    dmap_filename)
+                                    dmap_filename, scaling_factor)
 
         print('Wrote dmap to : {}'.format(written_dmap_filename))
 

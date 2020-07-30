@@ -17,6 +17,9 @@
 
 # What filesystem are we interested in?
 FILESYSTEM=`cat ${BOREALISPATH}/config.ini | jq -r '.data_directory'` 
+# Where should files be moved to?
+ARCHIVE_LOCATION=/borealis_nfs/archive/
+CONV_FAIL_LOCATION=${ARCHIVE_LOCATION}/fail/
 # Delete files if filesystem usage is over this threshold
 CAPACITY_LIMIT=90
 # How many files should be deleted at a time in the loop?
@@ -111,8 +114,11 @@ do
     ${convert_cmd} >> ${LOGFILE} 2>&1
     ret=$?
     if [ $ret -eq 0 ]; then
-        echo "rm -v ${f}" >> ${LOGFILE} 2>&1 
-        rm -v ${f} >> ${LOGFILE} 2>&1
+	# In case it succeeds in conversion, then remove the .site file
+	rm -v ${f} >> ${LOGFILE} 2>&1
+    else
+	# In case it fails to convert, move the .site file to the archive fail location
+	mv -v ${f} ${CONV_FAIL_LOCATION} >> ${LOGFILE} 2>&1
     fi
     converted_files_count=$((converted_files_count+1))
 done
@@ -159,10 +165,9 @@ do
         
         for f in ${DEL_FILES}
         do
-            echo Deleting ${f}... >> ${LOGFILE} 2>&1
-            rm -v ${f} >> ${LOGFILE} 2>&1
+            mv -v ${f} ${ARCHIVE_LOCATION}  >> ${LOGFILE} 2>&1
         done
-        EMAILBODY="${EMAILBODY}\nFiles deleted:\n${DEL_FILES}"
+        EMAILBODY="${EMAILBODY}\nFiles moved:\n${DEL_FILES}"
     else
         # Not above the threshold, so break and do nothing.
         break
