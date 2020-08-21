@@ -21,7 +21,7 @@ FILESYSTEM=`cat ${BOREALISPATH}/config.ini | jq -r '.data_directory'`
 ARCHIVE_LOCATION=/borealis_nfs/archive/
 CONV_FAIL_LOCATION=${ARCHIVE_LOCATION}/fail/
 # Delete files if filesystem usage is over this threshold
-CAPACITY_LIMIT=93
+CAPACITY_LIMIT=87
 # How many files should be deleted at a time in the loop?
 DELETE_X_FILES=12
 # What file pattern should be deleted?
