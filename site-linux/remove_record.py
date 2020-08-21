@@ -5,14 +5,11 @@ Usage:
 
 remove_record.py [-h] borealis_site_file record_name
 
-Pass in the filename you wish to convert (should end in '.hdf5'). 
+Pass in the filename you wish to check. If no record name is given, the 
+file will be searched for records where the data arrays are not the correct
+size for the given num_sequences, then remove those records.
 
-The script will convert the records to a dmap dictionary and then 
-write to file as the given filename, with extensions 
-'.[borealis_filetype].hdf5' replaced with [dmap_filetype].dmap. 
-The script will also bzip the resulting dmap file.
-
-Requires pydarn v1.1 to make use of scaling factor.
+If a record name is provided, only the given record will be removed. 
 
 """
 import argparse
