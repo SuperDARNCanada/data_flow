@@ -26,7 +26,7 @@ import datetime
 import os
 import sys
 
-from pydarn import BorealisRead, BorealisWrite, BorealisConvert
+from pydarnio import BorealisRead, BorealisWrite, BorealisConvert
 
 
 def usage_msg():

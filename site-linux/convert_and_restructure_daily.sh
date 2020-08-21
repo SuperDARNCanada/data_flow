@@ -2,13 +2,13 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Marci Detwiller
 
-# A script that uses pydarn to convert Borealis files to SDARN DMap files
+# A script that uses pydarnio to convert Borealis files to SDARN DMap files
 # as well as restructures the hdf5 files to be multidimensional arrays
 # for better file readability. Backs up the source site files before it
 # begins.
 #
-# Dependencies include pydarn being installed in a virtualenv at $HOME/pydarn-env
-# and RADARNAME being in environment variable
+# Dependencies include pydarnio being installed in a virtualenv at 
+# $HOME/pydarnio-env and RADARNAME being in environment variable
 #
 # The script should be run via crontab like so:
 # 10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * ${HOME}/data_flow/site-linux/convert_and_restructure_daily.sh >> ${HOME}/convert_and_restructure_borealis_log.txt 2>&1
@@ -66,7 +66,7 @@ echo "Restructuring files in ${DAILY_DIR}" >> ${LOGFILE} 2>&1
 
 RAWACF_CONVERT_FILES=`find "${DAILY_DIR}" -name "${RAWACF_FILE_PATTERN_TO_CONVERT}" -type f`
 BFIQ_CONVERT_FILES=`find "${DAILY_DIR}" -name "${BFIQ_FILE_PATTERN_TO_CONVERT}" -type f`
-source ${HOME}/pydarn-env/bin/activate
+source ${HOME}/pydarnio-env/bin/activate
 
 EMAILBODY=""
 

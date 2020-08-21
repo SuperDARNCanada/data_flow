@@ -12,7 +12,7 @@ write to file as the given filename, with extensions
 '.[borealis_filetype].hdf5' replaced with [dmap_filetype].dmap. 
 The script will also bzip the resulting dmap file.
 
-Requires pydarn v1.1 to make use of scaling factor.
+Requires pydarnio v1.0.
 
 """
 
@@ -22,7 +22,7 @@ import datetime
 import os
 import sys
 
-from pydarn import BorealisRead, BorealisWrite, BorealisConvert
+from pydarnio import BorealisRead, BorealisWrite, BorealisConvert
 
 
 def usage_msg():

@@ -9,7 +9,7 @@
 # delete 12 files on the /data partition)
 #
 # Dependencies include BOREALISPATH being in the environment variables in $HOME/.profile
-# and pydarn being installed in a virtualenv at $HOME/pydarn-env
+# and pydarnio being installed in a virtualenv at $HOME/pydarnio-env
 #
 # The script should be run via crontab like so:
 # 32 5,17 * * * . $HOME/.profile; $HOME/data_flow/borealis/rotate_borealis_files.sh >> $HOME/rotate_borealis_files.log 2>&1
@@ -96,7 +96,7 @@ echo "Restructuring all antennas_iq except from today ${DATE}" >> ${LOGFILE} 2>&
 # find all site files, remove the files from today from the list and reverse the list order
 # so that we convert the most recent files first (older files may get removed right away anyway)
 CONVERT_FILES=`find "${FILESYSTEM}" -name "${FILE_PATTERN_TO_CONVERT}" -type f | grep -v "${DATE}" | tac`
-source ${HOME}/pydarn-env/bin/activate
+source ${HOME}/pydarnio-env/bin/activate
 
 MAX_FILES_TO_CONVERT=24
 converted_files_count=0
