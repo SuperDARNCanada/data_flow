@@ -1,7 +1,7 @@
 #!/bin/bash
 
-DAILY_DIR=/data/daily/
-ERRORS_DIR=/data/hdf5_errors/
+DAILY_DIR=/borealis_nfs/borealis_data/daily/
+ERRORS_DIR=/borealis_nfs/borealis_data/hdf5_errors/
 FILE_PATTERN_FIX=*.site
 FILES_TO_FIX=`find "${ERRORS_DIR}" -name "${FILE_PATTERN_FIX}" -type f`
 
