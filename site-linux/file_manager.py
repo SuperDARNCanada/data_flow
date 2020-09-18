@@ -1,33 +1,69 @@
 #!/usr/bin/python3
-import subprocess as sp
-import sys
+import argparse
+import json
+import math
 import os
 import shutil
-import math
-import json
+import subprocess as sp
+import sys
 
-config_path = sys.argv[1]
+def usage_msg():
+    """
+    Return the usage message for this process.
 
-with open(config_path, 'r') as f:
-    config = json.load(f)
+    This is used if a -h flag or invalid arguments are provided.
 
-DATA_DIR = config['data_dir']
-STAGING_DIR = config['staging_dir']
+    :returns: the usage message
+    """
 
-ANTENNA_IQ_BACKUP_DIR = config['antenna_iq_backup_dir']
-BFIQ_BACKUP_DIR = config['bfiq_backup_dir']
-RAWACF_BACKUP_DIR = config['rawacf_backup_dir']
+    usage_message = """ file_manager.py [-h] file_manager_config
+
+    The script will transfer 
+    Pass in the file manager config file for this process. """
+
+    return usage_message
 
 
-PYDARN_ENV = config['pydarn_env']
-DATA_FLOW_LOCATION = config['data_flow_location']
+def file_manager_parser():
+    parser = argparse.ArgumentParser(usage=usage_msg())
+    parser.add_argument("file_manager_config", 
+                        help="Path to the file manager json config.")
 
-REMOTE = config['remote']
-REMOTE_FOLDER = config['remote_folder']
+    return parser
 
-LOG_DIR = config['log_dir']
 
-EMAILS = config['emails']
+def load_config():
+    parser = file_manager_parser()
+    parser.parse_args()
+
+    config_path = args.file_manager_config
+
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+
+    # source and processing directories
+    DATA_DIR = config['data_dir']
+    STAGING_DIR = config['staging_dir']
+
+    # backup directories
+    ANTENNA_IQ_BACKUP_DIR = config['antenna_iq_backup_dir']
+    BFIQ_BACKUP_DIR = config['bfiq_backup_dir']
+    RAWACF_BACKUP_DIR = config['rawacf_backup_dir']
+
+    # code/environment locations
+    PYDARN_ENV = config['pydarn_env']
+    DATA_FLOW_LOCATION = config['data_flow_location']
+
+    # destination information
+    REMOTE = config['remote']
+    REMOTE_FOLDER = config['remote_folder']
+
+    # logging and reporting information
+    LOG_DIR = config['log_dir']
+    EMAILS = config['emails']
+
+
+load_config()
 
 MAX_LOOPS = 10
 
