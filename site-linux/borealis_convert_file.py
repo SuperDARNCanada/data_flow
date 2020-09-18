@@ -25,9 +25,10 @@ import bz2
 import datetime
 import os
 import sys
-from pydarn.exceptions.borealis_exceptions import BorealisConvert2RawacfError, BorealisConvert2IqdatError
-from pydarn import BorealisRead, BorealisWrite, BorealisConvert
 
+from pydarnio import BorealisRead, BorealisWrite, BorealisConvert
+from pydarnio.exceptions.borealis_exceptions import \
+     BorealisConvert2RawacfError, BorealisConvert2IqdatError
 
 def usage_msg():
     """
