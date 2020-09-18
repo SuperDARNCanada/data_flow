@@ -40,7 +40,7 @@ then
 	exit
 fi
 
-FILES=`find ${SOURCE} \( -name '*rawacf.hdf5.site' -o -name '*bfiq.hdf5.*' \) -cmin +${CUR_FILE_THRESHOLD_MINUTES} -printf '%p\n'`
+FILES=`find ${SOURCE} \( -name '*rawacf.hdf5.site' -o -name '*bfiq.hdf5.*' -o -name '*antennas_iq.hdf5*' \) -cmin +${CUR_FILE_THRESHOLD_MINUTES} -printf '%p\n'`
 echo $FILES
 for file in $FILES
 do

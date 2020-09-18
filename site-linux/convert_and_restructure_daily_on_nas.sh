@@ -2,12 +2,12 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Marci Detwiller
 
-# A script that uses pydarn to convert Borealis files to SDARN DMap files
+# A script that uses pydarnio to convert Borealis files to SDARN DMap files
 # as well as restructures the hdf5 files to be multidimensional arrays
 # for better file readability. Backs up the source site files before it 
 # begins.
 #
-# Dependencies include pydarn being installed in a virtualenv at $HOME/pydarn-env
+# Dependencies include pydarnio being installed in a virtualenv at $HOME/pydarnio-env
 # and RADARNAME being in environment variable
 #
 # The script should be run via crontab like so:
@@ -23,8 +23,9 @@ HOSTNAME=`hostname`
 # What directories?
 DAILY_DIR=/borealis_nfs/borealis_data/daily # this is the source
 DMAP_DEST=/borealis_nfs/borealis_data/rawacf_dmap
-ARRAY_DEST=/borealis_nfs/borealis_data/rawacf_array
+RAWACF_ARRAY_DEST=/borealis_nfs/borealis_data/rawacf_array
 BFIQ_ARRAY_DEST=/borealis_nfs/borealis_data/bfiq_array
+ANTENNA_IQ_ARRAY_DEST=/borealis_nfs/borealis_data/antennas_iq_array
 BACKUP_DEST=/borealis_nfs/borealis_data/backup
 
 LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
@@ -62,6 +63,7 @@ cp -v ${DAILY_DIR}/*bfiq.hdf5.site $BACKUP_DEST
 # What file pattern should be converted?
 RAWACF_FILE_PATTERN_TO_CONVERT=*rawacf.hdf5.site
 BFIQ_FILE_PATTERN_TO_CONVERT=*bfiq.hdf5.site
+ANTENNAS_IQ_FILE_PATTERN_TO_CONVERT=*antennas_iq.hdf5.site
 
 echo "" >> ${LOGFILE} 2>&1
 echo ${DATE_UTC} >> ${LOGFILE} 2>&1
@@ -69,6 +71,7 @@ echo "Restructuring files in ${DAILY_DIR}" >> ${LOGFILE} 2>&1
 
 RAWACF_CONVERT_FILES=`find "${DAILY_DIR}" -name "${RAWACF_FILE_PATTERN_TO_CONVERT}" -type f`
 BFIQ_CONVERT_FILES=`find "${DAILY_DIR}" -name "${BFIQ_FILE_PATTERN_TO_CONVERT}" -type f`
+ANTENNAS_IQ_CONVERT_FILES=`find "${DAILY_DIR}" -name "${ANTENNAS_IQ_FILE_PATTERN_TO_CONVERT}" -type f`
 source ${HOME}/pydarnio-env/bin/activate
 
 EMAILBODY=""
@@ -85,7 +88,7 @@ do
         dmap_file="${f%hdf5.site}bz2"
         mv -v ${dmap_file} ${DMAP_DEST}/ >> ${LOGFILE} 2>&1
         array_file="${f%.site}"
-        mv -v ${array_file} ${ARRAY_DEST} >> ${LOGFILE} 2>&1
+        mv -v ${array_file} ${RAWACF_ARRAY_DEST} >> ${LOGFILE} 2>&1
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
@@ -105,6 +108,23 @@ do
         rm -v ${dmap_file} >> ${LOGFILE} 2>&1
         array_file="${f%.site}"
         mv -v ${array_file} ${BFIQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
+        rm -v ${f} >> ${LOGFILE} 2>&1
+    else
+        EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
+    fi
+done
+
+for f in ${ANTENNAS_IQ_CONVERT_FILES}
+do
+    echo "" >> ${LOGFILE} 2>&1
+    echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
+    python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        # remove iqdat and move bfiq array file if successful.
+        # then remove source site file.
+        array_file="${f%.site}"
+        mv -v ${array_file} ${ANTENNAS_IQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
