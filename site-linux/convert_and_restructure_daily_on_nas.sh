@@ -33,7 +33,7 @@ mkdir -p ${LOGGINGDIR}
 LOGFILE=${LOGGINGDIR}/${DATE}.log
 
 # do not start if already running
-if [ -a ${HOME}convert_daily_borealis_running ] ; then
+if [ -e ${HOME}/convert_daily_borealis_running ] ; then
   exit
 fi
 
