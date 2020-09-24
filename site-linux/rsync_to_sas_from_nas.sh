@@ -25,7 +25,7 @@ TEMPDEST=.rsync_partial
 MD5=${HOME}md5
 
 # do not start while files are converted and transferred from /data/daily
-if [ -a ${HOME}convert_daily_borealis_running ] ; then
+if [ -e ${HOME}/convert_daily_borealis_running ] ; then
   exit
 fi
 
