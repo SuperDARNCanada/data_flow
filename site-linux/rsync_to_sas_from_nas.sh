@@ -22,7 +22,7 @@ date
 echo "Placing files in sdcopy.usask.ca:$DEST"
 
 TEMPDEST=.rsync_partial
-MD5=${HOME}md5
+MD5=${HOME}/md5
 
 # do not start while files are converted and transferred from /data/daily
 if [ -e ${HOME}/convert_daily_borealis_running ] ; then
