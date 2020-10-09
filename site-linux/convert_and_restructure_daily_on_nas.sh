@@ -25,7 +25,7 @@ DAILY_DIR=/borealis_nfs/borealis_data/daily # this is the source
 DMAP_DEST=/borealis_nfs/borealis_data/rawacf_dmap
 RAWACF_ARRAY_DEST=/borealis_nfs/borealis_data/rawacf_array
 BFIQ_ARRAY_DEST=/borealis_nfs/borealis_data/bfiq_array
-ANTENNA_IQ_ARRAY_DEST=/borealis_nfs/borealis_data/antennas_iq_array
+ANTENNAS_IQ_ARRAY_DEST=/borealis_nfs/borealis_data/antennas_iq_array
 BACKUP_DEST=/borealis_nfs/borealis_data/backup
 
 LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
