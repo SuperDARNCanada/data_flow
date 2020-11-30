@@ -24,11 +24,6 @@ echo "Placing files in sdcopy.usask.ca:$DEST"
 TEMPDEST=.rsync_partial
 MD5=${HOME}/md5
 
-# do not start while files are converted and transferred from /data/daily
-if [ -e ${HOME}/convert_daily_borealis_running ] ; then
-  exit
-fi
-
 RSYNCRUNNING="`ps aux | grep rsync_to_sas | awk '$11 !~ /grep/ {print $12}'`" #if only this one running, will be /home/transfer/data_flow/site-linux/rsync_to_sas_from_nas /home/transfer/data_flow/site-linux/rsync_to_sas_from_nas.sh
 
 if [[ "$RSYNCRUNNING" == *"data_flow/site-linux/rsync_to_sas_from_nas"*"data_flow/site-linux/rsync_to_sas_from_nas"*"data_flow/site-linux/rsync_to_sas_from_nas"* ]] ; then #must be three times because the first two will be this instance of rsync_to_sas_from_nas
