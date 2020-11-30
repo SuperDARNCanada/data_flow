@@ -29,9 +29,9 @@ if [ -e ${HOME}/convert_daily_borealis_running ] ; then
   exit
 fi
 
-RSYNCRUNNING="`ps aux | grep rsync_to_sas | awk '$11 !~ /grep/ {print $12}'`" #if only this one running, will be /home/transfer/rsync_to_sas /home/transfer/rsync_to_sas
+RSYNCRUNNING="`ps aux | grep rsync_to_sas | awk '$11 !~ /grep/ {print $12}'`" #if only this one running, will be /home/transfer/data_flow/site-linux/rsync_to_sas_from_nas /home/transfer/data_flow/site-linux/rsync_to_sas_from_nas.sh
 
-if [[ "$RSYNCRUNNING" == *"data_flow/site-linux/rsync_to_sas"*"data_flow/site-linux/rsync_to_sas"*"data_flow/site-linux/rsync_to_sas"* ]] ; then #must be three times because the first two will be this instance of rsync_to_sas
+if [[ "$RSYNCRUNNING" == *"data_flow/site-linux/rsync_to_sas_from_nas"*"data_flow/site-linux/rsync_to_sas_from_nas"*"data_flow/site-linux/rsync_to_sas_from_nas"* ]] ; then #must be three times because the first two will be this instance of rsync_to_sas_from_nas
   exit
 fi
 
