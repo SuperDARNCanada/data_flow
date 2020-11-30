@@ -208,8 +208,7 @@ def main():
             print('Wrote dmap to : {}'.format(written_dmap_filename))
         except (BorealisConvert2RawacfError, BorealisConvert2IqdatError) as e:
             print("Unable to convert {} to DMAP file.".format(written_array_filename))
-
-
+            sys.exit(1)
 
     print('Wrote array to : {}'.format(written_array_filename))
 
