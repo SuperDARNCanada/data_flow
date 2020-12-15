@@ -11,9 +11,7 @@
 
 # What is this script called?
 SCRIPT_NAME=`basename "$0"`
-# Linux computer's user and hostname/IP address as well as the destination directory
-LINUX=${SITE_LINUX}
-DEST=/data/daily/
+DEST=/borealis_nfs/borealis_data/daily/
 # Use jq with the raw output option and the Borealis directory to get the source for the data
 SOURCE=`cat ${BOREALISPATH}/config.ini | jq -r '.data_directory'`
 # The following constant is how many minutes threshold the script will use to find FILES
@@ -29,20 +27,20 @@ echo ${SCRIPT_NAME}
 
 # Date in UTC format for logging
 date -u
-echo "Placing FILES in ${LINUX}:${DEST}"
+echo "Placing FILES in ${DEST}"
 
 # Check to make sure this is the only instance running.
 # If only this one is running, will be ${HOME}/${SCRIPT_NAME} ${HOME}/${SCRIPT_NAME}
-RSYNCRUNNING="`ps aux | grep rsync_to_linux.sh | awk '$11 !~ /grep/ {print $12}'`" 
+RSYNCRUNNING="`ps aux | grep rsync_to_nas.sh | awk '$11 !~ /grep/ {print $12}'`" 
 
 #must be three times because the first two will be this instance of ${SCRIPT_NAME}
-if [[ "$RSYNCRUNNING" == *"${HOME}/${SCRIPT_NAME}"*"${HOME}${SCRIPT_NAME}"*"${HOME}${SCRIPT_NAME}"* ]]
+if [[ "$RSYNCRUNNING" == *"${SCRIPT_NAME}"*"${SCRIPT_NAME}"*"${SCRIPT_NAME}"* ]]
 then 
 	echo "Another instance running, exiting"
 	exit
 fi
 
-FILES=`find ${SOURCE} \( -name '*rawacf.hdf5.site' -o -name '*bfiq.hdf5.*' \) -cmin +${CUR_FILE_THRESHOLD_MINUTES} -printf '%p\n'`
+FILES=`find ${SOURCE} \( -name '*rawacf.hdf5.site' -o -name '*bfiq.hdf5.*' -o -name '*antennas_iq.hdf5*' \) -cmin +${CUR_FILE_THRESHOLD_MINUTES} -printf '%p\n'`
 echo $FILES
 for file in $FILES
 do
@@ -50,10 +48,10 @@ do
 	datafile=`basename $file`	
 	path=`dirname $file`
 	cd $path
-	rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${datafile} ${LINUX}:${DEST}
+	rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${datafile} ${DEST}
         
 	# check if transfer was okay using the md5sum program, then remove the file if it matches
-	ssh ${LINUX} "cd ${DEST}; md5sum -b ${datafile}" > ${MD5}
+	md5sum -b ${DEST}${datafile} > ${MD5}
 	md5sum -c ${MD5}
 	mdstat=$?
 	if [ ${mdstat} -eq 0 ]
