@@ -101,7 +101,6 @@ do
             # last char is slice id, keep dmap_file_wo_slice_id as is
             slice_id=${dmap_file_start: -1}
         fi
-        echo $dmap_file_wo_slice_id
         ordinal_id="$(($slice_id + 97))"
         file_character=`chr $ordinal_id`
         dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
@@ -123,7 +122,24 @@ do
     if [ $ret -eq 0 ]; then
         # remove iqdat and move bfiq array file if successful.
         # then remove source site file.
-        dmap_file="${f%bfiq.hdf5.site}iqdat.bz2"
+        dmap_file_start="${f%.bfiq.hdf5.site}"
+
+        # remove last character (slice_id)
+        dmap_file_wo_slice_id=${dmap_file_start%?}
+        
+        check_char=${dmap_wo_slice_id: -1}
+        if [ $check_char != "." ]; then
+            # will be last two chars, >9
+            dmap_file_wo_slice_id=${dmap_file_start%??}
+            slice_id=${dmap_file_start: -2}
+        else
+            # last char is slice id, keep dmap_file_wo_slice_id as is
+            slice_id=${dmap_file_start: -1}
+        fi
+        ordinal_id="$(($slice_id + 97))"
+        file_character=`chr $ordinal_id`
+        dmap_file="${dmap_file_wo_slice_id}${file_character}.iqdat.bz2"
+
         rm -v ${dmap_file} >> ${LOGFILE} 2>&1
         array_file="${f%.site}"
         mv -v ${array_file} ${BFIQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
