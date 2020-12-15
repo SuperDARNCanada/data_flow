@@ -67,10 +67,31 @@ def create_dmap_filename(filename_to_convert, dmap_filetype):
     """
     Creates a dmap filename in the same directory as the source .hdf5 file,
     to write the DARN dmap file to.
+
+    Filename provided should have slice ID at [-4] position in name, 
+    ie '...X.rawacf.hdf5.site'
     """
     basename = os.path.basename(filename_to_convert)
-    basename_without_ext = '.'.join(basename.split('.')[0:-3]) # all but .rawacf.hdf5.site, for example.
-    dmap_filename = os.path.dirname(filename_to_convert) + '/' + basename_without_ext + '.' + dmap_filetype
+
+    slice_id = int(basename.split('.')[-4]) # X.rawacf.hdf5.site
+    ordinal = slice_id + 97
+
+    if ordinal not in range(97, 123):
+        # we are not in a-z
+        errmsg = 'Cannot convert slice ID {} to channel identifier '\
+                 'because it is outside range 0-25 (a-z).'.format(slice_id)
+        if dmap_filetype == 'iqdat':
+            raise BorealisConvert2IqdatError(errmsg)
+        elif dmap_filetype == 'rawacf':
+            raise BorealisConvert2RawacfError(errmsg)
+        else:
+            raise Exception(errmsg)
+
+    file_channel_id = chr(ordinal)
+
+    # e.g. remove .rawacf.hdf5.site, sub file_channel_id for slice_id, add dmap_filetype extension.
+    dmap_basename = '.'.join(basename.split('.')[0:-4] + [file_channel_id, dmap_filetype]) 
+    dmap_filename = os.path.dirname(filename_to_convert) + '/' + dmap_basename
     return dmap_filename
 
 
@@ -197,11 +218,11 @@ def main():
     dmap_filetypes = {'rawacf': 'rawacf', 'bfiq': 'iqdat'}
 
     if borealis_filetype in dmap_filetypes.keys():
-        # for 'rawacf' and 'bfiq' types, we can convert to arrays and to dmap.
-        dmap_filetype = dmap_filetypes[borealis_filetype]
-        dmap_filename = create_dmap_filename(borealis_site_file, dmap_filetype)
 
         try:
+            # for 'rawacf' and 'bfiq' types, we can convert to arrays and to dmap.
+            dmap_filetype = dmap_filetypes[borealis_filetype]
+            dmap_filename = create_dmap_filename(borealis_site_file, dmap_filetype)
             written_dmap_filename =  borealis_array_to_dmap_files(written_array_filename,
                                     borealis_filetype, slice_id,
                                     dmap_filename)
