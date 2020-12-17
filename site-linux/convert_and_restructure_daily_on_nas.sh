@@ -93,7 +93,7 @@ do
         dmap_file_wo_slice_id=${dmap_file_start%?}
         
         check_char=${dmap_file_wo_slice_id: -1}
-        if [ $check_char != "." ]; then
+        if [[ "$check_char" != "." ]]; then
             # will be last two chars, >9
             dmap_file_wo_slice_id=${dmap_file_start%??}
             slice_id=${dmap_file_start: -2}
@@ -128,7 +128,7 @@ do
         dmap_file_wo_slice_id=${dmap_file_start%?}
         
         check_char=${dmap_file_wo_slice_id: -1}
-        if [ $check_char != "." ]; then
+        if [[ "$check_char" != "." ]]; then
             # will be last two chars, >9
             dmap_file_wo_slice_id=${dmap_file_start%??}
             slice_id=${dmap_file_start: -2}
