@@ -92,7 +92,7 @@ do
         # remove last character (slice_id)
         dmap_file_wo_slice_id=${dmap_file_start%?}
         
-        check_char=${dmap_wo_slice_id: -1}
+        check_char=${dmap_file_wo_slice_id: -1}
         if [ $check_char != "." ]; then
             # will be last two chars, >9
             dmap_file_wo_slice_id=${dmap_file_start%??}
@@ -127,7 +127,7 @@ do
         # remove last character (slice_id)
         dmap_file_wo_slice_id=${dmap_file_start%?}
         
-        check_char=${dmap_wo_slice_id: -1}
+        check_char=${dmap_file_wo_slice_id: -1}
         if [ $check_char != "." ]; then
             # will be last two chars, >9
             dmap_file_wo_slice_id=${dmap_file_start%??}
