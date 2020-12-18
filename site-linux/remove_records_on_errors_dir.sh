@@ -2,7 +2,7 @@
 
 DAILY_DIR=/borealis_nfs/borealis_data/daily/
 ERRORS_DIR=/borealis_nfs/borealis_data/hdf5_errors/
-BACKUP_DIR=/borealis_nfs/borealis_data/hdf5_errors_backup
+BACKUP_DIR=/borealis_nfs/borealis_data/hdf5_errors_backup/
 FILE_PATTERN_FIX=*.site
 FILES_TO_FIX=`find "${ERRORS_DIR}" -name "${FILE_PATTERN_FIX}" -type f`
 
@@ -15,4 +15,3 @@ do
         mv -v ${f} ${DAILY_DIR}
     fi
 done
-
