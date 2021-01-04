@@ -38,6 +38,8 @@ chr() {
   printf "\\$(printf '%03o' "$1")"
 }
 
+# Print decimal (%d) value of an ascii character (example 'ord c' would 
+# print 99). Using C-style character set
 ord() {
   LC_CTYPE=C printf '%d' "'$1"
 }
@@ -89,18 +91,10 @@ do
         # then remove the source site file.
         dmap_file_start="${f%.rawacf.hdf5.site}"
 
-        # remove last character (slice_id)
-        dmap_file_wo_slice_id=${dmap_file_start%?}
-        
-        check_char=${dmap_file_wo_slice_id: -1}
-        if [[ "$check_char" != "." ]]; then
-            # will be last two chars, >9
-            dmap_file_wo_slice_id=${dmap_file_start%??}
-            slice_id=${dmap_file_start: -2}
-        else
-            # last char is slice id, keep dmap_file_wo_slice_id as is
-            slice_id=${dmap_file_start: -1}
-        fi
+        # remove last character(s) (slice_id)
+        slice_id=${dmap_file_start##*.}
+        dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
+
         ordinal_id="$(($slice_id + 97))"
         file_character=`chr $ordinal_id`
         dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
@@ -124,18 +118,10 @@ do
         # then remove source site file.
         dmap_file_start="${f%.bfiq.hdf5.site}"
 
-        # remove last character (slice_id)
-        dmap_file_wo_slice_id=${dmap_file_start%?}
-        
-        check_char=${dmap_file_wo_slice_id: -1}
-        if [[ "$check_char" != "." ]]; then
-            # will be last two chars, >9
-            dmap_file_wo_slice_id=${dmap_file_start%??}
-            slice_id=${dmap_file_start: -2}
-        else
-            # last char is slice id, keep dmap_file_wo_slice_id as is
-            slice_id=${dmap_file_start: -1}
-        fi
+        # remove last character(s) (slice_id)
+        slice_id=${dmap_file_start##*.}
+        dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
+
         ordinal_id="$(($slice_id + 97))"
         file_character=`chr $ordinal_id`
         dmap_file="${dmap_file_wo_slice_id}${file_character}.iqdat.bz2"
