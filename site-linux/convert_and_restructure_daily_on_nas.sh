@@ -32,6 +32,18 @@ LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
 LOGFILE=${LOGGINGDIR}/${DATE}.log
 
+# Character and ordinal functions for '0' -> 'a' etc. in dmap file names
+chr() {
+  [ "$1" -lt 256 ] || return 1
+  printf "\\$(printf '%03o' "$1")"
+}
+
+# Print decimal (%d) value of an ascii character (example 'ord c' would 
+# print 99). Using C-style character set
+ord() {
+  LC_CTYPE=C printf '%d' "'$1"
+}
+
 ##############################################################################
 # Email function. Called if any files fail conversion. 
 # Argument 1 should be the subject
@@ -77,7 +89,15 @@ do
     if [ $ret -eq 0 ]; then
         # move the resulting files if all was successful
         # then remove the source site file.
-        dmap_file="${f%hdf5.site}bz2"
+        dmap_file_start="${f%.rawacf.hdf5.site}"
+
+        # remove last character(s) (slice_id)
+        slice_id=${dmap_file_start##*.}
+        dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
+
+        ordinal_id="$(($slice_id + 97))"
+        file_character=`chr $ordinal_id`
+        dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
         mv -v ${dmap_file} ${DMAP_DEST}/ >> ${LOGFILE} 2>&1
         array_file="${f%.site}"
         mv -v ${array_file} ${RAWACF_ARRAY_DEST} >> ${LOGFILE} 2>&1
@@ -96,7 +116,16 @@ do
     if [ $ret -eq 0 ]; then
         # remove iqdat and move bfiq array file if successful.
         # then remove source site file.
-        dmap_file="${f%bfiq.hdf5.site}iqdat.bz2"
+        dmap_file_start="${f%.bfiq.hdf5.site}"
+
+        # remove last character(s) (slice_id)
+        slice_id=${dmap_file_start##*.}
+        dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
+
+        ordinal_id="$(($slice_id + 97))"
+        file_character=`chr $ordinal_id`
+        dmap_file="${dmap_file_wo_slice_id}${file_character}.iqdat.bz2"
+
         rm -v ${dmap_file} >> ${LOGFILE} 2>&1
         array_file="${f%.site}"
         mv -v ${array_file} ${BFIQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
