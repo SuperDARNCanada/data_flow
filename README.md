@@ -16,6 +16,6 @@ cedar - The Compute Canada server that houses SuperDARN Canada's storage allocat
 
 # Typical Crontab for Site Linux Machine (OR Borealis Machine) to Convert Files on NAS and sync to Off-Site
 ```
-10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * ${HOME}/data_flow/site-linux/convert_and_restructure_daily_on_nas.sh >> ${HOME}/convert_and_restructure_borealis_log.txt 2>&1
-*/5 * * * * ${HOME}/data_flow/site-linux/rsync_to_sas_from_nas.sh >> ${HOME}/rsync_to_sas.log 2>&1
+9,44 0,2,4,6,8,10,12,14,16,18,20,22 * * * source ~/.bashrc; flock -n ${HOME}/.data_flow_running -c '${HOME}/data_flow/site-linux/convert_and_restructure_daily_on_nas.sh >> ${HOME}/convert_and_restructure_borealis_log.txt 2>&1'
+*/5 * * * * flock -n ${HOME}/.data_flow_running -c '${HOME}/data_flow/site-linux/rsync_to_sas_from_nas.sh >> ${HOME}/rsync_to_sas.log 2>&1'
 ```

@@ -104,7 +104,7 @@ def compress_bz2(filename):
 
 def borealis_array_to_dmap_files(filename, borealis_filetype, slice_id, dmap_filename):
     """
-    Takes a Borealis array structured file, and writes both the SDARN converted
+    Takes a Borealis array structured file, and writes the SDARN converted
     file to the same directory as the input site file.
 
     Returns
@@ -124,7 +124,7 @@ def borealis_array_to_dmap_files(filename, borealis_filetype, slice_id, dmap_fil
 
 def borealis_site_to_dmap_files(filename, borealis_filetype, slice_id, dmap_filename):
     """
-    Takes a Borealis site structured file, and writes both the SDARN converted
+    Takes a Borealis site structured file, and writes the SDARN converted
     file to the same directory as the input site file.
 
     Returns
@@ -208,6 +208,7 @@ def main():
             print('Wrote dmap to : {}'.format(written_dmap_filename))
         except (BorealisConvert2RawacfError, BorealisConvert2IqdatError) as e:
             print("Unable to convert {} to DMAP file.".format(written_array_filename))
+            sys.exit(1)
 
     print('Wrote array to : {}'.format(written_array_filename))
 

@@ -32,14 +32,6 @@ LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
 LOGFILE=${LOGGINGDIR}/${DATE}.log
 
-# do not start if already running
-if [ -e ${HOME}/convert_daily_borealis_running ] ; then
-  exit
-fi
-
-# prevent copying of files
-echo 1 > ${HOME}/convert_daily_borealis_running
-
 ##############################################################################
 # Email function. Called if any files fail conversion. 
 # Argument 1 should be the subject
@@ -136,5 +128,3 @@ if [ ! -z "$EMAILBODY" ]; then # check if not empty
     echo -e ${EMAILBODY} >> ${LOGFILE} 2>&1
     send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
-
-rm -v ${HOME}/convert_daily_borealis_running
