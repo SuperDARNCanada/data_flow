@@ -62,8 +62,26 @@ def create_dmap_filename(filename_to_convert, dmap_filetype, output_data_dir):
     to write the DARN dmap file to.
     """
     basename = os.path.basename(filename_to_convert)
-    basename_without_ext = '.'.join(basename.split('.')[0:-2]) # all but .rawacf.hdf5, for example.
-    dmap_filename = output_data_dir + '/' + basename_without_ext + '.' + dmap_filetype 
+
+    slice_id = int(basename.split('.')[-4]) # X.rawacf.hdf5.site
+    ordinal = slice_id + 97
+
+    if ordinal not in range(97, 123):
+        # we are not in a-z
+        errmsg = 'Cannot convert slice ID {} to channel identifier '\
+                 'because it is outside range 0-25 (a-z).'.format(slice_id)
+        if dmap_filetype == 'iqdat':
+            raise BorealisConvert2IqdatError(errmsg)
+        elif dmap_filetype == 'rawacf':
+            raise BorealisConvert2RawacfError(errmsg)
+        else:
+            raise Exception(errmsg)
+
+    file_channel_id = chr(ordinal)
+
+    # e.g. remove .rawacf.hdf5.site, sub file_channel_id for slice_id, add dmap_filetype extension.
+    dmap_basename = '.'.join(basename.split('.')[0:-4] + [file_channel_id, dmap_filetype]) 
+    dmap_filename = output_data_dir + '/' + dmap_basename
     return dmap_filename
 
 
@@ -144,6 +162,7 @@ def array_to_dmap(borealis_array_file, output_data_dir, scaling_factor=1):
         print('Cannot convert file {} from Borealis filetype '
             '{}'.format(borealis_array_file, borealis_filetype))
         sys.exit(1)
+
 
 def main():
     parser = borealis_conversion_parser()
