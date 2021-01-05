@@ -40,7 +40,7 @@ def usage_msg():
 
     The script will convert the records to a dmap dictionary and then 
     write to file as the given filename, with extensions 
-    '.[borealis_filetype].hdf5' replaced with [dmap_filetype].dmap. 
+    '.[borealis_filetype].hdf5' replaced with '.[dmap_filetype]'. 
     The script will also bzip the resulting dmap file. 
     """
 
