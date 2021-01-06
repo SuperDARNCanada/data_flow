@@ -63,7 +63,7 @@ def create_dmap_filename(filename_to_convert, dmap_filetype, output_data_dir):
     """
     basename = os.path.basename(filename_to_convert)
 
-    slice_id = int(basename.split('.')[-4]) # X.rawacf.hdf5.site
+    slice_id = int(basename.split('.')[-3]) # X.rawacf.hdf5
     ordinal = slice_id + 97
 
     if ordinal not in range(97, 123):
@@ -80,7 +80,7 @@ def create_dmap_filename(filename_to_convert, dmap_filetype, output_data_dir):
     file_channel_id = chr(ordinal)
 
     # e.g. remove .rawacf.hdf5.site, sub file_channel_id for slice_id, add dmap_filetype extension.
-    dmap_basename = '.'.join(basename.split('.')[0:-4] + [file_channel_id, dmap_filetype]) 
+    dmap_basename = '.'.join(basename.split('.')[0:-3] + [file_channel_id, dmap_filetype]) 
     dmap_filename = output_data_dir + '/' + dmap_basename
     return dmap_filename
 
@@ -133,7 +133,7 @@ def borealis_array_to_dmap_files(filename, borealis_filetype, slice_id,
 
     bz2_filename = compress_bz2(dmap_filename) # compress (and adds .bz2 to filename)
     os.remove(dmap_filename) # remove uncompressed
-
+    del borealis_converter # mem savings
     return bz2_filename
 
 
