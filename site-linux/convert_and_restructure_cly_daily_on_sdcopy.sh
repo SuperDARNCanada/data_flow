@@ -54,8 +54,8 @@ send_email () {
 }
 
 # Copy the source rawacf file to backup.
-cp -v ${DAILY_DIR}/*rawacf.hdf5.site $BACKUP_DEST
-cp -v ${DAILY_DIR}/*bfiq.hdf5.site $BACKUP_DEST
+#cp -v ${DAILY_DIR}/*rawacf.hdf5.site $BACKUP_DEST
+#cp -v ${DAILY_DIR}/*bfiq.hdf5.site $BACKUP_DEST
 ##############################################################################
 # Convert the files to SDARN format and to array format for storage.
 ##############################################################################
