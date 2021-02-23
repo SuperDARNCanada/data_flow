@@ -15,7 +15,7 @@ source /home/transfer/.bashrc # source the RADARID, SDCOPY and other things
 HOME=/home/transfer/
 DMAP_SOURCE=/data/rawacf_dmap/
 ARRAY_SOURCE=/data/rawacf_array/
-DEST=/data/${RADARID}_data/
+DEST=/sddata/${RADARID}_data/
 
 echo ""
 date
