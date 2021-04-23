@@ -20,9 +20,9 @@ CURMONTH=`date +%m`
 HOSTNAME=`hostname`
 
 # What directories?
-DAILY_DIR=/data/cly_holding_dir # this is the source
-DMAP_DEST=/data/cly_data
-RAWACF_ARRAY_DEST=/data/cly_data
+DAILY_DIR=/sddata/cly_holding_dir # this is the source
+DMAP_DEST=/sddata/cly_data
+RAWACF_ARRAY_DEST=/sddata/cly_data
 
 LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
@@ -49,13 +49,13 @@ send_email () {
         # Argument 1 should be the subject
         # Argument 2 should be the body
         # What email address to send to?
-        EMAILADDRESS="kevin.krieger@usask.ca, marci.detwiller@usask.ca"
+        EMAILADDRESS="kevin.krieger@usask.ca"
         echo -e "${2}" | mutt -s "${1}" -- ${EMAILADDRESS}
 }
 
 # Copy the source rawacf file to backup.
-cp -v ${DAILY_DIR}/*rawacf.hdf5.site $BACKUP_DEST
-cp -v ${DAILY_DIR}/*bfiq.hdf5.site $BACKUP_DEST
+#cp -v ${DAILY_DIR}/*rawacf.hdf5.site $BACKUP_DEST
+#cp -v ${DAILY_DIR}/*bfiq.hdf5.site $BACKUP_DEST
 ##############################################################################
 # Convert the files to SDARN format and to array format for storage.
 ##############################################################################

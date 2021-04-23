@@ -26,7 +26,7 @@ fi
 
 echo ""
 date
-echo "Placing files in sdcopy.usask.ca:$DEST"
+echo "Placing files in ${SDCOPY}:$DEST"
 
 TEMPDEST=.rsync_partial
 MD5=${HOME}/md5
