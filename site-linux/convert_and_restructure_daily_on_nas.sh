@@ -57,9 +57,6 @@ send_email () {
         echo -e "${2}" | mutt -s "${1}" -- ${EMAILADDRESS}
 }
 
-# Copy the source rawacf file to backup.
-cp -v ${DAILY_DIR}/*rawacf.hdf5.site $BACKUP_DEST
-cp -v ${DAILY_DIR}/*bfiq.hdf5.site $BACKUP_DEST
 ##############################################################################
 # Convert the files to SDARN format and to array format for storage.
 ##############################################################################
@@ -71,6 +68,11 @@ ANTENNAS_IQ_FILE_PATTERN_TO_CONVERT=*antennas_iq.hdf5.site
 
 echo "" >> ${LOGFILE} 2>&1
 echo ${DATE_UTC} >> ${LOGFILE} 2>&1
+
+# Copy the source rawacf file to backup.
+cp -v ${DAILY_DIR}/*rawacf.hdf5.site $BACKUP_DEST >> ${LOGFILE} 2>&1
+cp -v ${DAILY_DIR}/*bfiq.hdf5.site $BACKUP_DEST >> ${LOGFILE} 2>&1
+
 echo "Restructuring files in ${DAILY_DIR}" >> ${LOGFILE} 2>&1
 
 RAWACF_CONVERT_FILES=`find "${DAILY_DIR}" -name "${RAWACF_FILE_PATTERN_TO_CONVERT}" -type f`

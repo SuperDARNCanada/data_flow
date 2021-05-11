@@ -27,7 +27,8 @@ MD5=${HOME}/md5
 RSYNCRUNNING="`ps aux | grep rsync_to_sas | awk '$11 !~ /grep/ {print $12}'`" #if only this one running, will be /home/transfer/data_flow/site-linux/rsync_to_sas_from_nas /home/transfer/data_flow/site-linux/rsync_to_sas_from_nas.sh
 
 if [[ "$RSYNCRUNNING" == *"data_flow/site-linux/rsync_to_sas_from_nas"*"data_flow/site-linux/rsync_to_sas_from_nas"*"data_flow/site-linux/rsync_to_sas_from_nas"* ]] ; then #must be three times because the first two will be this instance of rsync_to_sas_from_nas
-  exit
+	echo "Another instance running, exiting"
+     	exit
 fi
 
 files=`find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n'`
@@ -44,6 +45,8 @@ do
         if [ ${mdstat} -eq 0 ] ; then
                 echo "Deleting file: "${file}
                 rm -v ${file}
+	else
+		echo "File not deleted ${file}"
         fi
 done
 
@@ -61,6 +64,8 @@ do
         if [ ${mdstat} -eq 0 ] ; then
                 echo "Deleting file: "${file}
                 rm -v ${file}
+	else
+		echo "File not deleted ${file}"
         fi
 done
 
