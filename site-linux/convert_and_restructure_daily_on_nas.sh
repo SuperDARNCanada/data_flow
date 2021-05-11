@@ -53,7 +53,7 @@ send_email () {
         # Argument 1 should be the subject
         # Argument 2 should be the body
         # What email address to send to?
-        EMAILADDRESS="kevin.krieger@usask.ca, marci.detwiller@usask.ca"
+        EMAILADDRESS="kevin.krieger@usask.ca"
         echo -e "${2}" | mutt -s "${1}" -- ${EMAILADDRESS}
 }
 
