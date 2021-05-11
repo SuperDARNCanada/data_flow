@@ -67,7 +67,7 @@ echo "" >> ${LOGFILE} 2>&1
 echo ${DATE_UTC} >> ${LOGFILE} 2>&1
 echo "Restructuring files in ${DAILY_DIR}" >> ${LOGFILE} 2>&1
 
-RAWACF_CONVERT_FILES=`find "${DAILY_DIR}" -name "${RAWACF_FILE_PATTERN_TO_CONVERT}" -type f`
+RAWACF_CONVERT_FILES=`find "${DAILY_DIR}" -maxdepth 1 -name "${RAWACF_FILE_PATTERN_TO_CONVERT}" -type f`
 source ${HOME}/pydarnio-env/bin/activate
 
 EMAILBODY=""
