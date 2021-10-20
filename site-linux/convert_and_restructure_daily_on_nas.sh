@@ -139,6 +139,10 @@ done
 
 for f in ${ANTENNAS_IQ_CONVERT_FILES}
 do
+if [ "$RADARID" == "pgr" ] || [ "$RADARID" == "rkn" ] || [ "$RADARID" == "inv" ]; then
+echo "" >> ${LOGFILE} 2>&1
+mv -v ${f}  ${ANTENNAS_IQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
+else
     echo "" >> ${LOGFILE} 2>&1
     echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
     python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
@@ -152,6 +156,7 @@ do
     else
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
     fi
+fi
 done
 
 if [ ! -z "$EMAILBODY" ]; then # check if not empty
