@@ -20,7 +20,7 @@ ARRAY_SOURCE=/borealis_nfs/borealis_data/rawacf_array/
 if [[ "${RADARID}" == "cly" ]]; then
 	DEST=/sddata/cly_holding_dir
 else
-	DEST=/data/${RADARID}_data/
+	DEST=/sddata/${RADARID}_data/
 fi
 
 
