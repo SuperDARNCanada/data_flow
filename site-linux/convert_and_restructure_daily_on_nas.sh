@@ -130,6 +130,7 @@ do
         remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
         echo "$remove_record_output" >> ${LOGFILE} 2>&1
         EMAILBODY="${EMAILBODY}\nAttempting to remove records from ${f}:\n${remove_record_output}"
+        python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
         ret=$?
         if [ $ret -eq 0 ]; then
             # remove iqdat and move bfiq array file if successful.
@@ -170,6 +171,7 @@ else
         remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
         echo "$remove_record_output" >> ${LOGFILE} 2>&1
         EMAILBODY="${EMAILBODY}\nAttempting to remove records from ${f}:\n${remove_record_output}"
+        python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
         ret=$?
         if [ $ret -eq 0 ]; then
             # remove iqdat and move bfiq array file if successful.
