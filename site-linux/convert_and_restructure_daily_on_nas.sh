@@ -86,73 +86,67 @@ EMAILBODY=""
 for f in ${RAWACF_CONVERT_FILES}
 do
     echo "" >> ${LOGFILE} 2>&1
+    remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+    if [ -n "$remove_record_output" ]; then
+        echo "$remove_record_output" >> ${LOGFILE} 2>&1
+        EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
+    fi
     echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
     python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
     ret=$?
-    if [ ! $ret -eq 0 ]; then
-        # Try to remove records
-        remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
-        echo "$remove_record_output" >> ${LOGFILE} 2>&1
-        EMAILBODY="${EMAILBODY}\nAttempting to remove records from ${f}:\n${remove_record_output}"
-        python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
-        ret=$?
-        if [ $ret -eq 0 ]; then
-            # move the resulting files if all was successful
-            # then remove the source site file.
-            dmap_file_start="${f%.rawacf.hdf5.site}"
+    if [ $ret -eq 0 ]; then
+        # move the resulting files if all was successful
+        # then remove the source site file.
+        dmap_file_start="${f%.rawacf.hdf5.site}"
 
-            # remove last character(s) (slice_id)
-            slice_id=${dmap_file_start##*.}
-            dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
+        # remove last character(s) (slice_id)
+        slice_id=${dmap_file_start##*.}
+        dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
 
-            ordinal_id="$(($slice_id + 97))"
-            file_character=`chr $ordinal_id`
-            dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
-            mv -v ${dmap_file} ${DMAP_DEST}/ >> ${LOGFILE} 2>&1
-            array_file="${f%.site}"
-            mv -v ${array_file} ${RAWACF_ARRAY_DEST} >> ${LOGFILE} 2>&1
-            rm -v ${f} >> ${LOGFILE} 2>&1
-        else
-            EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
-            mv -v ${f} ${PROBLEM_FILES_DEST} >> ${LOGFILE} 2>&1
-        fi
+        ordinal_id="$(($slice_id + 97))"
+        file_character=`chr $ordinal_id`
+        dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
+        mv -v ${dmap_file} ${DMAP_DEST}/ >> ${LOGFILE} 2>&1
+        array_file="${f%.site}"
+        mv -v ${array_file} ${RAWACF_ARRAY_DEST} >> ${LOGFILE} 2>&1
+        rm -v ${f} >> ${LOGFILE} 2>&1
+    else
+        EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
+        mv -v ${f} ${PROBLEM_FILES_DEST} >> ${LOGFILE} 2>&1
     fi
 done
 
 for f in ${BFIQ_CONVERT_FILES}
 do
     echo "" >> ${LOGFILE} 2>&1
+    remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+    if [ -n "$remove_record_output" ]; then
+        echo "$remove_record_output" >> ${LOGFILE} 2>&1
+        EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
+    fi
     echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
     python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
     ret=$?
-    if [ ! $ret -eq 0 ]; then
-        # Try to remove records
-        remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
-        echo "$remove_record_output" >> ${LOGFILE} 2>&1
-        EMAILBODY="${EMAILBODY}\nAttempting to remove records from ${f}:\n${remove_record_output}"
-        python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
-        ret=$?
-        if [ $ret -eq 0 ]; then
-            # remove iqdat and move bfiq array file if successful.
-            # then remove source site file.
-            dmap_file_start="${f%.bfiq.hdf5.site}"
+    if [ $ret -eq 0 ]; then
+        # remove iqdat and move bfiq array file if successful.
+        # then remove source site file.
+        dmap_file_start="${f%.bfiq.hdf5.site}"
 
-            # remove last character(s) (slice_id)
-            slice_id=${dmap_file_start##*.}
-            dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
+        # remove last character(s) (slice_id)
+        slice_id=${dmap_file_start##*.}
+        dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
 
-            ordinal_id="$(($slice_id + 97))"
-            file_character=`chr $ordinal_id`
-            dmap_file="${dmap_file_wo_slice_id}${file_character}.iqdat.bz2"
+        ordinal_id="$(($slice_id + 97))"
+        file_character=`chr $ordinal_id`
+        dmap_file="${dmap_file_wo_slice_id}${file_character}.iqdat.bz2"
 
-            rm -v ${dmap_file} >> ${LOGFILE} 2>&1
-            array_file="${f%.site}"
-            mv -v ${array_file} ${BFIQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
-            rm -v ${f} >> ${LOGFILE} 2>&1
-        else
-            EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
-            mv -v ${f} ${PROBLEM_FILES_DEST} >> ${LOGFILE} 2>&1
-        fi
+        rm -v ${dmap_file} >> ${LOGFILE} 2>&1
+        array_file="${f%.site}"
+        mv -v ${array_file} ${BFIQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
+        rm -v ${f} >> ${LOGFILE} 2>&1
+    else
+        EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
+        mv -v ${f} ${PROBLEM_FILES_DEST} >> ${LOGFILE} 2>&1
     fi
 done
 
@@ -163,31 +157,28 @@ echo "" >> ${LOGFILE} 2>&1
 mv -v ${f}  ${ANTENNAS_IQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
 else
     echo "" >> ${LOGFILE} 2>&1
+    remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+    if [ -n "$remove_record_output" ]; then
+        echo "$remove_record_output" >> ${LOGFILE} 2>&1
+        EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
+    fi
     echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
     python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
     ret=$?
-    if [ ! $ret -eq 0 ]; then
-        # Try to remove records
-        remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
-        echo "$remove_record_output" >> ${LOGFILE} 2>&1
-        EMAILBODY="${EMAILBODY}\nAttempting to remove records from ${f}:\n${remove_record_output}"
-        python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
-        ret=$?
-        if [ $ret -eq 0 ]; then
-            # remove iqdat and move bfiq array file if successful.
-            # then remove source site file.
-            array_file="${f%.site}"
-            mv -v ${array_file} ${ANTENNAS_IQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
-            rm -v ${f} >> ${LOGFILE} 2>&1
-        else
-            EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
-            mv -v ${f} ${PROBLEM_FILES_DEST} >> ${LOGFILE} 2>&1
-        fi
+    if [ $ret -eq 0 ]; then
+        # remove iqdat and move bfiq array file if successful.
+        # then remove source site file.
+        array_file="${f%.site}"
+        mv -v ${array_file} ${ANTENNAS_IQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
+        rm -v ${f} >> ${LOGFILE} 2>&1
+    else
+        EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
+        mv -v ${f} ${PROBLEM_FILES_DEST} >> ${LOGFILE} 2>&1
     fi
 fi
 done
 
-if [ ! -z "$EMAILBODY" ]; then # check if not empty
+if [ -n "$EMAILBODY" ]; then # check if not empty
     EMAILSUBJECT="[Conversions ${RADARNAME}] ${DATE}: Files failed conversion"
     echo -e ${EMAILBODY} >> ${LOGFILE} 2>&1
     send_email "${EMAILSUBJECT}" "${EMAILBODY}"
