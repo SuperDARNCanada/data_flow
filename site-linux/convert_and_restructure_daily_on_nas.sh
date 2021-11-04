@@ -27,6 +27,7 @@ RAWACF_ARRAY_DEST=/borealis_nfs/borealis_data/rawacf_array
 BFIQ_ARRAY_DEST=/borealis_nfs/borealis_data/bfiq_array
 ANTENNAS_IQ_ARRAY_DEST=/borealis_nfs/borealis_data/antennas_iq_array
 BACKUP_DEST=/borealis_nfs/borealis_data/backup
+PROBLEM_FILES_DEST=/borealis_nfs/borealis_data/conversion_failure
 
 LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
@@ -85,6 +86,11 @@ EMAILBODY=""
 for f in ${RAWACF_CONVERT_FILES}
 do
     echo "" >> ${LOGFILE} 2>&1
+    remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+    if [ -n "$remove_record_output" ]; then
+        echo "$remove_record_output" >> ${LOGFILE} 2>&1
+        EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
+    fi
     echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
     python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
     ret=$?
@@ -106,12 +112,18 @@ do
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
+        mv -v ${f} ${PROBLEM_FILES_DEST} >> ${LOGFILE} 2>&1
     fi
 done
 
 for f in ${BFIQ_CONVERT_FILES}
 do
     echo "" >> ${LOGFILE} 2>&1
+    remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+    if [ -n "$remove_record_output" ]; then
+        echo "$remove_record_output" >> ${LOGFILE} 2>&1
+        EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
+    fi
     echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
     python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
     ret=$?
@@ -134,6 +146,7 @@ do
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
+        mv -v ${f} ${PROBLEM_FILES_DEST} >> ${LOGFILE} 2>&1
     fi
 done
 
@@ -144,6 +157,11 @@ echo "" >> ${LOGFILE} 2>&1
 mv -v ${f}  ${ANTENNAS_IQ_ARRAY_DEST} >> ${LOGFILE} 2>&1
 else
     echo "" >> ${LOGFILE} 2>&1
+    remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+    if [ -n "$remove_record_output" ]; then
+        echo "$remove_record_output" >> ${LOGFILE} 2>&1
+        EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
+    fi
     echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}" >> ${LOGFILE} 2>&1
     python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f} >> ${LOGFILE} 2>&1
     ret=$?
@@ -155,11 +173,12 @@ else
         rm -v ${f} >> ${LOGFILE} 2>&1
     else
         EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
+        mv -v ${f} ${PROBLEM_FILES_DEST} >> ${LOGFILE} 2>&1
     fi
 fi
 done
 
-if [ ! -z "$EMAILBODY" ]; then # check if not empty
+if [ -n "$EMAILBODY" ]; then # check if not empty
     EMAILSUBJECT="[Conversions ${RADARNAME}] ${DATE}: Files failed conversion"
     echo -e ${EMAILBODY} >> ${LOGFILE} 2>&1
     send_email "${EMAILSUBJECT}" "${EMAILBODY}"
