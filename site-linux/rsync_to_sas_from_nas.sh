@@ -16,8 +16,7 @@ source $HOME/.bashrc # source the RADARID, SDCOPY and other things
 DMAP_SOURCE=/borealis_nfs/borealis_data/rawacf_dmap/
 ARRAY_SOURCE=/borealis_nfs/borealis_data/rawacf_array/
 
-# 
-- move to holding dir to do dmaps on SDCOPY
+# move to holding dir to do dmaps on SDCOPY
 if [ "${RADARID}" == "cly" ] || [ "${RADARID}" == "rkn" ]; then
 	DEST=/sddata/${RADARID}_holding_dir
 else
