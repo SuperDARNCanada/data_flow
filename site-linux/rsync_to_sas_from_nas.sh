@@ -16,9 +16,10 @@ source $HOME/.bashrc # source the RADARID, SDCOPY and other things
 DMAP_SOURCE=/borealis_nfs/borealis_data/rawacf_dmap/
 ARRAY_SOURCE=/borealis_nfs/borealis_data/rawacf_array/
 
-# CLY - move to holding dir to do dmaps on SDCOPY
-if [[ "${RADARID}" == "cly" ]]; then
-	DEST=/sddata/cly_holding_dir
+# 
+- move to holding dir to do dmaps on SDCOPY
+if [ "${RADARID}" == "cly" ] || [ "${RADARID}" == "rkn" ]; then
+	DEST=/sddata/${RADARID}_holding_dir
 else
 	DEST=/sddata/${RADARID}_data/
 fi
@@ -38,7 +39,7 @@ if [[ "$RSYNCRUNNING" == *"data_flow/site-linux/rsync_to_sas_from_nas"*"data_flo
      	exit
 fi
 
-if [[ "${RADARID}" == "cly" ]]; then
+if [ "${RADARID}" == "cly" ] || [ "${RADARID}" == "rkn" ]; then
 	echo "Not transferring any dmaps, only HDF5"
 else
 	files=`find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n'`
