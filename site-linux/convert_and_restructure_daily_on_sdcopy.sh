@@ -19,14 +19,16 @@ CURYEAR=`date +%Y`
 CURMONTH=`date +%m`
 HOSTNAME=`hostname`
 
+RADARID=${1}
+
 # What directories?
-DAILY_DIR=/sddata/cly_holding_dir # this is the source
-DMAP_DEST=/sddata/cly_data
-RAWACF_ARRAY_DEST=/sddata/cly_data
+DAILY_DIR=/sddata/${RADARID}_holding_dir # this is the source
+DMAP_DEST=/sddata/${RADARID}_data
+RAWACF_ARRAY_DEST=/sddata/${RADARID}_data
 
 LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
-LOGFILE=${LOGGINGDIR}/${DATE}.log
+LOGFILE=${LOGGINGDIR}/${RADARID}_${DATE}.log
 
 # Character and ordinal functions for '0' -> 'a' etc. in dmap file names
 chr() {
@@ -98,7 +100,7 @@ do
 done
 
 if [ ! -z "$EMAILBODY" ]; then # check if not empty
-    EMAILSUBJECT="[Conversions CLY on SDCOPY] ${DATE}: Files failed conversion"
+    EMAILSUBJECT="[Conversions ${RADARID} on SDCOPY] ${DATE}: Files failed conversion"
     echo -e ${EMAILBODY} >> ${LOGFILE} 2>&1
     send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
