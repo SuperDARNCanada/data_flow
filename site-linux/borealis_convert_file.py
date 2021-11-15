@@ -90,9 +90,12 @@ def create_dmap_filename(filename_to_convert, dmap_filetype):
     file_channel_id = chr(ordinal)
 
     # e.g. remove .rawacf.hdf5.site, sub file_channel_id for slice_id, add dmap_filetype extension.
-    dmap_basename = '.'.join(basename.split('.')[0:-4] + [file_channel_id, dmap_filetype]) 
-    dmap_filename = os.path.dirname(filename_to_convert) + '/' + dmap_basename
-    return dmap_filename
+    dmap_basename = '.'.join(basename.split('.')[0:-4] + [file_channel_id, dmap_filetype])
+    containing_directory = os.path.dirname(filename_to_convert)
+    if containing_directory == "":
+        return dmap_basename
+    else:
+        return containing_directory + '/' + dmap_basename
 
 
 def decompress_bz2(filename):
@@ -229,6 +232,7 @@ def main():
             print('Wrote dmap to : {}'.format(written_dmap_filename))
         except (BorealisConvert2RawacfError, BorealisConvert2IqdatError, Exception) as e:
             print("Unable to convert {} to DMAP file.".format(written_array_filename))
+            print("Due to error: {}".format(e))
             sys.exit(1)
 
     print('Wrote array to : {}'.format(written_array_filename))
