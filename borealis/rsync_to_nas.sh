@@ -23,54 +23,89 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 fi
 
 
-# Define variables
-SCRIPT_NAME=$(basename "$0")
+# Transfer to NAS flag. If false, transfer to $SITE_LINUX computer instead
+readonly TRANSFER_TO_NAS=true
+
+
+# Borealis directory files are transferring from
+# Use jq with -r option source for the data from Borealis config file
+readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
 
 # Directory the files will be transferred to
-readonly DEST=/borealis_nfs/borealis_data/daily/
-
-# Directory
-# Use jq with -r option source for the data from Borealis config file
-readonly SOURCE=$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')
-
-# Log file
-readonly LOGFILE=/home/radar/logs/rsync_to_nas.log
+if [[ "$TRANSFER_TO_NAS" == true ]]; then
+	readonly DEST="/borealis_nfs/borealis_data/daily/"	# NAS
+else
+	readonly DEST="/data/borealis_data/daily"			# Site Linux
+fi
 
 # Threshold (in minutes) for selecting files to transfer with `find`.
 # Set to filter out files currently being written to by Borealis.
-FILE_THRESHOLD=0.1
+readonly FILE_THRESHOLD=0.1		# 0.1 min = 6 s
 
 # A temp directory for rsync to use in case rsync is killed, it will start up where it left off
-TEMPDEST=.rsync_partial
+readonly TEMPDEST=.rsync_partial
 
-# Directory of md5sum file to verify rsync transfer
-MD5=/tmp/md5
+# Location of md5sum file to verify rsync transfer
+readonly MD5=/tmp/md5
+
+# Location of inotify flags on site linux
+readonly FLAG_DIR=/home/transfer/logging/.dataflow_flags
+
 
 # Date in UTC format for logging
-echo ${SCRIPT_NAME} >> $LOGFILE 2>&1
-date -u >> $LOGFILE 2>&1
+basename "$0"
+date -u 
 
-files=$(find ${SOURCE} \( -name '*rawacf.hdf5.*' -o -name '*bfiq.hdf5.*' -o -name '*antennas_iq.hdf5.*' \) -cmin +${FILE_THRESHOLD})
+# Sleep for specified time to differentiate files done writing from files currently writing
+sleep 6
 
-echo "Placing following files in ${DEST}:" >> $LOGFILE 2>&1
-printf '%s\n' "${files[@]}"
-for file in $files
+# Check if transferring to NAS or site computer. 
+# If transferring to site computer, only send rawacf
+if [[ "$TRANSFER_TO_NAS" == true ]]; then
+	search="-name *rawacf.hdf5.* -o -name *bfiq.hdf5.* -o -name *antennas_iq.hdf5.*"
+else
+	search="-name *rawacf.hdf5.*"
+fi
+
+# Get all files that aren't currently being written do
+files=$(find ${SOURCE} \( ${search} \) -cmin +${FILE_THRESHOLD})
+
+if [[ -n $files ]]; then
+	echo "Placing following files in ${DEST}:" 
+	printf '%s\n' "${files[@]}"
+else
+	echo "No files to be transferred."
+fi
+
+# Transfer files
+for file in ${files}
 do
-	# Get the file name, directory it's in and rsync it
-	datafile=$(basename $file)	
-	path=$(dirname $file)
-	cd $path
-	rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${datafile} ${DEST}
-        
-	# check if transfer was okay using the md5sum program, then remove the file if it matches
-	md5sum -b ${DEST}${datafile} > ${MD5}
-	md5sum -c ${MD5}
-	mdstat=$?
-	if [[ ${mdstat} -eq 0 ]]
-       	then
-		echo "Deleting file: ${file}"
-		rm -v ${file}
+	if [[ "$TRANSFER_TO_NAS" == true ]]; then
+		# rsync file to NAS
+		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${DEST}	
+			
+		# check if transfer was okay using the md5sum program, then remove the file if it matches
+		md5sum -b ${DEST}${file} > ${MD5}
+		md5sum -c ${MD5}
+		mdstat=$?
+		if [[ ${mdstat} -eq 0 ]]
+			then
+			echo "Deleting file: ${file}"
+			rm -v ${file}	
+		fi
+	else
+		# rsync file to site computer
+		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${SITE_LINUX}:${DEST}	
+		
+		# TODO: Add some sort of checking when transferring to other computer
 	fi
 done
+
+# Send "flag" file to notify data flow computer to start next script
+flag=/home/radar/dataflow/.rsync_to_nas_flag
+touch $flag
+rsync -av --rsh=ssh ${flag} ${SITE_LINUX}:${FLAG_DIR}
+
+printf "Finished transferring. End time: $(date -u)\n\n\n"
 
 exit
