@@ -3,7 +3,7 @@
 """
 Usage:
 
-borealis_converter.py [-h] borealis_site_file
+borealis_converter.py [-h] [--dmap] borealis_site_file
 
 Pass in the filename you wish to convert (should end in '.hdf5.site'
 ('.bz2' optional)). The script will decompress if a bzipped hdf5 site
@@ -13,10 +13,10 @@ The script will :
 1. convert the records to an array style file, writing the file as
     the borealis_site_file with the last extension (should be '.site')
     removed.
-2. convert the records to a dmap dictionary and then write to file as
-    the given filename, with extensions '.[borealis_filetype].hdf5.site'
-    replaced with [dmap_filetype].dmap. The script will also bzip the
-    resulting dmap file.
+2. if --dmap is specified, convert the records to a dmap dictionary 
+    and then write to file as the given filename, with extensions 
+    '.[borealis_filetype].hdf5.site' replaced with [dmap_filetype].dmap. 
+    The script will also bzip the resulting dmap file.
 
 """
 
@@ -39,7 +39,7 @@ def usage_msg():
     :returns: the usage message
     """
 
-    usage_message = """ borealis_converter.py [-h] borealis_site_file
+    usage_message = """ borealis_converter.py [-h] [--dmap] borealis_site_file
 
     Pass in the filename you wish to convert (should end in '.hdf5.site' ('.bz2' optional)).
     The script will decompress if a bzipped hdf5 site file with 'bz2' extension is provided.
@@ -47,9 +47,9 @@ def usage_msg():
     The script will :
     1. convert the records to an array style file, writing the file as the borealis_site_file
        with the last extension (should be '.site') removed.
-    2. convert the records to a dmap dictionary and then write to file as the given filename,
-       with extensions '.[borealis_filetype].hdf5.site' replaced with [dmap_filetype].dmap.
-       The script will also bzip the resulting dmap file. """
+    2. if --dmap is specified, convert the records to a dmap dictionary and then write to file 
+       as the given filename, with extensions '.[borealis_filetype].hdf5.site' replaced with 
+       [dmap_filetype].dmap. The script will also bzip the resulting dmap file. """
 
     return usage_message
 
@@ -59,6 +59,7 @@ def borealis_conversion_parser():
     parser.add_argument("borealis_site_file", help="Path to the site file that you wish to "
                                                     "convert. "
                                                     "(e.g. 20190327.2210.38.sas.0.bfiq.hdf5.site)")
+    parser.add_argument("--dmap", action="store_true", help="Also convert file to dmap format")
 
     return parser
 
@@ -204,6 +205,8 @@ def main():
         borealis_site_file = args.borealis_site_file
         __bzip2 = False
 
+    dmap = args.dmap
+
     # .bz2, if at end of filename, was removed in the decompression.
     borealis_filetype = borealis_site_file.split('.')[-3] # XXX.hdf5.site
     if borealis_filetype not in ['bfiq', 'rawacf', 'antennas_iq']:
@@ -220,7 +223,7 @@ def main():
 
     dmap_filetypes = {'rawacf': 'rawacf', 'bfiq': 'iqdat'}
 
-    if borealis_filetype in dmap_filetypes.keys():
+    if dmap and borealis_filetype in dmap_filetypes.keys():
 
         try:
             # for 'rawacf' and 'bfiq' types, we can convert to arrays and to dmap.
