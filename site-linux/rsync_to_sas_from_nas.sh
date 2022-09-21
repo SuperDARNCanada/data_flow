@@ -3,79 +3,111 @@
 # Author: Dieter Andre
 # Modification: August 6th 2019 
 # Simplified and changed to a loop over all files instead of acting on all files at once.
+#
 # Modification: November 22 2019
 # Removed SDCOPY details from file
 #
+# Modification: September 2022
+# Refactored for inotify usage
+#
 # Should be called from crontab like so:
 # */5 * * * * ${HOME}/data_flow/site-linux/rsync_to_sas.sh >> ${HOME}/rsync_to_sas.log 2>&1
-#
-#
 
-source $HOME/.bashrc # source the RADARID, SDCOPY and other things
-#HOME=/home/radar/
-DMAP_SOURCE=/borealis_nfs/borealis_data/rawacf_dmap/
-ARRAY_SOURCE=/borealis_nfs/borealis_data/rawacf_array/
+##############################################################################
 
-# move to holding dir to do dmaps on SDCOPY
+source "$HOME/.bashrc" # source the RADARID, SDCOPY and other things
+
+readonly DMAP_SOURCE="/borealis_nfs/borealis_data/rawacf_dmap/"
+readonly ARRAY_SOURCE="/borealis_nfs/borealis_data/rawacf_array/"
+
+# move to holding dir to convert dmaps on SDCOPY
 if [ "${RADARID}" == "cly" ] || [ "${RADARID}" == "rkn" ]; then
-	DEST=/sddata/${RADARID}_holding_dir
+	readonly DEST="/sddata/${RADARID}_holding_dir"
 else
-	DEST=/sddata/${RADARID}_data/
+	readonly DEST="/sddata/${RADARID}_data/"
 fi
 
+# A temp directory for rsync to use in case rsync is killed, it will start up where it left off
+readonly TEMPDEST=".rsync_partial"
 
-echo ""
-date
-echo "Placing files in ${SDCOPY}:$DEST"
+# Location of md5sum file to verify rsync transfer
+readonly MD5="${HOME}/md5"
 
-TEMPDEST=.rsync_partial
-MD5=${HOME}/md5
+# Specify which sites will transfer each file type
+readonly DMAP_SITES=("sas" "pgr" "inv")
+readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
-RSYNCRUNNING="`ps aux | grep rsync_to_sas | awk '$11 !~ /grep/ {print $12}'`" #if only this one running, will be /home/transfer/data_flow/site-linux/rsync_to_sas_from_nas /home/transfer/data_flow/site-linux/rsync_to_sas_from_nas.sh
+##############################################################################
 
-if [[ "$RSYNCRUNNING" == *"data_flow/site-linux/rsync_to_sas_from_nas"*"data_flow/site-linux/rsync_to_sas_from_nas"*"data_flow/site-linux/rsync_to_sas_from_nas"* ]] ; then #must be three times because the first two will be this instance of rsync_to_sas_from_nas
-	echo "Another instance running, exiting"
-     	exit
+# Date in UTC format for logging
+basename "$0"
+date --utc
+
+# Ensure that only a single instance of this script runs.
+if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
+	echo "Error: Script $0 is already running. Exiting..."
+	exit 1
 fi
 
-if [ "${RADARID}" == "cly" ] || [ "${RADARID}" == "rkn" ]; then
-	echo "Not transferring any dmaps, only HDF5"
-else
-	files=`find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n'`
+# Check if this site is transferring dmaps to campus
+if [[ " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+	# Find all dmap files to transfer
+	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
+
+	if [[ -n $files ]]; then
+		echo "Placing following dmap files in ${SDCOPY}:${DEST}:" 
+		printf '%s\n' "${files[@]}"
+	else
+		echo "No files found to be transferred."
+	fi
+
+	# Transfer all files found
 	for file in $files
 	do
-		datafile=`basename $file`
-		path=`dirname $file`
-		cd $path
-		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${datafile} ${SDCOPY}:${DEST}
-		# check if transfer was okay using the md5sum program
-		ssh ${SDCOPY} "cd ${DEST}; md5sum -b ${datafile}" > ${MD5}
-		md5sum -c ${MD5}
+		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${SDCOPY}:${DEST}
+
+		# Check if transfer was okay using the md5sum program
+		ssh ${SDCOPY} "md5sum --binary ${DEST}$(basename ${file})" > ${MD5}
+		md5sum --check ${MD5}
 		mdstat=$?
-		if [ ${mdstat} -eq 0 ] ; then
-                	echo "Deleting file: "${file}
-                	rm -v ${file}
-        	fi
+		if [[ ${mdstat} -eq 0 ]]; then
+			echo "Deleting file: "${file}
+			rm --verbose ${file}
+        fi
 	done
+else
+	echo "Not transferring any dmaps, only HDF5"
 fi
 
-files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
-for file in $files
-do
-        datafile=`basename $file`
-        path=`dirname $file`
-        cd $path
-        rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${datafile} ${SDCOPY}:${DEST}
-        # check if transfer was okay using the md5sum program
-        ssh ${SDCOPY} "cd ${DEST}; md5sum -b ${datafile}" > ${MD5}
-        md5sum -c ${MD5}
-        mdstat=$?
-        if [ ${mdstat} -eq 0 ] ; then
-                echo "Deleting file: "${file}
-                rm -v ${file}
+# Check if this site is transferring dmaps to campus
+if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+	# Find all hdf5 files to transfer
+	files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
+
+	if [[ -n $files ]]; then
+		echo "Placing following dmap files in ${SDCOPY}:${DEST}:" 
+		printf '%s\n' "${files[@]}"
 	else
-		echo "File not deleted ${file}"
-        fi
-done
+		echo "No files to be transferred."
+	fi
+
+	for file in $files
+	do
+		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${SDCOPY}:${DEST}
+
+		# check if transfer was okay using the md5sum program
+		ssh ${SDCOPY} "md5sum --binary ${DEST}$(basename ${file})" > ${MD5}
+		md5sum --check ${MD5}
+		mdstat=$?
+		if [[ ${mdstat} -eq 0 ]] ; then
+			echo "Deleting file: "${file}
+			rm -v ${file}
+		else
+			echo "File not deleted ${file}"
+		fi
+	done
+else
+	echo "Not transferring any dmaps, only HDF5"
+fi
 
 exit

@@ -88,7 +88,7 @@ do
 		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${DEST}	
 			
 		# check if transfer was okay using the md5sum program, then remove the file if it matches
-		md5sum --binary ${DEST}${file} > ${MD5}
+		md5sum --binary ${DEST}$(basename ${file}) > ${MD5}
 		md5sum --check ${MD5}
 		mdstat=$?
 		if [[ ${mdstat} -eq 0 ]]
