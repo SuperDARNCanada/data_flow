@@ -9,6 +9,14 @@
 #
 # Modification: September 2022
 # Refactored for inotify usage
+# 
+# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to 
+# superdarn-cssdp on campus and removing them locally after a successful copy. 
+#
+# Dependencies: 
+# 	- RADARID and SDCOPY set as environment variables in $HOME/.bashrc
+#
+# TODO: Update when inotify method is completed.
 #
 # Should be called from crontab like so:
 # */5 * * * * ${HOME}/data_flow/site-linux/rsync_to_sas.sh >> ${HOME}/rsync_to_sas.log 2>&1
@@ -32,6 +40,9 @@ readonly TEMPDEST=".rsync_partial"
 
 # Location of md5sum file to verify rsync transfer
 readonly MD5="${HOME}/md5"
+
+# Location of inotify flags on superdarn-cssdp (TODO)
+readonly FLAG_DIR=""
 
 # Specify which sites will transfer each file type
 readonly DMAP_SITES=("sas" "pgr" "inv")
@@ -71,12 +82,14 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		md5sum --check ${MD5}
 		mdstat=$?
 		if [[ ${mdstat} -eq 0 ]]; then
-			echo "Deleting file: "${file}
+			echo "Deleting file: ${file}"
 			rm --verbose ${file}
-        fi
+		else
+			echo "File not deleted: ${file}"	# TODO: Should we log files that aren't transferred successfully somewhere?
+		fi
 	done
 else
-	echo "Not transferring any dmaps, only HDF5"
+	echo "Not transferring any dmap files"
 fi
 
 # Check if this site is transferring dmaps to campus
@@ -91,6 +104,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		echo "No files to be transferred."
 	fi
 
+	# Transfer all files found
 	for file in $files
 	do
 		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${SDCOPY}:${DEST}
@@ -100,14 +114,24 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		md5sum --check ${MD5}
 		mdstat=$?
 		if [[ ${mdstat} -eq 0 ]] ; then
-			echo "Deleting file: "${file}
+			echo "Deleting file: ${file}"
 			rm -v ${file}
 		else
 			echo "File not deleted ${file}"
 		fi
 	done
 else
-	echo "Not transferring any dmaps, only HDF5"
+	echo "Not transferring any HDF5 files"
 fi
+
+# Remove "flag" sent by convert_and_restructure to reset flag (TODO)
+rm -verbose "/home/transfer/logging/.dataflow_flags/convert_flag"
+
+# Send "flag" file to notify mrcopy to start next script (TODO)
+flag="/home/radar/dataflow/.rsync_to_campus_flag"
+touch $flag
+rsync -av --rsh=ssh ${flag} ${SITE_LINUX}:${FLAG_DIR}
+
+printf "Finished transferring. End time: $(date -u)\n\n\n"
 
 exit
