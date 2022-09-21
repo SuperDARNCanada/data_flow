@@ -115,7 +115,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		mdstat=$?
 		if [[ ${mdstat} -eq 0 ]] ; then
 			echo "Deleting file: ${file}"
-			rm -v ${file}
+			rm --verbose ${file}
 		else
 			echo "File not deleted ${file}"
 		fi
@@ -125,10 +125,10 @@ else
 fi
 
 # Remove "flag" sent by convert_and_restructure to reset flag (TODO)
-rm -verbose "/home/transfer/logging/.dataflow_flags/convert_flag"
+rm -verbose "/home/transfer/logging/.dataflow_flags/.convert_flag"
 
 # Send "flag" file to notify mrcopy to start next script (TODO)
-flag="/home/radar/dataflow/.rsync_to_campus_flag"
+flag="/home/transfer/dataflow/.rsync_to_campus_flag"
 touch $flag
 rsync -av --rsh=ssh ${flag} ${SITE_LINUX}:${FLAG_DIR}
 

@@ -7,37 +7,36 @@
 # for better file readability. Backs up the source site files before it 
 # begins.
 #
-# Dependencies include pydarnio being installed in a virtualenv at $HOME/pydarnio-env
-# and RADARNAME being in environment variable
+# Dependencies: 
+#	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
+# 	- RADARNAME and RADARID set as environment variables in $HOME/.bashrc
 #
+# TODO: Update when inotify is working
 # The script should be run via crontab like so:
 # 10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * ${HOME}/data_flow/site-linux/convert_and_restructure_daily.sh >> ${HOME}/convert_and_restructure_borealis_log.txt 2>&1
 
 source "$HOME/.bashrc" # source the RADARID, SDCOPY and other things
 
-# Date, time and other stuff
-DATE=$(date +%Y%m%d)
-CURYEAR=$(date +%Y)
-CURMONTH=$(date +%m)
-HOSTNAME=$(hostname)
-
 # Define directories
-SOURCE="/borealis_nfs/borealis_data/daily" # this is the source
-DMAP_DEST="/borealis_nfs/borealis_data/rawacf_dmap"
-RAWACF_ARRAY_DEST="/borealis_nfs/borealis_data/rawacf_array"
-BFIQ_ARRAY_DEST="/borealis_nfs/borealis_data/bfiq_array"
-ANTENNAS_IQ_ARRAY_DEST="/borealis_nfs/borealis_data/antennas_iq_array"
-BACKUP_DEST="/borealis_nfs/borealis_data/backup"
-PROBLEM_FILES_DEST="/borealis_nfs/borealis_data/conversion_failure"
+readonly SOURCE="/borealis_nfs/borealis_data/daily" # this is the source
+readonly DMAP_DEST="/borealis_nfs/borealis_data/rawacf_dmap"
+readonly RAWACF_ARRAY_DEST="/borealis_nfs/borealis_data/rawacf_array"
+readonly BFIQ_ARRAY_DEST="/borealis_nfs/borealis_data/bfiq_array"
+readonly ANTENNAS_IQ_ARRAY_DEST="/borealis_nfs/borealis_data/antennas_iq_array"
+readonly BACKUP_DEST="/borealis_nfs/borealis_data/backup"
+readonly PROBLEM_FILES_DEST="/borealis_nfs/borealis_data/conversion_failure"
 
 # Specify which sites will convert each file type
 readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly ANTENNAS_IQ_SITES=("sas" "cly")
 
-LOGGINGDIR="${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}"
-mkdir -p ${LOGGINGDIR}
-LOGFILE="${LOGGINGDIR}/${DATE}.log"
+# Location of inotify flags on site linux
+readonly FLAG_DIR="/home/transfer/logging/.dataflow_flags"
+
+readonly LOGGINGDIR="${HOME}/logs/file_conversions/$(date +%Y)/$(date +%m)"
+mkdir --parents --verbose ${LOGGINGDIR}
+readonly LOGFILE="${LOGGINGDIR}/$(date +%Y%m%d).log"
 
 # Redirect all stdout and sterr in this script to $LOGFILE
 exec &> $LOGFILE
@@ -72,12 +71,12 @@ send_email () {
 ##############################################################################
 
 
-basename "$0" 
+echo "Executing $(basename "$0") on $(hostname)"
 date -utc 
 
 # Copy the source rawacf file to backup.
-cp -v ${SOURCE}/*rawacf.hdf5.site $BACKUP_DEST  
-cp -v ${SOURCE}/*bfiq.hdf5.site $BACKUP_DEST  
+cp --verbose ${SOURCE}/*rawacf.hdf5.site $BACKUP_DEST  
+cp --verbose ${SOURCE}/*bfiq.hdf5.site $BACKUP_DEST  
 
 echo "Restructuring files in ${SOURCE}"  
 
@@ -98,8 +97,8 @@ do
             echo "$remove_record_output"  
             EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
         fi
-        echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}"  
-        python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}  
+        echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py --dmap ${f}"  
+        python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py --dmap ${f}  
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # move the resulting files if all was successful
@@ -113,17 +112,17 @@ do
             ordinal_id="$(($slice_id + 97))"
             file_character=$(chr $ordinal_id)
             dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
-            mv -v ${dmap_file} ${DMAP_DEST}/  
+            mv --verbose ${dmap_file} ${DMAP_DEST}/  
             array_file="${f%.site}"
-            mv -v ${array_file} ${RAWACF_ARRAY_DEST}  
-            rm -v ${f}  
+            mv --verbose ${array_file} ${RAWACF_ARRAY_DEST}  
+            rm --verbose ${f}  
         else
             EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
-            mv -v ${f} ${PROBLEM_FILES_DEST}  
+            mv --verbose ${f} ${PROBLEM_FILES_DEST}  
         fi
     else
         echo "Not converting $f"  
-        mv -v ${f}  ${RAWACF_ARRAY_DEST}  
+        mv --verbose ${f}  ${RAWACF_ARRAY_DEST}  
     fi
 done
 
@@ -141,29 +140,17 @@ do
         python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}  
         ret=$?
         if [[ $ret -eq 0 ]]; then
-            # remove iqdat and move bfiq array file if successful.
-            # then remove source site file.
-            dmap_file_start="${f%.bfiq.hdf5.site}"
-
-            # remove last character(s) (slice_id)
-            slice_id=${dmap_file_start##*.}
-            dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
-
-            ordinal_id="$(($slice_id + 97))"
-            file_character=`chr $ordinal_id`
-            dmap_file="${dmap_file_wo_slice_id}${file_character}.iqdat.bz2"
-
-            rm -v ${dmap_file}  
+            # Only converting array file
             array_file="${f%.site}"
-            mv -v ${array_file} ${BFIQ_ARRAY_DEST}  
-            rm -v ${f}  
+            mv --verbose ${array_file} ${BFIQ_ARRAY_DEST}  
+            rm --verbose ${f}  
         else
             EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
-            mv -v ${f} ${PROBLEM_FILES_DEST}  
+            mv --verbose ${f} ${PROBLEM_FILES_DEST}  
         fi
     else
         echo "Not converting $f"  
-        mv -v ${f}  ${BFIQ_ARRAY_DEST}  
+        mv --verbose ${f}  ${BFIQ_ARRAY_DEST}  
 done
 
 
@@ -180,23 +167,35 @@ do
         python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}  
         ret=$?
         if [ $ret -eq 0 ]; then
-            # remove iqdat and move bfiq array file if successful.
             # then remove source site file.
             array_file="${f%.site}"
-            mv -v ${array_file} ${ANTENNAS_IQ_ARRAY_DEST}  
-            rm -v ${f}  
+            mv --verbose ${array_file} ${ANTENNAS_IQ_ARRAY_DEST}  
+            rm --verbose ${f}  
         else
             EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
-            mv -v ${f} ${PROBLEM_FILES_DEST}  
+            mv --verbose ${f} ${PROBLEM_FILES_DEST}  
         fi
     else
         echo "Not converting $f"  
-        mv -v ${f}  ${ANTENNAS_IQ_ARRAY_DEST}  
+        mv --verbose ${f}  ${ANTENNAS_IQ_ARRAY_DEST}  
     fi
 done
 
+#TODO: Implement better method than emailing
 if [ -n "$EMAILBODY" ]; then # check if not empty
     EMAILSUBJECT="[Conversions ${RADARNAME}] ${DATE}: Files failed conversion"
     echo -e ${EMAILBODY}  
     send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
+
+# Remove "flag" sent by convert_and_restructure to reset flag
+rm -verbose "/home/transfer/logging/.dataflow_flags/.rsync_to_nas_flag"
+
+# Send "flag" file to notify mrcopy to start next script (TODO)
+flag="/home/transfer/dataflow/.convert_flag"
+touch $flag
+rsync -av --rsh=ssh ${flag} ${FLAG_DIR}
+
+printf "Finished conversion. End time: $(date -u)\n\n\n"
+
+exit
