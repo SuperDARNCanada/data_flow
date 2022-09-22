@@ -18,20 +18,30 @@
 
 ##############################################################################
 
-# Transfer to NAS flag. If false, transfer to $SITE_LINUX computer instead
-readonly TRANSFER_TO_NAS=true
+# Transfer to NAS flag. If not true, transfer to $SITE_LINUX computer instead
+readonly TRANSFER_TO_NAS=false
 
 ##############################################################################
 
+# Specify error behaviour
+set -o errexit   # abort on nonzero exitstatus
+set -o nounset   # abort on unbound variable
+set -o pipefail  # don't hide errors within pipes
+# set -x
+source ${HOME}/data_flow/library/data_flow_functions.sh
+
 # Borealis directory files are transferring from
 # Use jq with -r option source for the data from Borealis config file
-readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
+readonly SOURCE="/home/radar/testing/data_flow_testing/src"
+# readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
 
 # Directory the files will be transferred to
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
-	readonly DEST="/borealis_nfs/borealis_data/daily/"	# NAS
+	readonly DEST="/home/radar/testing/data_flow_testing/dest"
+	# readonly DEST="/borealis_nfs/borealis_data/daily/"	# NAS
 else
-	readonly DEST="/data/borealis_data/daily"			# Site Linux
+	# readonly DEST="/data/borealis_data/daily"			# Site Linux
+	readonly DEST="/home/radar/testing/data_flow"
 fi
 
 # Threshold (in minutes) for selecting files to transfer with `find`.
@@ -41,14 +51,12 @@ readonly FILE_THRESHOLD=0.1		# 0.1 min = 6 s
 # A temp directory for rsync to use in case rsync is killed, it will start up where it left off
 readonly TEMPDEST=".rsync_partial"
 
-# Location of md5sum file to verify rsync transfer
-readonly MD5="/tmp/md5"
-
 # Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
+# readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
+readonly FLAG_DEST="/home/radar/testing/data_flow"
 
 # Flag to send to start next script
-readonly FLAG="/home/radar/dataflow/.rsync_to_nas_flag"
+readonly FLAG="/home/radar/data_flow/.rsync_to_nas_flag"
 
 # Create log file
 readonly LOGFILE="/home/transfer/logs/rsync_to_nas.log"
@@ -56,7 +64,7 @@ readonly LOGFILE="/home/transfer/logs/rsync_to_nas.log"
 ##############################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
-exec &> $LOGFILE
+# exec &> $LOGFILE
 
 # Date in UTC format for logging
 basename "$0"
@@ -69,7 +77,7 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 fi
 
 # Sleep for specified time to differentiate files done writing from files currently writing
-sleep 6
+# sleep 6
 
 # Check if transferring to NAS or site computer. 
 # If transferring to site computer, only send rawacf
@@ -97,24 +105,30 @@ do
 		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${DEST}	
 			
 		# check if transfer was okay using the md5sum program, then remove the file if it matches
-		md5sum --binary ${DEST}$(basename ${file}) > ${MD5}
-		md5sum --check ${MD5}
-		mdstat=$?
-		if [[ ${mdstat} -eq 0 ]]
-			then
-			echo "Deleting file: ${file}"
+		verify_transfer $file ${DEST}/$(basename $file)
+		if [[ $? -eq 0 ]]; then		# Check return value of verify_transfer
+			echo "Successfully transferred, deleting file: ${file}"
 			rm --verbose ${file}	
+		else
+			echo "Transfer failed, file not deleted: ${file}"
 		fi
 	else
 		# rsync file to site computer
-		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${SITE_LINUX}:${DEST}	
-		
-		# TODO: Add some sort of checking when transferring to other computer
+		rsync -av --partial --partial-dir="${TEMPDEST}" --timeout=180 --rsh=ssh "${file}" "${SITE_LINUX}:${DEST}"
+
+		verify_transfer $file ${DEST}/$(basename $file) ${SITE_LINUX}
+		if [[ $? -eq 0 ]]; then
+			echo "Successfully transferred, deleting file: ${file}"
+			rm --verbose ${file}	# TODO: Do we want to delete file after transferring to site linux?	
+		else
+			echo "Transfer failed, file not deleted: ${file}"
+		fi
 	fi
 done
 
 # Send "flag" file to notify data flow computer to start next script
-rsync -av --rsh=ssh ${FLAG} ${SITE_LINUX}:${FLAG_DEST}
+touch "${FLAG}"
+rsync -av --rsh=ssh "${FLAG}" "${SITE_LINUX}:${FLAG_DEST}"
 
 printf "Finished transferring. End time: $(date -u)\n\n\n"
 
