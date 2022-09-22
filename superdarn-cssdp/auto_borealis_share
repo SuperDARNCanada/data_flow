@@ -1,4 +1,4 @@
-#! /bin/tcsh
+#!/bin/bash
 # Filename: auto_borealis_share
 # Last Modification:  Feb 28th 2020
 # Author: Kevin Krieger
@@ -28,13 +28,15 @@
 # The "2>&1" at the end redirects stderr to stdout so
 # That the logfile contains any error messages as well.
 
+# Depends upon h5stat being installed (zypper in hdf5)
+
 # argv[1] : radar code [sas, pgr, rkn, inv, cly]
 
 set RADAR_ID=${argv[1]}
 set YESTERDAY=`date -d '1 day ago' +%Y%m%d`
 set CURRENT_DAY=`date -d 'today' +%Y%m%d`
 set DATETIME=`date +%Y%m%d.%H%M`
-cd /data/${RADAR_ID}_data
+cd /sddata/${RADAR_ID}_data
 set LOGGINGDIR=/home/mrcopy/borealischeck
 set LOGFILE=${LOGGINGDIR}/${DATETIME}.check_radar.${RADAR_ID}.errors
 set emailflag=0
@@ -43,14 +45,12 @@ set norawfilesflag=1
 set nohdf5filesflag=1
 set nobfiqfilesflag=1
 set oldfileflag=0
-set emailaddress="marina.t.schmidt@gmail.com"
-set emailaddress1="kevin.krieger@usask.ca"
+set emailaddress="kevin.krieger@usask.ca"
 set TODAY=`date`
-# TODO: is this still needed?
 set BASDIR=/home/bas/outgoing
 set VTDIR=/home/vtsd/outgoing
+set NSSCDIR=/home/nssc/outgoing
 set NAS_STAGING_DIR=/data/borealis_site_data/
-set MIRROR_STAGING_ADDRESS=dataman@superdarn-cssdp.usask.ca
 set MIRROR_STAGING_DIR=/data/holding/globus
 set numbfiqfiles=0
 set numrawacffiles=0
@@ -112,19 +112,23 @@ foreach bz2file (*.bz2)
 				chmod -v 664 ${VTDIR}/${RADAR_ID}/${bz2file}
 				chgrp -v sddata ${VTDIR}/${RADAR_ID}/${bz2file}
 				
-				#TODO: is this still needed
 				# Place file in BAS outgoing
 				cp -pv ${bz2file} ${BASDIR}/${RADAR_ID}/
 				chmod -v 664 ${BASDIR}/${RADAR_ID}/${bz2file}
 				chgrp -v sddata ${BASDIR}/${RADAR_ID}/${bz2file}
 				
+				# Place file in NSSC outgoing - Uncommment this when NSSC is ready
+				#cp -pv ${bz2file} ${NSSCDIR}/${RADAR_ID}/
+				#chmod -v 664 ${NSSCDIR}/${RADAR_ID}/${bz2file}
+				#chgrp -v sddata ${NSSCDIR}/${RADAR_ID}/${bz2file}
+				
 				# And copy to superdarn-cssdp for placing on the mirror
-				rsync -av ${bz2file} ${MIRROR_STAGING_ADDRESS}:${MIRROR_STAGING_DIR} 
+				rsync -av ${bz2file} ${MIRROR_STAGING_DIR} 
 				set rsyncreturnvalue=$?
 				if ( $rsyncreturnvalue !~ 0 ) then
 					# Try again in a bit, then fail
 					sleep 30
-					rsync -av ${bz2file} ${MIRROR_STAGING_ADDRESS}:${MIRROR_STAGING_DIR}
+					rsync -av ${bz2file} ${MIRROR_STAGING_DIR}
 					set rsyncreturnvalue=$?
 					if ( $rsyncreturnvalue !~ 0 ) then
 						echo "${bz2file} rsync error" >> ${LOGFILE}
@@ -132,6 +136,9 @@ foreach bz2file (*.bz2)
 					endif
 				endif
 				
+                                set year=`echo ${bz2file} | cut -c 1-4`
+                                set month=`echo ${bz2file} | cut -c 5-6`
+
 				set norawfilesflag=0
 				# Finally move the file to cd_data directory
 				mkdir -p ${NAS_STAGING_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/ 
@@ -191,12 +198,12 @@ foreach hdf5file (*.hdf5)
 				chmod -v 644 ${hdf5file}
 				
 				#TODO: we could move this to outside the loop to do one major syncing of files?
-				rsync -av --chown=mschmidt:rpp-kam136 --rsync-path="mkdir -m 4775 -p ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ && rsync" ${hdf5file} ${MIRROR_STAGING_ADDRESS}:${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ 
+				rsync -av --chown=mschmidt:rpp-kam136 --rsync-path="mkdir -m 4775 -p ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ && rsync" ${hdf5file} ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ 
 				set rsyncreturnvalue=$?
 				if ( $rsyncreturnvalue !~ 0 ) then
 					# Try again after a sleep, then fail
 					sleep 30
-					rsync -av --chown=mschmidt:rpp-kam136 --rsync-path="mkdir -m 4775 -p ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ && rsync" ${hdf5file} ${MIRROR_STAGING_ADDRESS}:${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ 
+					rsync -av --chown=mschmidt:rpp-kam136 --rsync-path="mkdir -m 4775 -p ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ && rsync" ${hdf5file} ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ 
 					set rsyncreturnvalue=$?
 					if ( $rsyncreturnvalue !~ 0 ) then
 						echo "${hdf5file} rsync error" >> ${LOGFILE}
@@ -206,10 +213,12 @@ foreach hdf5file (*.hdf5)
 
 
 				# Finally move the file to the NAS directory
-				# TODO: If anyfiles fail should we put them somewhere else?
-				mkdir -p ${NAS_STAGING_DIR}/${RADAR_ID}_rawacf/${year}/${month}/ 
-				mv -v ${hdf5file} ${NAS_STAGING_DIR}/${RADAR_ID}_rawacf/${year}/${month}/ 
-
+				if ( $rsyncreturnvalue !~ 0 ) then
+					echo "Not moving ${hdf5file} due to rsync errors" >> ${LOGFILE}
+				else
+					mkdir -p ${NAS_STAGING_DIR}/${RADAR_ID}_rawacf/${year}/${month}/ 
+					mv -v ${hdf5file} ${NAS_STAGING_DIR}/${RADAR_ID}_rawacf/${year}/${month}/ 
+				endif
 				set nohdf5filesflag=0	 
 				breaksw
 			default:
@@ -243,5 +252,5 @@ endif
 
 # If there were any issues, send away an email
 if ( ${emailflag} > 0 ) then
-	cat ${LOGFILE} | mutt -s "${RADAR_ID} borealis data check errors ${CURRENT_DAY}" ${emailaddress} ${emailaddress1}
+	cat ${LOGFILE} | mutt -s "${RADAR_ID} borealis data check errors ${CURRENT_DAY}" ${emailaddress} 
 endif
