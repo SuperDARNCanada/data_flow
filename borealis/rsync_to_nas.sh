@@ -44,10 +44,19 @@ readonly TEMPDEST=".rsync_partial"
 # Location of md5sum file to verify rsync transfer
 readonly MD5="/tmp/md5"
 
-# Location of inotify flags on site linux
-readonly FLAG_DIR="/home/transfer/logging/.dataflow_flags"
+# Location of inotify watch directory for flags on site linux
+readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
+
+# Flag to send to start next script
+readonly FLAG="/home/radar/dataflow/.rsync_to_nas_flag"
+
+# Create log file
+readonly LOGFILE="/home/transfer/logs/rsync_to_nas.log"
 
 ##############################################################################
+
+# Redirect all stdout and sterr in this script to $LOGFILE
+exec &> $LOGFILE
 
 # Date in UTC format for logging
 basename "$0"
@@ -105,9 +114,7 @@ do
 done
 
 # Send "flag" file to notify data flow computer to start next script
-flag="/home/radar/dataflow/.rsync_to_nas_flag"
-touch $flag
-rsync -av --rsh=ssh ${flag} ${SITE_LINUX}:${FLAG_DIR}
+rsync -av --rsh=ssh ${FLAG} ${SITE_LINUX}:${FLAG_DEST}
 
 printf "Finished transferring. End time: $(date -u)\n\n\n"
 

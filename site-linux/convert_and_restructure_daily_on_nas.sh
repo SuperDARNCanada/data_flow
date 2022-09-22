@@ -31,9 +31,16 @@ readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly ANTENNAS_IQ_SITES=("sas" "cly")
 
-# Location of inotify flags on site linux
-readonly FLAG_DIR="/home/transfer/logging/.dataflow_flags"
+# Location of inotify watch directory for flags on site linux
+readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
 
+# Flag received from rsync_to_nas script to trigger this script
+readonly FLAG_IN="/home/transfer/logging/.dataflow_flags/.rsync_to_nas_flag"
+
+# Flag sent out to trigger rsync_to_campus script
+readonly FLAG_OUT="/home/transfer/data_flow/.convert_flag"
+
+# Create log file
 readonly LOGGINGDIR="${HOME}/logs/file_conversions/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose ${LOGGINGDIR}
 readonly LOGFILE="${LOGGINGDIR}/$(date +%Y%m%d).log"
@@ -189,12 +196,11 @@ if [ -n "$EMAILBODY" ]; then # check if not empty
 fi
 
 # Remove "flag" sent by convert_and_restructure to reset flag
-rm -verbose "/home/transfer/logging/.dataflow_flags/.rsync_to_nas_flag"
+# and allow inotify to see the next flag sent in
+rm -verbose "${FLAG_IN}"
 
-# Send "flag" file to notify mrcopy to start next script (TODO)
-flag="/home/transfer/dataflow/.convert_flag"
-touch $flag
-rsync -av --rsh=ssh ${flag} ${FLAG_DIR}
+# Send out "flag" to trigger next script with inotify
+rsync -av --rsh=ssh "${FLAG_OUT}" "${FLAG_DIR}"
 
 printf "Finished conversion. End time: $(date -u)\n\n\n"
 

@@ -41,14 +41,27 @@ readonly TEMPDEST=".rsync_partial"
 # Location of md5sum file to verify rsync transfer
 readonly MD5="${HOME}/md5"
 
-# Location of inotify flags on superdarn-cssdp (TODO)
-readonly FLAG_DIR=""
+# Location of inotify watch directory for flags on superdar-cssdp
+readonly FLAG_DEST=""
+
+# Flag received from rsync_to_nas script to trigger this script
+readonly FLAG_IN="/home/transfer/logging/.dataflow_flags/.convert_flag"
+
+# Flag sent out to trigger auto_borealis_share script
+readonly FLAG_OUT="/home/transfer/data_flow/.rsync_to_campus_flag"
+
 
 # Specify which sites will transfer each file type
 readonly DMAP_SITES=("sas" "pgr" "inv")
 readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
+# Create log file
+readonly LOGFILE="/home/transfer/logs/rsync_to_campus.log"
+
 ##############################################################################
+
+# Redirect all stdout and sterr in this script to $LOGFILE
+exec &> $LOGFILE
 
 # Date in UTC format for logging
 basename "$0"
@@ -124,13 +137,11 @@ else
 	echo "Not transferring any HDF5 files"
 fi
 
-# Remove "flag" sent by convert_and_restructure to reset flag (TODO)
-rm -verbose "/home/transfer/logging/.dataflow_flags/.convert_flag"
+# Remove "flag" sent by convert_and_restructure to reset flag
+rm -verbose "${FLAG_IN}"
 
-# Send "flag" file to notify mrcopy to start next script (TODO)
-flag="/home/transfer/dataflow/.rsync_to_campus_flag"
-touch $flag
-rsync -av --rsh=ssh ${flag} ${SITE_LINUX}:${FLAG_DIR}
+# Send "flag" file to notify mrcopy to start next script
+rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
 
 printf "Finished transferring. End time: $(date -u)\n\n\n"
 
