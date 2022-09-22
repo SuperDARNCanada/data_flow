@@ -30,30 +30,8 @@ LOGGINGDIR=${HOME}/logs/file_conversions/${CURYEAR}/${CURMONTH}
 mkdir -p ${LOGGINGDIR}
 LOGFILE=${LOGGINGDIR}/${RADARID}_${DATE}.log
 
-# Character and ordinal functions for '0' -> 'a' etc. in dmap file names
-chr() {
-  [ "$1" -lt 256 ] || return 1
-  printf "\\$(printf '%03o' "$1")"
-}
-
-# Print decimal (%d) value of an ascii character (example 'ord c' would 
-# print 99). Using C-style character set
-ord() {
-  LC_CTYPE=C printf '%d' "'$1"
-}
-
-##############################################################################
-# Email function. Called if any files fail conversion. 
-# Argument 1 should be the subject
-# Argument 2 should be the body
-##############################################################################
-send_email () {
-        # Argument 1 should be the subject
-        # Argument 2 should be the body
-        # What email address to send to?
-        EMAILADDRESS="kevin.krieger@usask.ca"
-        echo -e "${2}" | mutt -s "${1}" -- ${EMAILADDRESS}
-}
+# Load in functions
+source "${HOME}/data_flow/library/data_flow_functions.sh"
 
 # Copy the source rawacf file to backup.
 #cp -v ${DAILY_DIR}/*rawacf.hdf5.site $BACKUP_DEST
