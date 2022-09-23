@@ -59,11 +59,12 @@ array_files=$(find ${SOURCE} -name "*rawacf.hdf5")
 
 if [[ -n $dmap_files ]]; then
     echo "Distributing the following dmap files" 
-    printf '%s\n' "${files[@]}"
+    printf '%s\n' "${dmap_files[@]}"
 else
     echo "No dmap files found to be transferred."
 fi
 
+# Iterate over all dmap files to be transferred
 for file in $dmap_files; do
     bzip2 --test "${file}"
     if [[ $? -eq 2 ]]; then
@@ -117,3 +118,39 @@ for file in $dmap_files; do
             echo "File distributed successfully: ${file}"
         fi
 done
+
+
+if [[ -n $array_files ]]; then
+    echo "Distributing the following dmap files" 
+    printf '%s\n' "${array_files[@]}"
+else
+    echo "No dmap files found to be transferred."
+fi
+
+# Iterate over all array files and back them up to NAS
+for file in $array_files; do
+    h5stat "${file}" >& /dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "Array file failed h5stat test: ${file}" | tee --append "${SUMMARY_FILE}"
+        # TODO: Set a flag to notify
+    else
+        echo "\nDistributing ${file}"
+        chmod --verbose 664 "${file}"
+
+        # TODO: Do we want to do rsync here instead?
+        # TODO: Review changing of groups and permissions differring across destinations
+
+        # TODO: array files aren't synced to mirror - do we still want to back them up in the holding directory?
+
+        year=$(echo ${file} | cut -c 1-4)
+        month=$(echo ${file} | cut -c 5-6)
+        nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf/${year}/${month}/"
+        mkdir --parents "${nas_site_dir}"
+        mv --verbose "${file}" "${nas_site_dir}"
+    fi
+done
+
+# TODO: Handle flags for inotify here
+
+# TODO: Send notification if errors occur
+printf "Finished distributing data. End time: $(date -u)\n\n\n"
