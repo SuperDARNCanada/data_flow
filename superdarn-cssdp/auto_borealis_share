@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/tcsh
 # Filename: auto_borealis_share
 # Last Modification:  Feb 28th 2020
 # Author: Kevin Krieger

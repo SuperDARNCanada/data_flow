@@ -86,8 +86,7 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	fi
 
 	# Transfer all files found
-	for file in $files
-	do
+	for file in $files; do
 		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${SDCOPY}:${DEST}
 
 		# Check if transfer was okay using the md5sum program
@@ -118,8 +117,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	fi
 
 	# Transfer all files found
-	for file in $files
-	do
+	for file in $files; do
 		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${SDCOPY}:${DEST}
 
 		# check if transfer was okay using the md5sum program

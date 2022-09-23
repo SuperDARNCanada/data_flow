@@ -1,0 +1,71 @@
+#!/bin/bash
+# Copyright 2022 SuperDARN Canada, University of Saskatchewan
+# Author: Theodore Kolkman
+#
+# This script distributes borealis rawacf dmap (bz2) and array (HDF5) 
+# data to the following organizations/locations
+#   Backs up dmap and array data to campus NAS
+#   Stages dmap and array data for the mirror
+#   Stages dmap data for sending to British Antarctic Survey (BAS), 
+#       Virginia Tech (VT) and National Space Science Center (NSSC)
+# Checks all files for integrity and place them in the correct location
+# if all tests are passed. If any tests fail, the file isn't transferred
+# and a log file explaining what happened is sent to the Engineering 
+# dashboard
+#
+# Based on auto_borealis_share written by Kevin Krieger
+#
+# Dependencies:
+#   - hdf5 (zypper in hdf5)
+#
+# Usage: ./distribute_borealis_data RADAR_ID
+# Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
+
+readonly RADAR_ID="${1}"
+
+readonly SOURCE="/sddata/${RADAR_ID}_data"
+readonly NAS_DIR="/data/borealis_site_data"
+readonly MIRROR_STAGING_DIR="/data/holding/globus"
+readonly BAS_STAGING_DIR="/home/bas/outgoing"
+readonly VT_STAGING_DIR="/home/vtsd/outgoing"
+readonly NSSC_STAGING_DIR="/home/nssc/outgoing"
+
+# Create two separate logs: 
+#   LOG_FILE: File containing all output from this script
+#   SUMMARY_FILE: File for all sites containing only info on errors
+readonly LOGGING_DIR="/home/mrcopy/logs/distribute_data/${RADAR_ID}"
+mkdir --parents --verbose "${LOGGING_DIR}"
+readonly LOG_FILE="${LOGGING_DIR}/$(date -u +%Y-%m).distribute_data_${RADAR_ID}.log"
+readonly SUMMARY_DIR="/home/mrcopy/logs/distribute_data/summary_logs"
+mkdir --parents --verbose "${LOGGING_DIR}"
+readonly SUMMARY_FILE="${LOGGING_DIR}/$(date -u +%Y-%m).distribute_data_summary.log"
+
+exec &> "${LOG_FILE}"
+
+# Date in UTC format for logging
+echo "$(date --utc) - ${RADAR_ID}" | tee -a "${SUMMARY_FILE}"
+
+# Ensure that only a single instance of this script runs.
+if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
+	echo "Error: Script $0 is already running. Exiting..."
+	exit 1
+fi
+
+dmap_files=$(find ${SOURCE} -name "*rawacf.bz2")
+array_files=$(find ${SOURCE} -name "*rawacf.hdf5")
+
+if [[ -n $dmap_files ]]; then
+    echo "Distributing the following dmap files" 
+    printf '%s\n' "${files[@]}"
+else
+    echo "No files found to be transferred."
+fi
+
+for file in $dmap_files; do
+    bzip2 --test "${file}"
+    if [[ $? -eq 2 ]]; then
+        echo "DMAP file failed bzip2 test: ${file}" | tee -a "${SUMMARY_FILE}"
+        # TODO: Set a flag to notify
+    else
+
+done
