@@ -26,9 +26,9 @@ readonly RADAR_ID="${1}"
 readonly SOURCE="/sddata/${RADAR_ID}_data"
 readonly NAS_DIR="/data/borealis_site_data"
 readonly MIRROR_STAGING_DIR="/data/holding/globus"
-readonly BAS_STAGING_DIR="/home/bas/outgoing"
-readonly VT_STAGING_DIR="/home/vtsd/outgoing"
-readonly NSSC_STAGING_DIR="/home/nssc/outgoing"
+readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADAR_ID}"
+readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADAR_ID}"
+readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADAR_ID}"
 
 # Create two separate logs: 
 #   LOG_FILE: File containing all output from this script
@@ -37,13 +37,16 @@ readonly LOGGING_DIR="/home/mrcopy/logs/distribute_data/${RADAR_ID}"
 mkdir --parents --verbose "${LOGGING_DIR}"
 readonly LOG_FILE="${LOGGING_DIR}/$(date -u +%Y-%m).distribute_data_${RADAR_ID}.log"
 readonly SUMMARY_DIR="/home/mrcopy/logs/distribute_data/summary_logs"
-mkdir --parents --verbose "${LOGGING_DIR}"
+mkdir --parents --verbose "${SUMMARY_DIR}"
 readonly SUMMARY_FILE="${LOGGING_DIR}/$(date -u +%Y-%m).distribute_data_summary.log"
 
 exec &> "${LOG_FILE}"
 
+# Load in functions
+source "${HOME}/data_flow/library/data_flow_functions.sh"
+
 # Date in UTC format for logging
-echo "$(date --utc) - ${RADAR_ID}" | tee -a "${SUMMARY_FILE}"
+echo "$(date --utc) - ${RADAR_ID}" | tee --append "${SUMMARY_FILE}"
 
 # Ensure that only a single instance of this script runs.
 if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
@@ -58,14 +61,59 @@ if [[ -n $dmap_files ]]; then
     echo "Distributing the following dmap files" 
     printf '%s\n' "${files[@]}"
 else
-    echo "No files found to be transferred."
+    echo "No dmap files found to be transferred."
 fi
 
 for file in $dmap_files; do
     bzip2 --test "${file}"
     if [[ $? -eq 2 ]]; then
-        echo "DMAP file failed bzip2 test: ${file}" | tee -a "${SUMMARY_FILE}"
+        echo "DMAP file failed bzip2 test: ${file}" | tee --append "${SUMMARY_FILE}"
         # TODO: Set a flag to notify
     else
+        echo "\nDistributing ${file}"
+        chmod --verbose 664 "${file}"
 
+        # TODO: Do we want to do rsync here instead?
+        # TODO: Review changing of groups and permissions differring across destinations
+
+        # Flag will be > 0 if any transfers fail
+        transfer_flag=0
+
+        # Place file in vtsd outgoing
+        cp --preserve --verbose "${file}" "${VT_STAGING_DIR}/"
+        chgrp --verbose sddata "${VT_STAGING_DIR}/${file}"   
+        verify_transfer "${file}" "${VT_STAGING_DIR}/${file}" 
+        transfer_flag=$((${transfer_flag} + $?))
+
+        # Place file in BAS outgoing
+        cp --preserve --verbose "${file}" "${BAS_STAGING_DIR}/"
+        chgrp --verbose sddata "${BAS_STAGING_DIR}/${file}"
+        verify_transfer "${file}" "${BAS_STAGING_DIR}/${file}"
+        transfer_flag=$((${transfer_flag} + $?))
+        
+        # Place file in NSSC outgoing - Uncommment this when NSSC is ready
+        # cp --preserve --verbose "${file}" "${NSSC_STAGING_DIR}/"
+        # chgrp --verbose sddata "${NSSC_STAGING_DIR}/${file}"
+        # verify_transfer "${file}" "${NSSC_STAGING_DIR}/${file}"
+        # transfer_flag=$((${transfer_flag} + $?))
+
+        # Copy for staging to the mirror
+        cp --preserve --verbose "${file}" "${MIRROR_STAGING_DIR}"
+        verify_transfer "${file}" "${MIRROR_STAGING_DIR}/${file}"
+        transfer_flag=$((${transfer_flag} + $?))
+
+        # Move file to campus NAS for long term storage
+        year=$(echo ${file} | cut -c 1-4)
+        month=$(echo ${file} | cut -c 5-6)
+        nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/"
+        mkdir --parents "${nas_site_dir}"
+        mv --verbose "${file}" "${nas_site_dir}"
+
+        # Check that all files were copied successfully
+        if [[ "${transfer_flag}" -ge 0 ]]; then
+            echo "File transfer failed: ${file}" | tee --append "${SUMMARY_FILE}"
+            # Set flag to notify
+        else
+            echo "File distributed successfully: ${file}"
+        fi
 done
