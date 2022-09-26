@@ -19,7 +19,7 @@
 ##############################################################################
 
 # Transfer to NAS flag. If not true, transfer to $SITE_LINUX computer instead
-readonly TRANSFER_TO_NAS=false
+readonly TRANSFER_TO_NAS=true
 
 ##############################################################################
 
@@ -27,21 +27,18 @@ readonly TRANSFER_TO_NAS=false
 set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
-# set -x
+
 source ${HOME}/data_flow/library/data_flow_functions.sh
 
 # Borealis directory files are transferring from
 # Use jq with -r option source for the data from Borealis config file
-readonly SOURCE="/home/radar/testing/data_flow_testing/src"
-# readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
+readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
 
 # Directory the files will be transferred to
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
-	readonly DEST="/home/radar/testing/data_flow_testing/dest"
-	# readonly DEST="/borealis_nfs/borealis_data/daily/"	# NAS
+	readonly DEST="/borealis_nfs/borealis_data/daily/"	# NAS
 else
-	# readonly DEST="/data/borealis_data/daily"			# Site Linux
-	readonly DEST="/home/radar/testing/data_flow"
+	readonly DEST="/data/borealis_data/daily"			# Site Linux
 fi
 
 # Threshold (in minutes) for selecting files to transfer with `find`.
@@ -52,8 +49,7 @@ readonly FILE_THRESHOLD=0.1		# 0.1 min = 6 s
 readonly TEMPDEST=".rsync_partial"
 
 # Location of inotify watch directory for flags on site linux
-# readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
-readonly FLAG_DEST="/home/radar/testing/data_flow"
+readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
 
 # Flag to send to start next script
 readonly FLAG="/home/radar/data_flow/.rsync_to_nas_flag"
@@ -64,7 +60,7 @@ readonly LOGFILE="/home/transfer/logs/rsync_to_nas.log"
 ##############################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
-# exec &> $LOGFILE
+exec &> $LOGFILE
 
 # Date in UTC format for logging
 basename "$0"
@@ -77,7 +73,7 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 fi
 
 # Sleep for specified time to differentiate files done writing from files currently writing
-# sleep 6
+sleep 6
 
 # Check if transferring to NAS or site computer. 
 # If transferring to site computer, only send rawacf
@@ -108,7 +104,7 @@ do
 		verify_transfer $file ${DEST}/$(basename $file)
 		if [[ $? -eq 0 ]]; then		# Check return value of verify_transfer
 			echo "Successfully transferred, deleting file: ${file}"
-			rm --verbose ${file}	
+			# rm --verbose ${file}	
 		else
 			echo "Transfer failed, file not deleted: ${file}"
 		fi

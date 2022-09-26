@@ -51,7 +51,7 @@ send_email () {
 verify_transfer () {
 	local source_file=$1
 	local dest_file=$2
-	local dest_ssh=$3
+	local dest_ssh=${3-""}	# Default to empty string
 	if [[ -n $dest_ssh ]]; then
 		ssh $dest_ssh "md5sum --binary $dest_file" > tmp.md5
 	else
