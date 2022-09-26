@@ -22,15 +22,18 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
+readonly HOME_DIR="/home/transfer"  # ${HOME} doesn't work since script is run by root
+
 # source the RADARID, SDCOPY and other things
-source "${HOME}/.bashrc"
+source "${HOME_DIR}/.bashrc"
 # Load in function library
-source "${HOME}/data_flow/library/data_flow_functions.sh"
+source "${HOME_DIR}/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
 # Define directories
-readonly DATA_DIR="/borealis_nfs/borealis_data"
+# readonly DATA_DIR="/borealis_nfs/borealis_data"
+readonly DATA_DIR="/home/radar/testing/data_flow_testing/data"
 readonly SOURCE="${DATA_DIR}/daily" # this is the source
 readonly DMAP_DEST="${DATA_DIR}/rawacf_dmap"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
@@ -45,24 +48,25 @@ readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly ANTENNAS_IQ_SITES=("sas" "cly")
 
 # Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
+# readonly FLAG_DEST="${HOME_DIR}/logging/.dataflow_flags"
+readonly FLAG_DEST="/home/radar/testing/data_flow_testing/.dataflow_flags"
 
 # Flag received from rsync_to_nas script to trigger this script
 readonly FLAG_IN="${FLAG_DEST}/.rsync_to_nas_flag"
 
 # Flag sent out to trigger rsync_to_campus script
-readonly FLAG_OUT="/home/transfer/data_flow/.convert_flag"
+readonly FLAG_OUT="${HOME_DIR}/data_flow/.convert_flag"
 
 # Create log file. New file created monthly
-readonly LOGGING_DIR="${HOME}/logs/file_conversions/$(date +%Y)"
-mkdir --parents --verbose ${LOGGING_DIR}
-readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m).file_conversions.log"
-readonly ERROR_DIR="/${HOME}/logs/file_conversions/conversion_failures"
-mkdir --parents --verbose "${ERROR_DIR}"
-readonly ERROR_FILE="${ERROR_DIR}/$(date -u +%Y%m).file_conversion_summary.log"
+# readonly LOGGING_DIR="${HOME_DIR}/logs/file_conversions/$(date +%Y)"
+# mkdir --parents --verbose ${LOGGING_DIR}
+# readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m).file_conversions.log"
+# readonly ERROR_DIR="${HOME_DIR}/logs/file_conversions/conversion_failures"
+# mkdir --parents --verbose "${ERROR_DIR}"
+# readonly ERROR_FILE="${ERROR_DIR}/$(date -u +%Y%m).file_conversion_summary.log"
 
-# Redirect all stdout and sterr in this script to $LOGFILE
-exec &> $LOGFILE
+# # Redirect all stdout and sterr in this script to $LOGFILE
+# exec &> $LOGFILE
 
 ##############################################################################
 # Convert the files to SDARN format and to array format for storage.
@@ -81,7 +85,7 @@ cp --verbose ${SOURCE}/*bfiq.hdf5.site $BACKUP_DEST
 RAWACF_CONVERT_FILES=$(find "${SOURCE}" -name "*rawacf.hdf5.site" -type f)
 BFIQ_CONVERT_FILES=$(find "${SOURCE}" -name "*bfiq.hdf5.site" -type f)
 ANTENNAS_IQ_CONVERT_FILES=$(find "${SOURCE}" -name "*antennas_iq.hdf5.site" -type f)
-source "${HOME}/pydarnio-env/bin/activate"
+source "${HOME_DIR}/pydarnio-env/bin/activate"
 
 # EMAILBODY=""
 if [[ -n $RAWACF_CONVERT_FILES ]]; then
@@ -95,15 +99,15 @@ fi
 for f in "${RAWACF_CONVERT_FILES}"; do
     if [[ " ${RAWACF_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         echo "Converting ${f}..."
-        echo "python3 ${HOME}/data_flow/site-linux/remove_record.py ${f}"
-        remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+        echo "python3 ${HOME_DIR}/data_flow/site-linux/remove_record.py ${f}"
+        remove_record_output=$(python3 ${HOME_DIR}/data_flow/site-linux/remove_record.py ${f})
         if [[ -n "$remove_record_output" ]]; then
             echo "Removed records from ${f}:\n${remove_records_output}" | tee --append "${ERROR_FILE}"
             # echo "$remove_record_output"
             # EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
         fi
-        echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py --dmap ${f}"
-        python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --dmap "${f}"
+        echo "python3 ${HOME_DIR}/data_flow/site-linux/borealis_convert_file.py --dmap ${f}"
+        python3 "${HOME_DIR}/data_flow/site-linux/borealis_convert_file.py" --dmap "${f}"
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # move the resulting files if all was successful
@@ -144,15 +148,15 @@ fi
 for f in "${BFIQ_CONVERT_FILES}"; do
     if [[ " ${BFIQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         echo "Converting ${f}..."
-        echo "python3 ${HOME}/data_flow/site-linux/remove_record.py ${f}"
-        remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+        echo "python3 ${HOME_DIR}/data_flow/site-linux/remove_record.py ${f}"
+        remove_record_output=$(python3 ${HOME_DIR}/data_flow/site-linux/remove_record.py ${f})
         if [[ -n "$remove_record_output" ]]; then
             echo "Removed records from ${f}:\n${remove_records_output}" | tee --append "${ERROR_FILE}"
             # echo "$remove_record_output"
             # EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
         fi
-        echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}"
-        python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" "${f}"
+        echo "python3 ${HOME_DIR}/data_flow/site-linux/borealis_convert_file.py ${f}"
+        python3 "${HOME_DIR}/data_flow/site-linux/borealis_convert_file.py" "${f}"
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # Only converting array file
@@ -181,15 +185,15 @@ fi
 for f in "${ANTENNAS_IQ_CONVERT_FILES}"; do
     if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         echo "Converting ${f}..."
-        echo "python3 ${HOME}/data_flow/site-linux/remove_record.py ${f}"
-        remove_record_output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+        echo "python3 ${HOME_DIR}/data_flow/site-linux/remove_record.py ${f}"
+        remove_record_output=$(python3 ${HOME_DIR}/data_flow/site-linux/remove_record.py ${f})
         if [ -n "$remove_record_output" ]; then
             echo "Removed records from ${f}:\n${remove_records_output}" | tee --append "${ERROR_FILE}"
             # echo "$remove_record_output"
             # EMAILBODY="${EMAILBODY}\nRemoved records from ${f}:\n${remove_record_output}"
         fi
-        echo "python3 ${HOME}/data_flow/site-linux/borealis_convert_file.py ${f}"
-        python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" "${f}"
+        echo "python3 ${HOME_DIR}/data_flow/site-linux/borealis_convert_file.py ${f}"
+        python3 "${HOME_DIR}/data_flow/site-linux/borealis_convert_file.py" "${f}"
         ret=$?
         if [ $ret -eq 0 ]; then
             # then remove source site file.
@@ -209,12 +213,13 @@ done
 
 # TODO: Send error file to Engineering dashboard
 
+echo "Triggering next script via inotify..."
 # Remove "flag" sent by convert_and_restructure to reset flag
 # and allow inotify to see the next flag sent in
 rm -verbose "${FLAG_IN}"
 
 # Send out "flag" to trigger next script with inotify
-rsync -av --rsh=ssh "${FLAG_OUT}" "${FLAG_DIR}"
+rsync -av --rsh=ssh "${FLAG_OUT}" "${FLAG_DEST}"
 
 printf "Finished conversion. End time: $(date -u)\n\n\n"
 

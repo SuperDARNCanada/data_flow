@@ -14,7 +14,7 @@
 # superdarn-cssdp on campus and removing them locally after a successful copy.
 #
 # Dependencies:
-# 	- RADARID and SDCOPY set as environment variables in $HOME/.bashrc
+# 	- RADARID and SDCOPY set as environment variables in ${HOME_DIR}/.bashrc
 #
 # TODO: Update when inotify method is completed.
 #
@@ -23,7 +23,9 @@
 
 ##############################################################################
 
-source "$HOME/.bashrc" # source the RADARID, SDCOPY and other things
+readonly HOME_DIR="/home/transfer"
+
+source "${HOME_DIR}/.bashrc" # source the RADARID, SDCOPY and other things
 
 readonly DMAP_SOURCE="/borealis_nfs/borealis_data/rawacf_dmap/"
 readonly ARRAY_SOURCE="/borealis_nfs/borealis_data/rawacf_array/"
@@ -39,16 +41,16 @@ fi
 readonly TEMPDEST=".rsync_partial"
 
 # Location of md5sum file to verify rsync transfer
-readonly MD5="${HOME}/md5"
+readonly MD5="${HOME_DIR}/md5"
 
 # Location of inotify watch directory for flags on superdar-cssdp
 readonly FLAG_DEST=""
 
 # Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="/home/transfer/logging/.dataflow_flags/.convert_flag"
+readonly FLAG_IN="${HOME_DIR}/logging/.dataflow_flags/.convert_flag"
 
 # Flag sent out to trigger auto_borealis_share script
-readonly FLAG_OUT="/home/transfer/data_flow/.rsync_to_campus_flag"
+readonly FLAG_OUT="${HOME_DIR}/data_flow/.rsync_to_campus_flag"
 
 
 # Specify which sites will transfer each file type
@@ -56,7 +58,7 @@ readonly DMAP_SITES=("sas" "pgr" "inv")
 readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 # Create log file
-readonly LOGFILE="/home/transfer/logs/rsync_to_campus.log"
+readonly LOGFILE="${HOME_DIR}/logs/rsync_to_campus.log"
 
 ##############################################################################
 

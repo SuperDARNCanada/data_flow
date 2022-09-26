@@ -28,7 +28,9 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-source ${HOME}/data_flow/library/data_flow_functions.sh
+readonly HOME_DIR="/home/radar"
+
+source ${HOME_DIR}/data_flow/library/data_flow_functions.sh
 
 ##############################################################################
 
@@ -57,7 +59,7 @@ readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
 readonly FLAG_OUT="/home/radar/data_flow/.rsync_to_nas_flag"
 
 # Create log file. New file created monthly
-readonly LOGGING_DIR="${HOME}/logs/rsync_to_nas/$(date +%Y)"
+readonly LOGGING_DIR="${HOME_DIR}/logs/rsync_to_nas/$(date +%Y)"
 mkdir --parents --verbose ${LOGGING_DIR}
 readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m).rsync_to_nas.log"
 
