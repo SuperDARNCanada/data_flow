@@ -1,7 +1,7 @@
 #!/bin/bash
 # rsync_to_sas
 # Author: Dieter Andre
-# Modification: August 6th 2019 
+# Modification: August 6th 2019
 # Simplified and changed to a loop over all files instead of acting on all files at once.
 #
 # Modification: November 22 2019
@@ -9,11 +9,11 @@
 #
 # Modification: September 2022
 # Refactored for inotify usage
-# 
-# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to 
-# superdarn-cssdp on campus and removing them locally after a successful copy. 
 #
-# Dependencies: 
+# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to
+# superdarn-cssdp on campus and removing them locally after a successful copy.
+#
+# Dependencies:
 # 	- RADARID and SDCOPY set as environment variables in $HOME/.bashrc
 #
 # TODO: Update when inotify method is completed.
@@ -64,7 +64,7 @@ readonly LOGFILE="/home/transfer/logs/rsync_to_campus.log"
 exec &> $LOGFILE
 
 # Date in UTC format for logging
-basename "$0"
+echo "Executing $(basename "$0") on $(hostname)"
 date --utc
 
 # Ensure that only a single instance of this script runs.
@@ -79,7 +79,7 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 
 	if [[ -n $files ]]; then
-		echo "Placing following dmap files in ${SDCOPY}:${DEST}:" 
+		echo "Placing following dmap files in ${SDCOPY}:${DEST}:"
 		printf '%s\n' "${files[@]}"
 	else
 		echo "No files found to be transferred."
@@ -110,7 +110,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
 
 	if [[ -n $files ]]; then
-		echo "Placing following dmap files in ${SDCOPY}:${DEST}:" 
+		echo "Placing following dmap files in ${SDCOPY}:${DEST}:"
 		printf '%s\n' "${files[@]}"
 	else
 		echo "No files to be transferred."

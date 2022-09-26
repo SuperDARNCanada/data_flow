@@ -38,7 +38,7 @@ mkdir --parents --verbose "${LOGGING_DIR}"
 readonly LOG_FILE="${LOGGING_DIR}/$(date -u +%Y-%m).distribute_data_${RADAR_ID}.log"
 readonly SUMMARY_DIR="/home/mrcopy/logs/distribute_data/summary_logs"
 mkdir --parents --verbose "${SUMMARY_DIR}"
-readonly SUMMARY_FILE="${LOGGING_DIR}/$(date -u +%Y-%m).distribute_data_summary.log"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y-%m).distribute_data_summary.log"
 
 exec &> "${LOG_FILE}"
 

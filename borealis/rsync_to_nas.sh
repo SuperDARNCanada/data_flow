@@ -5,10 +5,10 @@
 # Modification: September 2022
 # Refactored for inotify usage
 #
-# A singleton script to copy the data FILES to the on-site linux computer, 
-# removing them locally after a successful copy. 
+# A singleton script to copy the data FILES to the on-site linux computer,
+# removing them locally after a successful copy.
 #
-# Dependencies: 
+# Dependencies:
 #	- jq (installed via zypper)
 # 	- BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
 #
@@ -29,6 +29,8 @@ set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
 source ${HOME}/data_flow/library/data_flow_functions.sh
+
+##############################################################################
 
 # Borealis directory files are transferring from
 # Use jq with -r option source for the data from Borealis config file
@@ -52,10 +54,12 @@ readonly TEMPDEST=".rsync_partial"
 readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
 
 # Flag to send to start next script
-readonly FLAG="/home/radar/data_flow/.rsync_to_nas_flag"
+readonly FLAG_OUT="/home/radar/data_flow/.rsync_to_nas_flag"
 
-# Create log file
-readonly LOGFILE="/home/transfer/logs/rsync_to_nas.log"
+# Create log file. New file created monthly
+readonly LOGGING_DIR="${HOME}/logs/rsync_to_nas/$(date +%Y)"
+mkdir --parents --verbose ${LOGGING_DIR}
+readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m).rsync_to_nas.log"
 
 ##############################################################################
 
@@ -63,7 +67,7 @@ readonly LOGFILE="/home/transfer/logs/rsync_to_nas.log"
 exec &> $LOGFILE
 
 # Date in UTC format for logging
-basename "$0"
+echo "Executing $(basename "$0") on $(hostname)"
 date --utc
 
 # Ensure that only a single instance of this script runs.
@@ -75,7 +79,7 @@ fi
 # Sleep for specified time to differentiate files done writing from files currently writing
 sleep 6
 
-# Check if transferring to NAS or site computer. 
+# Check if transferring to NAS or site computer.
 # If transferring to site computer, only send rawacf
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
 	search="-name *rawacf.hdf5.* -o -name *bfiq.hdf5.* -o -name *antennas_iq.hdf5.*"
@@ -87,7 +91,7 @@ fi
 files=$(find ${SOURCE} \( ${search} \) -cmin +${FILE_THRESHOLD})
 
 if [[ -n $files ]]; then
-	echo "Placing following files in ${DEST}:" 
+	echo "Placing following files in ${DEST}:"
 	printf '%s\n' "${files[@]}"
 else
 	echo "No files to be transferred."
@@ -98,13 +102,13 @@ for file in ${files}
 do
 	if [[ "$TRANSFER_TO_NAS" == true ]]; then
 		# rsync file to NAS
-		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${DEST}	
-			
+		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${DEST}
+
 		# check if transfer was okay using the md5sum program, then remove the file if it matches
 		verify_transfer $file ${DEST}/$(basename $file)
 		if [[ $? -eq 0 ]]; then		# Check return value of verify_transfer
 			echo "Successfully transferred, deleting file: ${file}"
-			# rm --verbose ${file}	
+			rm --verbose ${file}
 		else
 			echo "Transfer failed, file not deleted: ${file}"
 		fi
@@ -115,7 +119,7 @@ do
 		verify_transfer $file ${DEST}/$(basename $file) ${SITE_LINUX}
 		if [[ $? -eq 0 ]]; then
 			echo "Successfully transferred, deleting file: ${file}"
-			rm --verbose ${file}	# TODO: Do we want to delete file after transferring to site linux?	
+			rm --verbose ${file}	# TODO: Do we want to delete file after transferring to site linux?
 		else
 			echo "Transfer failed, file not deleted: ${file}"
 		fi
@@ -123,8 +127,8 @@ do
 done
 
 # Send "flag" file to notify data flow computer to start next script
-touch "${FLAG}"
-rsync -av --rsh=ssh "${FLAG}" "${SITE_LINUX}:${FLAG_DEST}"
+touch "${FLAG_OUT}"
+rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
 
 printf "Finished transferring. End time: $(date -u)\n\n\n"
 
