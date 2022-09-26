@@ -23,20 +23,21 @@ set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
 # source the RADARID, SDCOPY and other things
-source "$HOME/.bashrc"
+source "${HOME}/.bashrc"
 # Load in function library
 source "${HOME}/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
 # Define directories
-readonly SOURCE="/borealis_nfs/borealis_data/daily" # this is the source
-readonly DMAP_DEST="/borealis_nfs/borealis_data/rawacf_dmap"
-readonly RAWACF_ARRAY_DEST="/borealis_nfs/borealis_data/rawacf_array"
-readonly BFIQ_ARRAY_DEST="/borealis_nfs/borealis_data/bfiq_array"
-readonly ANTENNAS_IQ_ARRAY_DEST="/borealis_nfs/borealis_data/antennas_iq_array"
-readonly BACKUP_DEST="/borealis_nfs/borealis_data/backup"
-readonly PROBLEM_FILES_DEST="/borealis_nfs/borealis_data/conversion_failure"
+readonly DATA_DIR="/borealis_nfs/borealis_data"
+readonly SOURCE="${DATA_DIR}/daily" # this is the source
+readonly DMAP_DEST="${DATA_DIR}/rawacf_dmap"
+readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
+readonly BFIQ_ARRAY_DEST="${DATA_DIR}/bfiq_array"
+readonly ANTENNAS_IQ_ARRAY_DEST="${DATA_DIR}/antennas_iq_array"
+readonly BACKUP_DEST="${DATA_DIR}/backup"
+readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Specify which sites will convert each file type
 readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
@@ -91,8 +92,7 @@ else
 fi
 
 # Convert rawacf files to array and dmap format
-for f in "${RAWACF_CONVERT_FILES}"
-do
+for f in "${RAWACF_CONVERT_FILES}"; do
     if [[ " ${RAWACF_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         echo "Converting ${f}..."
         echo "python3 ${HOME}/data_flow/site-linux/remove_record.py ${f}"
@@ -120,7 +120,7 @@ do
             mv --verbose "${dmap_file}" "${DMAP_DEST}"
             array_file="${f%.site}"
             mv --verbose "${array_file}" "${RAWACF_ARRAY_DEST}"
-            rm --verbose "${f}"
+            # rm --verbose "${f}"
         else
             echo "File failed to convert: ${f}" | tee --append "${ERROR_FILE}"
             # EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
@@ -141,8 +141,7 @@ else
 fi
 
 # Convert bfiq files to array format
-for f in "${BFIQ_CONVERT_FILES}"
-do
+for f in "${BFIQ_CONVERT_FILES}"; do
     if [[ " ${BFIQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         echo "Converting ${f}..."
         echo "python3 ${HOME}/data_flow/site-linux/remove_record.py ${f}"
@@ -159,7 +158,7 @@ do
             # Only converting array file
             array_file="${f%.site}"
             mv --verbose "${array_file}" "${BFIQ_ARRAY_DEST}"
-            rm --verbose "${f}"
+            # rm --verbose "${f}"
         else
             echo "File failed to convert: ${f}" | tee --append "${ERROR_FILE}"
             # EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
@@ -179,8 +178,7 @@ else
 fi
 
 # Convert antennas_iq files to array format
-for f in "${ANTENNAS_IQ_CONVERT_FILES}"
-do
+for f in "${ANTENNAS_IQ_CONVERT_FILES}"; do
     if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         echo "Converting ${f}..."
         echo "python3 ${HOME}/data_flow/site-linux/remove_record.py ${f}"
@@ -197,7 +195,7 @@ do
             # then remove source site file.
             array_file="${f%.site}"
             mv --verbose "${array_file}" "${ANTENNAS_IQ_ARRAY_DEST}"
-            rm --verbose "${f}"
+            # rm --verbose "${f}"
         else
             echo "File failed to convert: ${f}" | tee --append "${ERROR_FILE}"
             # EMAILBODY="${EMAILBODY}\nFile failed to convert: ${f}"
@@ -208,13 +206,6 @@ do
         mv --verbose "${f}"  "${ANTENNAS_IQ_ARRAY_DEST}"
     fi
 done
-
-#TODO: Implement better method than emailing
-# if [ -n "$EMAILBODY" ]; then # check if not empty
-#     EMAILSUBJECT="[Conversions ${RADARNAME}] ${DATE}: Files failed conversion"
-#     echo -e ${EMAILBODY}
-#     send_email "${EMAILSUBJECT}" "${EMAILBODY}"
-# fi
 
 # TODO: Send error file to Engineering dashboard
 
