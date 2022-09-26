@@ -25,6 +25,7 @@ import bz2
 import datetime
 import os
 import sys
+from tracemalloc import start
 
 from pydarnio import BorealisRead, BorealisWrite, BorealisConvert
 from pydarnio.exceptions.borealis_exceptions import \
@@ -192,10 +193,7 @@ def main():
     parser = borealis_conversion_parser()
     args = parser.parse_args()
 
-    time_now = datetime.datetime.utcnow().strftime('%Y%m%d %H:%M:%S')
-    sys_call = ' '.join(sys.argv[:])
-    print(time_now)
-    print(sys_call)
+    start_time = datetime.datetime.utcnow()
 
     # Check if the file is bz2, decompress if necessary
     if os.path.basename(args.borealis_site_file).split('.')[-1] in ['bz2', 'bzip2']:
@@ -221,6 +219,8 @@ def main():
                                                         borealis_filetype,
                                                         array_filename)
 
+    print('Wrote array to : {}'.format(written_array_filename))
+
     dmap_filetypes = {'rawacf': 'rawacf', 'bfiq': 'iqdat'}
 
     if dmap and borealis_filetype in dmap_filetypes.keys():
@@ -238,7 +238,8 @@ def main():
             print("Due to error: {}".format(e))
             sys.exit(1)
 
-    print('Wrote array to : {}'.format(written_array_filename))
+    end_time = datetime.datetime.utcnow()
+    print("Conversion time: {:.2f} seconds".format((end_time-start_time).total_seconds()))
 
     if __bzip2:
         # remove the decompressed site file from the directory because it was

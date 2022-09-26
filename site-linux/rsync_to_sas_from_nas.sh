@@ -63,11 +63,11 @@ readonly LOGFILE="${HOME_DIR}/logs/rsync_to_campus.log"
 ##############################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
-exec &> $LOGFILE
+exec &>> $LOGFILE
 
 # Date in UTC format for logging
 echo "Executing $(basename "$0") on $(hostname)"
-date --utc
+date --utc "+%Y%m%d %H:%M:%S UTC"
 
 # Ensure that only a single instance of this script runs.
 if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
@@ -143,6 +143,6 @@ rm -verbose "${FLAG_IN}"
 # Send "flag" file to notify mrcopy to start next script
 rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
 
-printf "Finished transferring. End time: $(date -u)\n\n\n"
+printf "Finished transferring. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n\n"
 
 exit
