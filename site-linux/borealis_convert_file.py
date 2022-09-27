@@ -219,8 +219,9 @@ def main():
                                                         borealis_filetype,
                                                         array_filename)
 
-    print('Wrote array to : {}'.format(written_array_filename))
-
+    print('Wrote array to: {}'.format(written_array_filename))
+    array_time = datetime.datetime.utcnow()
+    print("Conversion time: {:.2f} seconds".format((array_time-start_time).total_seconds()))
     dmap_filetypes = {'rawacf': 'rawacf', 'bfiq': 'iqdat'}
 
     if dmap and borealis_filetype in dmap_filetypes.keys():
@@ -232,14 +233,15 @@ def main():
             written_dmap_filename =  borealis_array_to_dmap_files(written_array_filename,
                                     borealis_filetype, slice_id,
                                     dmap_filename)
-            print('Wrote dmap to : {}'.format(written_dmap_filename))
+            print('Wrote dmap to: {}'.format(written_dmap_filename))
+            dmap_time = datetime.datetime.utcnow()
+            print("Conversion time: {:.2f} seconds".format((dmap_time-array_time).total_seconds())) 
         except (BorealisConvert2RawacfError, BorealisConvert2IqdatError, Exception) as e:
             print("Unable to convert {} to DMAP file.".format(written_array_filename))
             print("Due to error: {}".format(e))
             sys.exit(1)
 
-    end_time = datetime.datetime.utcnow()
-    print("Conversion time: {:.2f} seconds".format((end_time-start_time).total_seconds()))
+
 
     if __bzip2:
         # remove the decompressed site file from the directory because it was
