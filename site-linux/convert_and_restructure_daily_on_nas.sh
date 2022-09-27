@@ -49,14 +49,14 @@ readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly ANTENNAS_IQ_SITES=("sas" "cly")
 
-# Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="${HOME_DIR}/logging/.dataflow_flags"
-
 # Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${FLAG_DEST}/.rsync_to_nas_flag"
+readonly FLAG_IN="${HOME_DIR}/data_flow/.inotify_watchdir/.rsync_to_nas_flag"
+
+# Location of inotify watch directory for flags on site linux
+readonly FLAG_DEST="${HOME_DIR}/data_flow/.inotify_watchdir"
 
 # Flag sent out to trigger rsync_to_campus script
-readonly FLAG_OUT="${HOME_DIR}/data_flow/.convert_flag"
+readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.convert_and_restructure_flag"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME_DIR}/logs/convert_and_restructure/$(date +%Y)/$(date +%m)"
@@ -66,11 +66,10 @@ readonly  SUMMARY_DIR="${HOME_DIR}/logs/convert_and_restructure/summary/$(date +
 mkdir --parents --verbose $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).convert_summary.log"
 
-# Redirect all stdout and sterr in this script to $LOGFILE
-exec &>> $LOGFILE
-
 ##############################################################################
 
+# Redirect all stdout and sterr in this script to $LOGFILE
+exec &>> $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 

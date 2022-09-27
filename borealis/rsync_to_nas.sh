@@ -53,10 +53,10 @@ readonly FILE_THRESHOLD=0.1		# 0.1 min = 6 s
 readonly TEMPDEST=".rsync_partial"
 
 # Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
+readonly FLAG_DEST="/home/transfer/data_flow/.inotify_watchdir"
 
 # Flag to send to start next script
-readonly FLAG_OUT="/home/radar/data_flow/.rsync_to_nas_flag"
+readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.rsync_to_nas_flag"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME_DIR}/logs/rsync_to_nas/$(date +%Y)/$(date +%m)"

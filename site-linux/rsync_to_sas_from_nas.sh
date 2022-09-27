@@ -28,7 +28,9 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-readonly HOME_DIR="/home/transfer" # ${HOME} doesn't work since script is run by root
+# readonly HOME_DIR="/home/transfer" # ${HOME} doesn't work since script is run by root
+HOME_DIR=/home/radar
+SDCOPY=
 
 source "${HOME_DIR}/.bashrc" # source the RADARID, SDCOPY and other things
 source "${HOME_DIR}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
@@ -54,14 +56,14 @@ fi
 # A temp directory for rsync to use in case rsync is killed, it will start up where it left off
 readonly TEMPDEST=".rsync_partial"
 
-# Location of inotify watch directory for flags on superdar-cssdp
-readonly FLAG_DEST="" #TODO
-
 # Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME_DIR}/logging/.dataflow_flags/.convert_flag"
+readonly FLAG_IN="/home/transfer/data_flow/.inotify_watchdir/.convert_and_restructure_flag"
+
+# Location of inotify watch directory for flags on superdar-cssdp
+readonly FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
 
 # Flag sent out to trigger auto_borealis_share script
-readonly FLAG_OUT="${HOME_DIR}/data_flow/.rsync_to_campus_flag"
+readonly FLAG_OUT="/home/mrcopy/data_flow/.inotify_flags/.rsync_to_campus_flag"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME_DIR}/logs/rsync_to_campus/$(date +%Y)/$(date +%m)"
