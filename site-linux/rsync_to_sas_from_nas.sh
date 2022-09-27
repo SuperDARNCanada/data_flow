@@ -67,7 +67,7 @@ readonly FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
 # readonly FLAG_DEST="/home/radar/data_flow/.inotify_watchdir"	#FIX
 
 # Flag sent out to trigger auto_borealis_share script
-readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.rsync_to_campus_flag"
+readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.rsync_to_campus_flag_${RADAR_ID}"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME_DIR}/logs/rsync_to_campus/$(date +%Y)/$(date +%m)"

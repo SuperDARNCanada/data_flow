@@ -37,7 +37,7 @@ source "${HOME_DIR}/data_flow/library/data_flow_functions.sh"
 # Define directories
 readonly DATA_DIR="/borealis_nfs/borealis_data"
 readonly SOURCE="${DATA_DIR}/daily" # this is the source
-readonly DMAP_DEST="${DATA_DIR}/rawacf_dmap"
+readonly RAWACF_DMAP_DEST="${DATA_DIR}/rawacf_dmap"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
 readonly BFIQ_ARRAY_DEST="${DATA_DIR}/bfiq_array"
 readonly ANTENNAS_IQ_ARRAY_DEST="${DATA_DIR}/antennas_iq_array"
@@ -123,7 +123,7 @@ for f in $RAWACF_CONVERT_FILES; do
             ordinal_id="$(($slice_id + 97))"
             file_character=$(chr $ordinal_id)
             dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
-            mv --verbose $dmap_file $DMAP_DEST
+            mv --verbose $dmap_file $RAWACF_DMAP_DEST
             array_file="${f%.site}"
             mv --verbose $array_file $RAWACF_ARRAY_DEST
             rm --verbose $f
