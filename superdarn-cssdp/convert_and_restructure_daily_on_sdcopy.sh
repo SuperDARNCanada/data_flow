@@ -16,6 +16,7 @@
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
 #
 # Usage: ./convert_on_campus RADAR_ID
+# Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
 #
 # TODO: Update when inotify is working
 
@@ -61,9 +62,9 @@ readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.convert_on_campus_flag_
 readonly LOGGING_DIR="${HOME_DIR}/logs/convert_on_campus/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).convert_on_campus.log"
-readonly  SUMMARY_DIR="${HOME_DIR}/logs/convert_and_restructure/summary/$(date +%Y)/$(date +%m)"
+readonly  SUMMARY_DIR="${HOME_DIR}/logs/convert_on_campus/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose $SUMMARY_DIR
-readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).convert_summary.log"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).convert_summary.log"
 
 ##############################################################################
 
@@ -88,7 +89,7 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 
     echo "Restructuring files in ${DAILY_DIR}" >> ${LOGFILE} 2>&1
 
-    RAWACF_CONVERT_FILES=`find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f`
+    RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
     source "${HOME}/pydarnio-env/bin/activate"
 
     if [[ -n $RAWACF_CONVERT_FILES ]]; then
