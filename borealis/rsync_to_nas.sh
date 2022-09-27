@@ -2,7 +2,7 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Kevin Krieger
 #
-# Modification: September 2022
+# Last Edited: September 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
 # A singleton script to copy the data FILES to the on-site linux computer,
@@ -28,9 +28,9 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-readonly HOME_DIR="/home/radar"
+readonly HOME_DIR="/home/radar" # ${HOME} doesn't work since script is run by root
 
-source ${HOME_DIR}/data_flow/library/data_flow_functions.sh
+source "${HOME_DIR}/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
@@ -58,15 +58,17 @@ readonly FLAG_DEST="/home/transfer/logging/.dataflow_flags"
 # Flag to send to start next script
 readonly FLAG_OUT="/home/radar/data_flow/.rsync_to_nas_flag"
 
-# Create log file. New file created monthly
-readonly LOGGING_DIR="${HOME_DIR}/logs/rsync_to_nas/$(date +%Y)"
-mkdir --parents --verbose ${LOGGING_DIR}
-readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m).rsync_to_nas.log"
+# Create log file. New file created daily
+readonly LOGGING_DIR="${HOME_DIR}/logs/rsync_to_nas/$(date +%Y)/$(date +%m)"
+mkdir --parents --verbose "${LOGGING_DIR}"
+readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m%d).rsync_to_nas.log"
 
 ##############################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
 exec &>> $LOGFILE
+
+printf "################################################################################\n\n"
 
 # Date in UTC format for logging
 echo "Executing $(basename "$0") on $(hostname)"
@@ -100,26 +102,29 @@ else
 fi
 
 # Transfer files
-for file in ${files}
+for file in $files
 do
 	if [[ "$TRANSFER_TO_NAS" == true ]]; then
 		# rsync file to NAS
 		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${DEST}
 
 		# check if transfer was okay using the md5sum program, then remove the file if it matches
-		verify_transfer $file ${DEST}/$(basename $file)
-		if [[ $? -eq 0 ]]; then		# Check return value of verify_transfer
+		verify_transfer $file "${DEST}/$(basename $file)"
+		return_value=$?
+		if [[ $return_value -eq 0 ]]; then
 			echo "Successfully transferred, deleting file: ${file}"
 			rm --verbose ${file}
 		else
+            # If file not transferred successfully, don't delete and try again next time
 			echo "Transfer failed, file not deleted: ${file}"
 		fi
 	else
 		# rsync file to site computer
 		rsync -av --partial --partial-dir="${TEMPDEST}" --timeout=180 --rsh=ssh "${file}" "${SITE_LINUX}:${DEST}"
 
-		verify_transfer $file ${DEST}/$(basename $file) ${SITE_LINUX}
-		if [[ $? -eq 0 ]]; then
+		verify_transfer "${file}" "${DEST}/$(basename $file)" "${SITE_LINUX}"
+		return_value=$?
+		if [[ $return_value -eq 0 ]]; then
 			echo "Successfully transferred, deleting file: ${file}"
 			rm --verbose ${file}	# TODO: Do we want to delete file after transferring to site linux?
 		else
@@ -129,6 +134,7 @@ do
 done
 
 # Send "flag" file to notify data flow computer to start next script
+printf "\nTriggering next script via inotify...\n"
 touch "${FLAG_OUT}"
 rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
 

@@ -1,7 +1,10 @@
 #!/bin/bash
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Marci Detwiller
-
+#
+# Last Edited: September 2022 by Theo Kolkman
+# Refactored for inotify usage
+#
 # A script that uses pydarnio to convert Borealis files to SDARN DMap files
 # as well as restructures the hdf5 files to be multidimensional arrays
 # for better file readability. Backs up the source site files before it
@@ -56,25 +59,24 @@ readonly FLAG_IN="${FLAG_DEST}/.rsync_to_nas_flag"
 # Flag sent out to trigger rsync_to_campus script
 readonly FLAG_OUT="${HOME_DIR}/data_flow/.convert_flag"
 
-# Create log file. New file created monthly
-readonly LOGGING_DIR="${HOME_DIR}/logs/file_conversions/$(date +%Y)"
+# Create log file. New file created daily
+readonly LOGGING_DIR="${HOME_DIR}/logs/convert_and_restructure/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose ${LOGGING_DIR}
-readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m).file_conversions.log"
-readonly ERROR_DIR="${HOME_DIR}/logs/file_conversions/conversion_failures"
-mkdir --parents --verbose "${ERROR_DIR}"
-readonly ERROR_FILE="${ERROR_DIR}/$(date -u +%Y%m).file_conversion_summary.log"
+readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m%d).convert_and_restructure.log"
+readonly  SUMMARY_DIR="${HOME_DIR}/logs/convert_and_restructure/summary/$(date +%Y)/$(date +%m)"
+mkdir --parents --verbose "${SUMMARY_DIR}"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).convert_summary.log"
 
 # Redirect all stdout and sterr in this script to $LOGFILE
 exec &>> $LOGFILE
 
 ##############################################################################
-# Convert the files to SDARN format and to array format for storage.
-##############################################################################
 
-printf "################################################################################\n\n"
 
-printf "Executing $(basename "$0") on $(hostname)\n" | tee --append $ERROR_FILE
-date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $ERROR_FILE
+printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
+
+printf "Executing $(basename "$0") on $(hostname)\n" | tee --append $SUMMARY_FILE
+date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Ensure that only a single instance of this script runs.
 if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
@@ -106,7 +108,7 @@ for f in $RAWACF_CONVERT_FILES; do
         printf "python3 remove_record.py $(basename ${f})\n"
         remove_record_output=$(python3 ${HOME_DIR}/data_flow/site-linux/remove_record.py ${f})
         if [[ -n "$remove_record_output" ]]; then
-            printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $ERROR_FILE
+            printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
         fi
         printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
         python3 "${HOME_DIR}/data_flow/site-linux/borealis_convert_file.py" --dmap "${f}"
@@ -127,12 +129,13 @@ for f in $RAWACF_CONVERT_FILES; do
             array_file="${f%.site}"
             mv --verbose "${array_file}" "${RAWACF_ARRAY_DEST}"
             rm --verbose "${f}"
+            printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
-            printf "File failed to convert: ${f}\n" | tee --append $ERROR_FILE
+            printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
             mv --verbose "${f}" "${PROBLEM_FILES_DEST}"
         fi
     else
-        printf "Not converting ${f}\n"
+        printf "Not converting: ${f}\n" | tee --append $SUMMARY_FILE
         mv --verbose "${f}" "${RAWACF_ARRAY_DEST}"
     fi
 done
@@ -152,7 +155,7 @@ for f in $BFIQ_CONVERT_FILES; do
         printf "python3 remove_record.py $(basename ${f})\n"
         remove_record_output=$(python3 ${HOME_DIR}/data_flow/site-linux/remove_record.py ${f})
         if [[ -n "$remove_record_output" ]]; then
-            printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $ERROR_FILE
+            printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
         fi
         printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
         python3 "${HOME_DIR}/data_flow/site-linux/borealis_convert_file.py" "${f}"
@@ -162,12 +165,13 @@ for f in $BFIQ_CONVERT_FILES; do
             array_file="${f%.site}"
             mv --verbose "${array_file}" "${BFIQ_ARRAY_DEST}"
             rm --verbose "${f}"
+            printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
-            printf "File failed to convert: ${f}\n" | tee --append $ERROR_FILE
+            printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
             mv --verbose "${f}" "${PROBLEM_FILES_DEST}"
         fi
     else
-        printf "Not converting ${f}\n"
+        printf "Not converting: ${f}\n" | tee --append $SUMMARY_FILE
         mv --verbose "${f}"  "${BFIQ_ARRAY_DEST}"
     fi
 done
@@ -187,7 +191,7 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         printf "python3 remove_record.py $(basename ${f})\n"
         remove_record_output=$(python3 ${HOME_DIR}/data_flow/site-linux/remove_record.py ${f})
         if [[ -n "$remove_record_output" ]]; then
-            printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $ERROR_FILE
+            printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
         fi
         printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
         python3 "${HOME_DIR}/data_flow/site-linux/borealis_convert_file.py" "${f}"
@@ -197,12 +201,13 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
             array_file="${f%.site}"
             mv --verbose "${array_file}" "${ANTENNAS_IQ_ARRAY_DEST}"
             rm --verbose "${f}"
+            printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
-            printf "File failed to convert: ${f}\n" | tee --append $ERROR_FILE
+            printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
             mv --verbose "${f}" "${PROBLEM_FILES_DEST}"
         fi
     else
-        printf "Not converting ${f}\n"
+        printf "Not converting: ${f}\n" | tee --append $SUMMARY_FILE
         mv --verbose "${f}"  "${ANTENNAS_IQ_ARRAY_DEST}"
     fi
 done
@@ -218,6 +223,6 @@ rm --verbose "${FLAG_IN}"
 touch "${FLAG_OUT}"
 rsync -av --rsh=ssh "${FLAG_OUT}" "${FLAG_DEST}"
 
-printf "\nFinished file conversion. End time: $(date --utc "+%Y/%m/%d %H:%M:%S UTC")\n\n"
+printf "\nFinished file conversion. End time: $(date --utc "+%Y/%m/%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 exit

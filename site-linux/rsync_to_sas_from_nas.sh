@@ -1,5 +1,5 @@
 #!/bin/bash
-# rsync_to_sas
+# rsync_to_campus
 # Author: Dieter Andre
 # Modification: August 6th 2019
 # Simplified and changed to a loop over all files instead of acting on all files at once.
@@ -7,7 +7,7 @@
 # Modification: November 22 2019
 # Removed SDCOPY details from file
 #
-# Modification: September 2022
+# Last Edited: September 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
 # A singleton script to transfer rawacf dmap and hdf5 files from site NAS to
@@ -23,15 +23,29 @@
 
 ##############################################################################
 
-readonly HOME_DIR="/home/transfer"
+# Specify error behaviour
+set -o errexit   # abort on nonzero exitstatus
+set -o nounset   # abort on unbound variable
+set -o pipefail  # don't hide errors within pipes
+
+readonly HOME_DIR="/home/transfer" # ${HOME} doesn't work since script is run by root
 
 source "${HOME_DIR}/.bashrc" # source the RADARID, SDCOPY and other things
+source "${HOME_DIR}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
 
-readonly DMAP_SOURCE="/borealis_nfs/borealis_data/rawacf_dmap/"
-readonly ARRAY_SOURCE="/borealis_nfs/borealis_data/rawacf_array/"
+##############################################################################
 
-# move to holding dir to convert dmaps on SDCOPY
-if [ "${RADARID}" == "cly" ] || [ "${RADARID}" == "rkn" ]; then
+# Specify which sites will transfer each file type
+readonly DMAP_SITES=("sas" "pgr" "inv")
+readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn")
+
+# Location rawacf files are transferring from
+readonly DATA_DIR="/borealis_nfs/borealis_data"
+readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
+readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
+
+# If site isn't transferring dmap files, send to holding directory for campus conversion
+if [[ ! " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	readonly DEST="/sddata/${RADARID}_holding_dir"
 else
 	readonly DEST="/sddata/${RADARID}_data/"
@@ -40,11 +54,8 @@ fi
 # A temp directory for rsync to use in case rsync is killed, it will start up where it left off
 readonly TEMPDEST=".rsync_partial"
 
-# Location of md5sum file to verify rsync transfer
-readonly MD5="${HOME_DIR}/md5"
-
 # Location of inotify watch directory for flags on superdar-cssdp
-readonly FLAG_DEST=""
+readonly FLAG_DEST="" #TODO
 
 # Flag received from rsync_to_nas script to trigger this script
 readonly FLAG_IN="${HOME_DIR}/logging/.dataflow_flags/.convert_flag"
@@ -52,13 +63,13 @@ readonly FLAG_IN="${HOME_DIR}/logging/.dataflow_flags/.convert_flag"
 # Flag sent out to trigger auto_borealis_share script
 readonly FLAG_OUT="${HOME_DIR}/data_flow/.rsync_to_campus_flag"
 
-
-# Specify which sites will transfer each file type
-readonly DMAP_SITES=("sas" "pgr" "inv")
-readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn")
-
-# Create log file
-readonly LOGFILE="${HOME_DIR}/logs/rsync_to_campus.log"
+# Create log file. New file created daily
+readonly LOGGING_DIR="${HOME_DIR}/logs/rsync_to_campus/$(date +%Y)/$(date +%m)"
+mkdir --parents --verbose "${LOGGING_DIR}"
+readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m%d).rsync_to_campus.log"
+readonly  SUMMARY_DIR="${HOME_DIR}/logs/rsync_to_campus/summary/$(date +%Y)/$(date +%m)"
+mkdir --parents --verbose "${SUMMARY_DIR}"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_campus_summary.log"
 
 ##############################################################################
 
@@ -91,22 +102,22 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	for file in $files; do
 		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${SDCOPY}:${DEST}
 
-		# Check if transfer was okay using the md5sum program
-		ssh ${SDCOPY} "md5sum --binary ${DEST}$(basename ${file})" > ${MD5}
-		md5sum --check ${MD5}
-		mdstat=$?
-		if [[ ${mdstat} -eq 0 ]]; then
-			echo "Deleting file: ${file}"
+		# check if transfer was okay using the md5sum program, then remove the file if it matches
+		verify_transfer $file "${DEST}/$(basename $file)" "${SDCOPY}"
+		return_value=$?
+		if [[ $return_value -eq 0 ]]; then
+			echo "Successfully transferred, deleting file: ${file}"
 			rm --verbose ${file}
 		else
-			echo "File not deleted: ${file}"	# TODO: Should we log files that aren't transferred successfully somewhere?
+            # If file not transferred successfully, don't delete and try again next time
+			echo "Transfer failed, file not deleted: ${file}"
 		fi
 	done
 else
 	echo "Not transferring any dmap files"
 fi
 
-# Check if this site is transferring dmaps to campus
+# Check if this site is transferring HDF5 to campus
 if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	# Find all hdf5 files to transfer
 	files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
@@ -123,25 +134,25 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${file} ${SDCOPY}:${DEST}
 
 		# check if transfer was okay using the md5sum program
-		ssh ${SDCOPY} "md5sum --binary ${DEST}$(basename ${file})" > ${MD5}
-		md5sum --check ${MD5}
-		mdstat=$?
-		if [[ ${mdstat} -eq 0 ]] ; then
-			echo "Deleting file: ${file}"
+		verify_transfer "${file}" "${DEST}/$(basename $file)" "${SDCOPY}"
+		return_value=$?
+		if [[ $return_value -eq 0 ]]; then
+			echo "Successfully transferred, deleting file: ${file}"
 			rm --verbose ${file}
 		else
-			echo "File not deleted ${file}"
+			echo "Transfer failed, file not deleted: ${file}"
 		fi
 	done
 else
 	echo "Not transferring any HDF5 files"
 fi
 
+printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by convert_and_restructure to reset flag
 rm -verbose "${FLAG_IN}"
-
 # Send "flag" file to notify mrcopy to start next script
-rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
+touch $FLAG_OUT
+rsync -av --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${FLAG_DEST}"
 
 printf "Finished transferring. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n\n"
 
