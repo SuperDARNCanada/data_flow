@@ -28,7 +28,8 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-readonly HOME_DIR="/home/mrcopy"  # ${HOME} doesn't work since script is run by root
+# readonly HOME_DIR="/home/mrcopy"  # ${HOME} doesn't work since script is run by root
+HOME_DIR=/home/radar #TESTING
 
 # Load in functions
 source "${HOME}/data_flow/library/data_flow_functions.sh"
@@ -38,12 +39,17 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"
 readonly RADAR_ID=$1
 
 # Define directories
-readonly SOURCE="/sddata/${RADAR_ID}_data"
-readonly NAS_DIR="/data/borealis_site_data"
-readonly MIRROR_STAGING_DIR="/data/holding/globus"
-readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADAR_ID}"
-readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADAR_ID}"
-readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADAR_ID}"
+TEST_DIR=/home/radar/testing/data_flow_testing
+readonly SOURCE="${TEST_DIR}/sddata/${RADAR_ID}_data"
+readonly NAS_DIR="${TEST_DIR}/data/borealis_site_data"
+readonly MIRROR_STAGING_DIR="${TEST_DIR}/data/holding/globus"
+readonly BAS_STAGING_DIR="${TEST_DIR}/home/bas/outgoing/${RADAR_ID}"
+readonly VT_STAGING_DIR="${TEST_DIR}/home/vtsd/outgoing/${RADAR_ID}"
+readonly NSSC_STAGING_DIR="${TEST_DIR}/home/nssc/outgoing/${RADAR_ID}"
+
+# Data group for outgoing files
+# readonly DATA_GROUP="sddata"
+DATA_GROUP=users    # TESTING
 
 # Flag received from rsync_to_nas script to trigger this script
 readonly FLAG_IN="${HOME_DIR}/data_flow/.inotify_watchdir/.rsync_on_campus_flag_${RADAR_ID}"
@@ -66,7 +72,7 @@ readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_
 ##############################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
-exec &> $LOG_FILE
+exec &> $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
@@ -102,6 +108,8 @@ for file in $dmap_files; do
         printf "\nDistributing ${file}\n"
         chmod --verbose 664 $file
 
+        file_name=$(basename $file)
+
         # TODO: Do we want to do rsync here instead?
         # TODO: Review changing of groups and permissions differring across destinations
 
@@ -111,46 +119,51 @@ for file in $dmap_files; do
 
         # Place file in vtsd outgoing
         cp --preserve --verbose "${file}" "${VT_STAGING_DIR}/"
-        chgrp --verbose sddata "${VT_STAGING_DIR}/${file}"   
-        verify_transfer "${file}" "${VT_STAGING_DIR}/${file}" 
+        chgrp --verbose $DATA_GROUP "${VT_STAGING_DIR}/${file_name}"   
+        echo "verify_transfer ${file} ${VT_STAGING_DIR}/${file_name}"
+        verify_transfer "${file}" "${VT_STAGING_DIR}/${file_name}" 
         return_value=$?
+        echo "return_value: $return_value"
         transfer_flag=$(($transfer_flag + $return_value))
 
         # Place file in BAS outgoing
         cp --preserve --verbose "${file}" "${BAS_STAGING_DIR}/"
-        chgrp --verbose sddata "${BAS_STAGING_DIR}/${file}"
-        verify_transfer "${file}" "${BAS_STAGING_DIR}/${file}"
+        chgrp --verbose $DATA_GROUP "${BAS_STAGING_DIR}/${file_name}"
+        verify_transfer "${file}" "${BAS_STAGING_DIR}/${file_name}"
         return_value=$?
+        echo "return_value: $return_value"
         transfer_flag=$(($transfer_flag + $return_value))
 
         # Place file in NSSC outgoing - Uncommment this when NSSC is ready
         # cp --preserve --verbose "${file}" "${NSSC_STAGING_DIR}/"
-        # chgrp --verbose sddata "${NSSC_STAGING_DIR}/${file}"
-        # verify_transfer "${file}" "${NSSC_STAGING_DIR}/${file}"
-        return_value=$?
-        transfer_flag=$(($transfer_flag + $return_value))
+        # chgrp --verbose $DATA_GROUP "${NSSC_STAGING_DIR}/${file_name}"
+        # verify_transfer "${file}" "${NSSC_STAGING_DIR}/${file_name}"
+        # return_value=$?
+        # transfer_flag=$(($transfer_flag + $return_value))
 
         # Copy for staging to the mirror
         cp --preserve --verbose "${file}" "${MIRROR_STAGING_DIR}/"
-        verify_transfer "${file}" "${MIRROR_STAGING_DIR}/${file}"
+        verify_transfer "${file}" "${MIRROR_STAGING_DIR}/${file_name}"
         return_value=$?
+        echo "return_value: $return_value"
         transfer_flag=$(($transfer_flag + $return_value))
 
         # Check that all files were copied successfully
         # If any transfers failed, leave file in directory so tranfer
         # can be attempted the next time the script runs
-        if [[ "${transfer_flag}" -ge 0 ]]; then
-            echo "File distribution failed: ${file}" | tee --append $SUMMARY_FILE
+        if [[ "${transfer_flag}" -eq 0 ]]; then
+            echo "File distribution successful: ${file}" | tee --append $SUMMARY_FILE
 
             # Move file to campus NAS for long term storage
-            year=$(echo ${file} | cut --characters 1-4)
-            month=$(echo ${file} | cut --characters 5-6)
+            year=$(echo ${file_name} | cut --characters 1-4)
+            month=$(echo ${file_name} | cut --characters 5-6)
             nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/"
             mkdir --parents $nas_site_dir
             mv --verbose $file $nas_site_dir
         else
-            echo "File distribution successful: ${file}" | tee --append $SUMMARY_FILE
+            echo "File distribution failed: ${file}" | tee --append $SUMMARY_FILE
         fi
+    fi
 done
 
 
@@ -170,13 +183,15 @@ for file in $array_files; do
         printf "\nDistributing ${file}\n"
         chmod --verbose 664 "${file}"
 
+        file_name=$(basename $file)
+
         # TODO: Do we want to do rsync here instead?
         # TODO: Review changing of groups and permissions differring across destinations
 
         # TODO: array files aren't synced to mirror - do we still want to back them up in the holding directory?
 
-        year=$(echo ${file} | cut --characters 1-4)
-        month=$(echo ${file} | cut --characters 5-6)
+        year=$(echo ${file_name} | cut --characters 1-4)
+        month=$(echo ${file_name} | cut --characters 5-6)
         nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf/${year}/${month}/"
         mkdir --parents $nas_site_dir
         mv --verbose $file $nas_site_dir
@@ -188,6 +203,7 @@ done
 printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by convert_and_restructure to reset flag
 # and allow inotify to see the next flag sent in
+touch $FLAG_IN # TESTING
 rm --verbose $FLAG_IN
 
 # Send out "flag" to trigger next script with inotify
