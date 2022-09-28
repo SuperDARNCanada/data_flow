@@ -71,12 +71,12 @@ exec &>> $LOGFILE
 printf "################################################################################\n\n"
 
 # Date in UTC format for logging
-echo "Executing $(basename "$0") on $(hostname)"
+printf "Executing $(basename "$0") on $(hostname)\n"
 date --utc "+%Y%m%d %H:%M:%S UTC"
 
 # Ensure that only a single instance of this script runs.
 if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
-	echo "Error: Script $0 is already running. Exiting..."
+	printf "Error: Script $0 is already running. Exiting...\n"
 	exit 1
 fi
 
@@ -95,10 +95,10 @@ fi
 files=$(find ${SOURCE} \( ${search} \) -cmin +${FILE_THRESHOLD})
 
 if [[ -n $files ]]; then
-	echo "Placing following files in ${DEST}:"
+	printf "Placing following files in ${DEST}:\n"
 	printf '%s\n' "${files[@]}"
 else
-	echo "No files to be transferred."
+	printf "No files to be transferred.\n"
 fi
 
 # Transfer files
@@ -112,11 +112,11 @@ do
 		verify_transfer $file "${DEST}/$(basename $file)"
 		return_value=$?
 		if [[ $return_value -eq 0 ]]; then
-			echo "Successfully transferred, deleting file: ${file}"
+			printf "Successfully transferred, deleting file: ${file}\n"
 			rm --verbose ${file}
 		else
             # If file not transferred successfully, don't delete and try again next time
-			echo "Transfer failed, file not deleted: ${file}"
+			printf "Transfer failed, file not deleted: ${file}\n"
 		fi
 	else
 		# rsync file to site computer
@@ -125,10 +125,10 @@ do
 		verify_transfer "${file}" "${DEST}/$(basename $file)" "${SITE_LINUX}"
 		return_value=$?
 		if [[ $return_value -eq 0 ]]; then
-			echo "Successfully transferred, deleting file: ${file}"
+			printf "Successfully transferred, deleting file: ${file}\n"
 			rm --verbose ${file}	# TODO: Do we want to delete file after transferring to site linux?
 		else
-			echo "Transfer failed, file not deleted: ${file}"
+			printf "Transfer failed, file not deleted: ${file}\n"
 		fi
 	fi
 done

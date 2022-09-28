@@ -28,6 +28,7 @@ set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
 readonly HOME_DIR="/home/mrcopy"  # ${HOME} doesn't work since script is run by root
+# HOME_DIR=/home/radar #TESTING
 
 # source the RADAR_ID, SDCOPY and other things
 source "${HOME_DIR}/.bashrc"
@@ -41,13 +42,14 @@ RADAR_ID=$1
 # Sites that have to convert dmap files on campus
 # If a site isn't specified here, then this script is skipped and the flag
 # for the next script is sent immediately
-readonly SITES=("cly" "rkn")
+readonly SITES=("cly" "rkn" "lab") #TESTING
 
 # Define directories
-DATA_DIR="/sddata"
-SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir" # this is the source
-RAWACF_DMAP_DEST="${DATA_DIR}/${RADAR_ID}_data"
-RAWACF_ARRAY_DEST="${DATA_DIR}/${RADAR_ID}_data"
+readonly DATA_DIR="/sddata"
+# DATA_DIR=~/testing/data_flow_testing/sddata #TESTING
+readonly SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir" # this is the source
+readonly RAWACF_DMAP_DEST="${DATA_DIR}/${RADAR_ID}_data"
+readonly RAWACF_ARRAY_DEST="${DATA_DIR}/${RADAR_ID}_data"
 
 # Flag received from rsync_to_nas script to trigger this script
 readonly FLAG_IN="${HOME_DIR}/data_flow/.inotify_watchdir/.rsync_to_campus_flag_${RADAR_ID}"
@@ -87,25 +89,21 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     #     exit 1
     # fi
 
-    echo "Restructuring files in ${DAILY_DIR}" >> ${LOGFILE} 2>&1
-
     RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
-    source "${HOME}/pydarnio-env/bin/activate"
+    source "${HOME_DIR}/pydarnio-env/bin/activate"
 
     if [[ -n $RAWACF_CONVERT_FILES ]]; then
-        printf "\n\nConverting the following files:\n"
+        printf "\nConverting the following files:\n"
         printf '%s\n' "${RAWACF_CONVERT_FILES[@]}"
     else
         printf "\nNo files to be converted.\n"
     fi
 
-    # EMAILBODY=""
-
     for f in ${RAWACF_CONVERT_FILES}
     do
         printf "\nConverting ${f}\n"
         printf "python3 borealis_array_to_dmap.py $(basename ${f})\n"
-        python3 "${HOME}/data_flow/script_archive/borealis_array_to_dmap.py" $f
+        python3 "${HOME_DIR}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py" $f
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # move the resulting files if all was successful
@@ -125,6 +123,7 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         else
             printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
             mv --verbose $f $PROBLEM_FILES_DEST
+        fi
     done
 fi
 
@@ -132,6 +131,7 @@ fi
 printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by convert_and_restructure to reset flag
 # and allow inotify to see the next flag sent in
+# touch $FLAG_IN #TESTING
 rm --verbose $FLAG_IN
 
 # Send out "flag" to trigger next script with inotify
