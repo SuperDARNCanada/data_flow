@@ -52,7 +52,7 @@ readonly NSSC_STAGING_DIR="${TEST_DIR}/home/nssc/outgoing/${RADAR_ID}"
 DATA_GROUP=users    # TESTING
 
 # Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME_DIR}/data_flow/.inotify_watchdir/.rsync_on_campus_flag_${RADAR_ID}"
+readonly FLAG_IN="${HOME_DIR}/data_flow/.inotify_watchdir/.convert_on_campus_flag_${RADAR_ID}"
 
 # Location of inotify watch directory for flags on site linux
 readonly FLAG_DEST="${HOME_DIR}/data_flow/.inotify_watchdir"
@@ -203,7 +203,7 @@ done
 printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by convert_and_restructure to reset flag
 # and allow inotify to see the next flag sent in
-touch $FLAG_IN # TESTING
+# touch $FLAG_IN # TESTING
 rm --verbose $FLAG_IN
 
 # Send out "flag" to trigger next script with inotify

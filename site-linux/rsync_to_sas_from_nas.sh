@@ -28,9 +28,9 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-readonly HOME_DIR="/home/transfer" # ${HOME} doesn't work since script is run by root
-# HOME_DIR=/home/radar #Testing
-# SDCOPY=radar@10.65.0.32 #Testing
+# readonly HOME_DIR="/home/transfer" # ${HOME} doesn't work since script is run by root
+HOME_DIR=/home/radar #Testing
+SDCOPY=radar@10.65.0.16 #Testing
 
 source "${HOME_DIR}/.bashrc" # source the RADARID, SDCOPY and other things
 source "${HOME_DIR}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
@@ -38,22 +38,22 @@ source "${HOME_DIR}/data_flow/library/data_flow_functions.sh" # Load dataflow fu
 ##############################################################################
 
 # Specify which sites will transfer each file type
-readonly DMAP_SITES=("sas" "pgr" "inv" "lab") #Testing
+readonly DMAP_SITES=("sas" "pgr" "inv") #Testing
 readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #Testing
 
 # Location rawacf files are transferring from
-readonly DATA_DIR="/borealis_nfs/borealis_data"
-# DATA_DIR=~/testing/data_flow_testing/data
+# readonly DATA_DIR="/borealis_nfs/borealis_data"
+DATA_DIR=${HOME_DIR}/testing/data_flow_testing/data
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
 if [[ ! " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
-	readonly DEST="/sddata/${RADARID}_holding_dir"
-	# DEST=/home/radar/testing/data_flow/lab_holding_dir #Testing
+	# readonly DEST="/sddata/${RADARID}_holding_dir"
+	DEST=/home/radar/testing/data_flow_testing/sddata/lab_holding_dir #Testing
 else
 	readonly DEST="/sddata/${RADARID}_data/"
-	# DEST=/home/radar/testing/data_flow/lab_dir #Testing
+	# DEST=/home/radar/testing/data_flow_testing/lab_dir #Testing
 fi
 
 # A temp directory for rsync to use in case rsync is killed, it will start up where it left off
@@ -63,8 +63,8 @@ readonly TEMPDEST=".rsync_partial"
 readonly FLAG_IN="${HOME_DIR}/data_flow/.inotify_watchdir/.convert_and_restructure_flag"
 
 # Location of inotify watch directory for flags on superdar-cssdp
-readonly FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
-# readonly FLAG_DEST="/home/radar/data_flow/.inotify_watchdir"	#FIX
+# readonly FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
+readonly FLAG_DEST="/home/radar/data_flow/.inotify_watchdir"	# TESTING
 
 # Flag sent out to trigger auto_borealis_share script
 readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.rsync_to_campus_flag_${RADAR_ID}"
@@ -80,7 +80,7 @@ readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_campus_summary
 ##############################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
-# exec &>> $LOGFILE
+exec &>> $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 

@@ -9,17 +9,18 @@
 
 RADAR_ID=$1
 
-WATCH_DIR="/home/mrcopy/data_flow/.inotify_watchdir"
-LOGFILE="/home/mrcopy/logs/inotify_daemon.log"
-
-echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - $(basename $0)" >> $LOGFILE 2>&1
+# HOME_DIR="/home/mrcopy"
+HOME_DIR=/home/radar
+WATCH_DIR="${HOME_DIR}/data_flow/.inotify_watchdir"
+LOGFILE="${HOME_DIR}/logs/inotify_daemon.log"
 
 inotifywait -r --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' -e MOVED_TO $WATCH_DIR | \
 while read TIME DIRECTORY ACTION FILE # These must line up with format parameters
 do
-    if [[ "$FILE" =~ \.distribute_borealis_data_flag_${RADAR_ID}$ ]]   # Only interested in 2 hour files
+    if [[ "$FILE" =~ \.convert_on_campus_flag_${RADAR_ID}$ ]]   # Only interested in 2 hour files
     then
+        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - $(basename $0)" >> $LOGFILE 2>&1
         echo "$TIME $DIRECTORY $ACTION $FILE" >> $LOGFILE 2>&1
-        /home/mrcopy/data_flow/superdarn-cssdp/distribute_borealis_data.sh $RADAR_ID >> $LOGFILE 2>&1
+        $HOME_DIR/data_flow/superdarn-cssdp/distribute_borealis_data $RADAR_ID >> $LOGFILE 2>&1
     fi
 done

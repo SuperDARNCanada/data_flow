@@ -36,11 +36,13 @@ source "${HOME_DIR}/data_flow/library/data_flow_functions.sh"
 
 # Borealis directory files are transferring from
 # Use jq with -r option source for the data from Borealis config file
-readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
+# readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
+SOURCE=/home/radar/testing/data_flow_testing/src
 
 # Directory the files will be transferred to
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
-	readonly DEST="/borealis_nfs/borealis_data/daily/"	# NAS
+	# readonly DEST="/borealis_nfs/borealis_data/daily/"	# NAS
+	DEST=${HOME_DIR}/testing/data_flow_testing/data/daily #TESTING
 else
 	readonly DEST="/data/borealis_data/daily"			# Site Linux
 fi
@@ -53,7 +55,8 @@ readonly FILE_THRESHOLD=0.1		# 0.1 min = 6 s
 readonly TEMPDEST=".rsync_partial"
 
 # Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="/home/transfer/data_flow/.inotify_watchdir"
+# readonly FLAG_DEST="/home/transfer/data_flow/.inotify_watchdir"
+FLAG_DEST=/home/radar/data_flow/.inotify_watchdir
 
 # Flag to send to start next script
 readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.rsync_to_nas_flag"
@@ -136,7 +139,8 @@ done
 # Send "flag" file to notify data flow computer to start next script
 printf "\nTriggering next script via inotify...\n"
 touch "${FLAG_OUT}"
-rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
+# rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
+rsync -av --rsh=ssh "${FLAG_OUT}" "${FLAG_DEST}"
 
 printf "Finished transferring. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n\n"
 

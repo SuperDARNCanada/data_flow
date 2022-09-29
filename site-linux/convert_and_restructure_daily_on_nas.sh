@@ -25,7 +25,8 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-readonly HOME_DIR="/home/transfer"  # ${HOME} doesn't work since script is run by root
+# readonly HOME_DIR="/home/transfer"  # ${HOME} doesn't work since script is run by root
+HOME_DIR=/home/radar #TESTING
 
 # source the RADARID, SDCOPY and other things
 source "${HOME_DIR}/.bashrc"
@@ -35,7 +36,8 @@ source "${HOME_DIR}/data_flow/library/data_flow_functions.sh"
 ##############################################################################
 
 # Define directories
-readonly DATA_DIR="/borealis_nfs/borealis_data"
+# readonly DATA_DIR="/borealis_nfs/borealis_data"
+DATA_DIR=/home/radar/testing/data_flow_testing/data
 readonly SOURCE="${DATA_DIR}/daily" # this is the source
 readonly RAWACF_DMAP_DEST="${DATA_DIR}/rawacf_dmap"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
@@ -45,8 +47,8 @@ readonly BACKUP_DEST="${DATA_DIR}/backup"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Specify which sites will convert each file type
-readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
-readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
+readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab")
+readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab")
 readonly ANTENNAS_IQ_SITES=("sas" "cly")
 
 # Flag received from rsync_to_nas script to trigger this script

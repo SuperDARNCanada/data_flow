@@ -27,8 +27,8 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-readonly HOME_DIR="/home/mrcopy"  # ${HOME} doesn't work since script is run by root
-# HOME_DIR=/home/radar #TESTING
+# readonly HOME_DIR="/home/mrcopy"  # ${HOME} doesn't work since script is run by root
+HOME_DIR=/home/radar #TESTING
 
 # source the RADAR_ID, SDCOPY and other things
 source "${HOME_DIR}/.bashrc"
@@ -45,8 +45,8 @@ RADAR_ID=$1
 readonly SITES=("cly" "rkn" "lab") #TESTING
 
 # Define directories
-readonly DATA_DIR="/sddata"
-# DATA_DIR=~/testing/data_flow_testing/sddata #TESTING
+# readonly DATA_DIR="/sddata"
+DATA_DIR=$HOME_DIR/testing/data_flow_testing/sddata #TESTING
 readonly SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir" # this is the source
 readonly RAWACF_DMAP_DEST="${DATA_DIR}/${RADAR_ID}_data"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/${RADAR_ID}_data"

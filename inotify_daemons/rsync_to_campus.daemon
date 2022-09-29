@@ -5,17 +5,18 @@
 # Inotify script for rsync_to_campus
 # Triggers rsync_to_campus when convert_and_restructure completes and sends the flag
 
-WATCH_DIR="/home/transfer/data_flow/.inotify_watchdir"
-LOGFILE="/home/transfer/logs/inotify_daemon.log"
-
-echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - $(basename $0)" >> $LOGFILE 2>&1
+# HOME_DIR="/home/transfer"
+HOME_DIR=/home/radar
+WATCH_DIR="${HOME_DIR}/data_flow/.inotify_watchdir"
+LOGFILE="${HOME_DIR}/logs/inotify_daemon.log"
 
 inotifywait -r --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' -e MOVED_TO $WATCH_DIR | \
 while read TIME DIRECTORY ACTION FILE # These must line up with format parameters
 do
     if [[ "$FILE" =~ \.convert_and_restructure_flag$ ]]   # Only interested in 2 hour files
     then
+        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - $(basename $0)" >> $LOGFILE 2>&1
         echo "$TIME $DIRECTORY $ACTION $FILE" >> $LOGFILE 2>&1
-        /home/transfer/data_flow/site_linux/rsync_to_sas_from_nas.sh >> $LOGFILE 2>&1
+        $HOME_DIR/data_flow/site-linux/rsync_to_sas_from_nas.sh >> $LOGFILE 2>&1
     fi
 done
