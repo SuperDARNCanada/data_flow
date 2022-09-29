@@ -32,7 +32,7 @@ set -o pipefail  # don't hide errors within pipes
 HOME_DIR=/home/radar #TESTING
 
 # Load in functions
-source "${HOME}/data_flow/library/data_flow_functions.sh"
+source "${HOME_DIR}/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
@@ -72,7 +72,7 @@ readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_
 ##############################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
-exec &> $LOGFILE
+exec &>> $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
@@ -118,6 +118,7 @@ for file in $dmap_files; do
         transfer_flag=0
 
         # Place file in vtsd outgoing
+        ls -l $file
         cp --preserve --verbose "${file}" "${VT_STAGING_DIR}/"
         chgrp --verbose $DATA_GROUP "${VT_STAGING_DIR}/${file_name}"   
         echo "verify_transfer ${file} ${VT_STAGING_DIR}/${file_name}"

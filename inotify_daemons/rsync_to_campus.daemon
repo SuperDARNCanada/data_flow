@@ -6,7 +6,7 @@
 # Triggers rsync_to_campus when convert_and_restructure completes and sends the flag
 
 # HOME_DIR="/home/transfer"
-HOME_DIR=/home/radar
+HOME_DIR=~
 WATCH_DIR="${HOME_DIR}/data_flow/.inotify_watchdir"
 LOGFILE="${HOME_DIR}/logs/inotify_daemon.log"
 

@@ -53,14 +53,14 @@ verify_transfer () {
 	local dest_file=$2
 	local dest_ssh=${3-""}	# Default to empty string
 	if [[ -n $dest_ssh ]]; then
-		ssh $dest_ssh "md5sum --binary $dest_file" > tmp.md5
+		ssh $dest_ssh "md5sum --binary $dest_file" > $HOME/tmp.md5
 	else
-		md5sum --binary $dest_file > tmp.md5
+		md5sum --binary $dest_file > $HOME/tmp.md5
 	fi
 
 	# Convert md5sum to look at source file
-	sed -i "s~$dest_file~$source_file~g" tmp.md5
+	sed -i "s~$dest_file~$source_file~g" $HOME/tmp.md5
 	# Check md5sum of destination file is same as source
-	md5sum --check --status tmp.md5
+	md5sum --check --status $HOME/tmp.md5
 	return $?
 }
