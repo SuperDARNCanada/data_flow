@@ -43,8 +43,8 @@ RADAR_ID=$1
 readonly SITES=("cly" "rkn" "lab") #TESTING
 
 # Define directories
-# readonly DATA_DIR="/sddata"
-DATA_DIR=$HOME/testing/data_flow_testing/sddata #TESTING
+readonly DATA_DIR="/sddata"
+# DATA_DIR=$HOME/testing/data_flow_testing/sddata #TESTING
 readonly SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir" # this is the source
 readonly RAWACF_DMAP_DEST="${DATA_DIR}/${RADAR_ID}_data"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/${RADAR_ID}_data"
@@ -60,10 +60,10 @@ readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.convert_on_campus_flag_${RA
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/convert_on_campus/$(date +%Y)/$(date +%m)"
-mkdir --parents --verbose $LOGGING_DIR
+mkdir --parents $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).convert_on_campus.log"
 readonly  SUMMARY_DIR="${HOME}/logs/convert_on_campus/summary/$(date +%Y)/$(date +%m)"
-mkdir --parents --verbose $SUMMARY_DIR
+mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).convert_summary.log"
 
 ##############################################################################
@@ -97,7 +97,7 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         printf "\nNo files to be converted.\n"
     fi
 
-    for f in ${RAWACF_CONVERT_FILES}
+    for f in $RAWACF_CONVERT_FILES
     do
         printf "\nConverting ${f}\n"
         printf "python3 borealis_array_to_dmap.py $(basename ${f})\n"
@@ -109,8 +109,8 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
             dmap_file_start="${f%.rawacf.hdf5}"
 
             # remove last character(s) (slice_id)
-            slice_id=${dmap_file_start##*.}
-            dmap_file_wo_slice_id=${dmap_file_start%${slice_id}}
+            slice_id="${dmap_file_start##*.}"
+            dmap_file_wo_slice_id="${dmap_file_start%${slice_id}}"
 
             ordinal_id="$(($slice_id + 97))"
             file_character=$(chr $ordinal_id)

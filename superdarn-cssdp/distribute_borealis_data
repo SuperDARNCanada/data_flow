@@ -39,7 +39,8 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"
 readonly RADAR_ID=$1
 
 # Define directories
-TEST_DIR=/home/radar/testing/data_flow_testing
+# TEST_DIR=/home/radar/testing/data_flow_testing #TESTING
+readonly TEST_DIR=""
 readonly SOURCE="${TEST_DIR}/sddata/${RADAR_ID}_data"
 readonly NAS_DIR="${TEST_DIR}/data/borealis_site_data"
 readonly MIRROR_STAGING_DIR="${TEST_DIR}/data/holding/globus"
@@ -48,8 +49,8 @@ readonly VT_STAGING_DIR="${TEST_DIR}/home/vtsd/outgoing/${RADAR_ID}"
 readonly NSSC_STAGING_DIR="${TEST_DIR}/home/nssc/outgoing/${RADAR_ID}"
 
 # Data group for outgoing files
-# readonly DATA_GROUP="sddata"
-DATA_GROUP=users    # TESTING
+readonly DATA_GROUP="sddata"
+# DATA_GROUP=users    # TESTING
 
 # Flag received from rsync_to_nas script to trigger this script
 readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.convert_on_campus_flag_${RADAR_ID}"
@@ -63,10 +64,10 @@ readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.distribute_borealis_data_fl
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/distribute_borealis_data/$(date +%Y)/$(date +%m)"
-mkdir --parents --verbose $LOGGING_DIR
+mkdir --parents $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).distribute_borealis_data.log"
 readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y)/$(date +%m)"
-mkdir --parents --verbose $SUMMARY_DIR
+mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_summary.log"
 
 ##############################################################################
@@ -119,34 +120,30 @@ for file in $dmap_files; do
 
         # Place file in vtsd outgoing
         ls -l $file
-        cp --preserve --verbose "${file}" "${VT_STAGING_DIR}/"
+        cp --preserve --verbose $file $VT_STAGING_DIR
         chgrp --verbose $DATA_GROUP "${VT_STAGING_DIR}/${file_name}"   
-        echo "verify_transfer ${file} ${VT_STAGING_DIR}/${file_name}"
-        verify_transfer "${file}" "${VT_STAGING_DIR}/${file_name}" 
+        verify_transfer $file "${VT_STAGING_DIR}/${file_name}" 
         return_value=$?
-        echo "return_value: $return_value"
         transfer_flag=$(($transfer_flag + $return_value))
 
         # Place file in BAS outgoing
-        cp --preserve --verbose "${file}" "${BAS_STAGING_DIR}/"
+        cp --preserve --verbose $file $BAS_STAGING_DIR
         chgrp --verbose $DATA_GROUP "${BAS_STAGING_DIR}/${file_name}"
-        verify_transfer "${file}" "${BAS_STAGING_DIR}/${file_name}"
+        verify_transfer $file "${BAS_STAGING_DIR}/${file_name}"
         return_value=$?
-        echo "return_value: $return_value"
         transfer_flag=$(($transfer_flag + $return_value))
 
         # Place file in NSSC outgoing - Uncommment this when NSSC is ready
-        # cp --preserve --verbose "${file}" "${NSSC_STAGING_DIR}/"
+        # cp --preserve --verbose $file $NSSC_STAGING_DIR
         # chgrp --verbose $DATA_GROUP "${NSSC_STAGING_DIR}/${file_name}"
-        # verify_transfer "${file}" "${NSSC_STAGING_DIR}/${file_name}"
+        # verify_transfer $file "${NSSC_STAGING_DIR}/${file_name}"
         # return_value=$?
         # transfer_flag=$(($transfer_flag + $return_value))
 
         # Copy for staging to the mirror
-        cp --preserve --verbose "${file}" "${MIRROR_STAGING_DIR}/"
-        verify_transfer "${file}" "${MIRROR_STAGING_DIR}/${file_name}"
+        cp --preserve --verbose $file $MIRROR_STAGING_DIR
+        verify_transfer $file "${MIRROR_STAGING_DIR}/${file_name}"
         return_value=$?
-        echo "return_value: $return_value"
         transfer_flag=$(($transfer_flag + $return_value))
 
         # Check that all files were copied successfully

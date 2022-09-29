@@ -32,8 +32,8 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"
 ##############################################################################
 
 # Define directories
-# readonly DATA_DIR="/borealis_nfs/borealis_data"
-DATA_DIR=/home/radar/testing/data_flow_testing/data
+readonly DATA_DIR="/borealis_nfs/borealis_data"
+# DATA_DIR=/home/radar/testing/data_flow_testing/data #TESTING
 readonly SOURCE="${DATA_DIR}/daily" # this is the source
 readonly RAWACF_DMAP_DEST="${DATA_DIR}/rawacf_dmap"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
@@ -43,8 +43,8 @@ readonly BACKUP_DEST="${DATA_DIR}/backup"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Specify which sites will convert each file type
-readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab")
-readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab")
+readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #TESTING
+readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #TESTING
 readonly ANTENNAS_IQ_SITES=("sas" "cly")
 
 # Flag received from rsync_to_nas script to trigger this script
@@ -58,10 +58,10 @@ readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.convert_and_restructure_fla
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/convert_and_restructure/$(date +%Y)/$(date +%m)"
-mkdir --parents --verbose $LOGGING_DIR
+mkdir --parents $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m%d).convert_and_restructure.log"
 readonly  SUMMARY_DIR="${HOME}/logs/convert_and_restructure/summary/$(date +%Y)/$(date +%m)"
-mkdir --parents --verbose $SUMMARY_DIR
+mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).convert_summary.log"
 
 ##############################################################################
@@ -210,7 +210,7 @@ done
 
 # TODO: Send error file to Engineering dashboard
 printf "\nTriggering next script via inotify...\n"
-# Remove "flag" sent by convert_and_restructure to reset flag
+# Remove "flag" sent by rsync_to_nas to reset flag
 # and allow inotify to see the next flag sent in
 rm --verbose $FLAG_IN
 
