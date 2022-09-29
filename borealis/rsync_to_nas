@@ -12,9 +12,8 @@
 #	- jq (installed via zypper)
 # 	- BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
 #
-# TODO: Update when inotify method is completed.
-# The script should be run via crontab like so:
-# 8,45 */2 * * * . $HOME/.profile; $HOME/data_flow/rsync_to_linux.sh >> $HOME/rsync_to_linux.log 2>&1
+# This script should be run via an inotify daemon triggerring whenever
+# 2-hour Borealis site files finish writing
 
 ##############################################################################
 

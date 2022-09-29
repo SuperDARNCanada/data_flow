@@ -18,7 +18,8 @@
 # Usage: ./convert_on_campus RADAR_ID
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
 #
-# TODO: Update when inotify is working
+# This script should be run via an inotify daemon triggerring when the
+# rsync_to_campus script finishes transferring files
 
 ##############################################################################
 

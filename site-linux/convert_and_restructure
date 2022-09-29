@@ -14,9 +14,8 @@
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
 # 	- RADARNAME and RADARID set as environment variables in $HOME/.bashrc
 #
-# TODO: Update when inotify is working
-# The script should be run via crontab like so:
-# 10,45 0,2,4,6,8,10,12,14,16,18,20,22 * * * ${HOME}/data_flow/site-linux/convert_and_restructure_daily.sh >> ${HOME}/convert_and_restructure_borealis_log.txt 2>&1
+# This script should be run via an inotify daemon triggerring when the
+# rsync_to_nas finished transferring files 
 
 ##############################################################################
 

@@ -17,6 +17,6 @@ do
     then
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)" >> $LOGFILE 2>&1
         echo "$TIME $DIRECTORY $ACTION $FILE" >> $LOGFILE 2>&1
-        $HOME/data_flow/site-linux/rsync_to_sas_from_nas.sh >> $LOGFILE 2>&1
+        $HOME/data_flow/site-linux/rsync_to_campus >> $LOGFILE 2>&1
     fi
 done

@@ -16,10 +16,8 @@
 # Dependencies:
 # 	- RADARID and SDCOPY set as environment variables in ${HOME}/.bashrc
 #
-# TODO: Update when inotify method is completed.
-#
-# Should be called from crontab like so:
-# */5 * * * * ${HOME}/data_flow/site-linux/rsync_to_sas.sh >> ${HOME}/rsync_to_sas.log 2>&1
+# This script should be run via an inotify daemon triggerring when the
+# convert_and_restructure script finishes
 
 ##############################################################################
 

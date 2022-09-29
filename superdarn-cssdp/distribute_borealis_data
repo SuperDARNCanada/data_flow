@@ -20,6 +20,9 @@
 #
 # Usage: ./distribute_borealis_data RADAR_ID
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
+#
+# This script should be run via an inotify daemon triggerring when the
+# convert_on_campus script finishes
 
 ##############################################################################
 
