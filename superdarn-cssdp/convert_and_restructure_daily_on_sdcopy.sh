@@ -27,13 +27,10 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-# readonly HOME_DIR="/home/mrcopy"  # ${HOME} doesn't work since script is run by root
-HOME_DIR=/home/radar #TESTING
-
 # source the RADAR_ID, SDCOPY and other things
-source "${HOME_DIR}/.bashrc"
+source "${HOME}/.bashrc"
 # Load in function library
-source "${HOME_DIR}/data_flow/library/data_flow_functions.sh"
+source "${HOME}/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
@@ -46,25 +43,25 @@ readonly SITES=("cly" "rkn" "lab") #TESTING
 
 # Define directories
 # readonly DATA_DIR="/sddata"
-DATA_DIR=$HOME_DIR/testing/data_flow_testing/sddata #TESTING
+DATA_DIR=$HOME/testing/data_flow_testing/sddata #TESTING
 readonly SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir" # this is the source
 readonly RAWACF_DMAP_DEST="${DATA_DIR}/${RADAR_ID}_data"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/${RADAR_ID}_data"
 
 # Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME_DIR}/data_flow/.inotify_watchdir/.rsync_to_campus_flag_${RADAR_ID}"
+readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.rsync_to_campus_flag_${RADAR_ID}"
 
 # Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="${HOME_DIR}/data_flow/.inotify_watchdir"
+readonly FLAG_DEST="${HOME}/data_flow/.inotify_watchdir"
 
 # Flag sent out to trigger rsync_to_campus script
-readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.convert_on_campus_flag_${RADAR_ID}"
+readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.convert_on_campus_flag_${RADAR_ID}"
 
 # Create log file. New file created daily
-readonly LOGGING_DIR="${HOME_DIR}/logs/convert_on_campus/$(date +%Y)/$(date +%m)"
+readonly LOGGING_DIR="${HOME}/logs/convert_on_campus/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).convert_on_campus.log"
-readonly  SUMMARY_DIR="${HOME_DIR}/logs/convert_on_campus/summary/$(date +%Y)/$(date +%m)"
+readonly  SUMMARY_DIR="${HOME}/logs/convert_on_campus/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).convert_summary.log"
 
@@ -90,7 +87,7 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     # fi
 
     RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
-    source "${HOME_DIR}/pydarnio-env/bin/activate"
+    source "${HOME}/pydarnio-env/bin/activate"
 
     if [[ -n $RAWACF_CONVERT_FILES ]]; then
         printf "\nConverting the following files:\n"
@@ -103,7 +100,7 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     do
         printf "\nConverting ${f}\n"
         printf "python3 borealis_array_to_dmap.py $(basename ${f})\n"
-        python3 "${HOME_DIR}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py" $f
+        python3 "${HOME}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py" $f
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # move the resulting files if all was successful

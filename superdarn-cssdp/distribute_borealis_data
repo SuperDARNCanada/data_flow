@@ -28,11 +28,8 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-# readonly HOME_DIR="/home/mrcopy"  # ${HOME} doesn't work since script is run by root
-HOME_DIR=/home/radar #TESTING
-
 # Load in functions
-source "${HOME_DIR}/data_flow/library/data_flow_functions.sh"
+source "${HOME}/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
@@ -52,20 +49,20 @@ readonly NSSC_STAGING_DIR="${TEST_DIR}/home/nssc/outgoing/${RADAR_ID}"
 DATA_GROUP=users    # TESTING
 
 # Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME_DIR}/data_flow/.inotify_watchdir/.convert_on_campus_flag_${RADAR_ID}"
+readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.convert_on_campus_flag_${RADAR_ID}"
 
 # Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="${HOME_DIR}/data_flow/.inotify_watchdir"
+readonly FLAG_DEST="${HOME}/data_flow/.inotify_watchdir"
 
 # Flag sent out to trigger rsync_to_campus script
-readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.distribute_borealis_data_flag_${RADAR_ID}"
+readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.distribute_borealis_data_flag_${RADAR_ID}"
 
 
 # Create log file. New file created daily
-readonly LOGGING_DIR="${HOME_DIR}/logs/distribute_borealis_data/$(date +%Y)/$(date +%m)"
+readonly LOGGING_DIR="${HOME}/logs/distribute_borealis_data/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).distribute_borealis_data.log"
-readonly  SUMMARY_DIR="${HOME_DIR}/logs/distribute_borealis_data/summary/$(date +%Y)/$(date +%m)"
+readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_summary.log"
 
@@ -187,8 +184,6 @@ for file in $array_files; do
         file_name=$(basename $file)
 
         # TODO: Do we want to do rsync here instead?
-        # TODO: Review changing of groups and permissions differring across destinations
-
         # TODO: array files aren't synced to mirror - do we still want to back them up in the holding directory?
 
         year=$(echo ${file_name} | cut --characters 1-4)

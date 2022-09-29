@@ -28,9 +28,7 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-readonly HOME_DIR="/home/radar" # ${HOME} doesn't work since script is run by root
-
-source "${HOME_DIR}/data_flow/library/data_flow_functions.sh"
+source "${HOME}/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
@@ -42,7 +40,7 @@ SOURCE=/home/radar/testing/data_flow_testing/src
 # Directory the files will be transferred to
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
 	# readonly DEST="/borealis_nfs/borealis_data/daily/"	# NAS
-	DEST=${HOME_DIR}/testing/data_flow_testing/data/daily #TESTING
+	DEST=${HOME}/testing/data_flow_testing/data/daily #TESTING
 else
 	readonly DEST="/data/borealis_data/daily"			# Site Linux
 fi
@@ -59,10 +57,10 @@ readonly TEMPDEST=".rsync_partial"
 FLAG_DEST=/home/radar/data_flow/.inotify_watchdir
 
 # Flag to send to start next script
-readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.rsync_to_nas_flag"
+readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.rsync_to_nas_flag"
 
 # Create log file. New file created daily
-readonly LOGGING_DIR="${HOME_DIR}/logs/rsync_to_nas/$(date +%Y)/$(date +%m)"
+readonly LOGGING_DIR="${HOME}/logs/rsync_to_nas/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose "${LOGGING_DIR}"
 readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m%d).rsync_to_nas.log"
 

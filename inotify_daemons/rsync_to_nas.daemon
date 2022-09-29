@@ -5,18 +5,19 @@
 # Inotify script for rsync_to_nas
 # Triggers rsync_to_nas when 2-hour set of Borealis files finish writing
 
-HOME_DIR="/home/radar"
-# WATCH_DIR="/data/borealis_data"
-WATCH_DIR=${HOME_DIR}/testing/data_flow_testing/src
-LOGFILE="${HOME_DIR}/logs/inotify_daemon.log"
+WATCH_DIR="/data/borealis_data"
+# WATCH_DIR=${HOME}/testing/data_flow_testing/src #TESTING
+LOGFILE="${HOME}/logs/inotify_daemon.log"
+
+echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 
 inotifywait -r --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' -e create $WATCH_DIR | \
 while read TIME DIRECTORY ACTION FILE # These must line up with format parameters
 do
     if [[ "$FILE" =~ .*\.site$ ]]   # Only interested in 2 hour files
     then
-        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - $(basename $0)" >> $LOGFILE 2>&1
+        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)" >> $LOGFILE 2>&1
         echo "$TIME $DIRECTORY $ACTION $FILE" >> $LOGFILE
-        $HOME_DIR/data_flow/borealis/rsync_to_nas.sh >> $LOGFILE 2>&1
+        $HOME/data_flow/borealis/rsync_to_nas.sh >> $LOGFILE 2>&1
     fi
 done

@@ -14,7 +14,7 @@
 # superdarn-cssdp on campus and removing them locally after a successful copy.
 #
 # Dependencies:
-# 	- RADARID and SDCOPY set as environment variables in ${HOME_DIR}/.bashrc
+# 	- RADARID and SDCOPY set as environment variables in ${HOME}/.bashrc
 #
 # TODO: Update when inotify method is completed.
 #
@@ -28,12 +28,10 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-# readonly HOME_DIR="/home/transfer" # ${HOME} doesn't work since script is run by root
-HOME_DIR=/home/radar #Testing
-SDCOPY=radar@10.65.0.16 #Testing
+# SDCOPY=radar@10.65.0.16 #Testing
 
-source "${HOME_DIR}/.bashrc" # source the RADARID, SDCOPY and other things
-source "${HOME_DIR}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
+source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
+source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
 
 ##############################################################################
 
@@ -43,7 +41,7 @@ readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #Testing
 
 # Location rawacf files are transferring from
 # readonly DATA_DIR="/borealis_nfs/borealis_data"
-DATA_DIR=${HOME_DIR}/testing/data_flow_testing/data
+DATA_DIR=${HOME}/testing/data_flow_testing/data
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
 
@@ -60,20 +58,20 @@ fi
 readonly TEMPDEST=".rsync_partial"
 
 # Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME_DIR}/data_flow/.inotify_watchdir/.convert_and_restructure_flag"
+readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.convert_and_restructure_flag"
 
 # Location of inotify watch directory for flags on superdar-cssdp
 # readonly FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
 readonly FLAG_DEST="/home/radar/data_flow/.inotify_watchdir"	# TESTING
 
 # Flag sent out to trigger auto_borealis_share script
-readonly FLAG_OUT="${HOME_DIR}/data_flow/.inotify_flags/.rsync_to_campus_flag_${RADAR_ID}"
+readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.rsync_to_campus_flag_${RADAR_ID}"
 
 # Create log file. New file created daily
-readonly LOGGING_DIR="${HOME_DIR}/logs/rsync_to_campus/$(date +%Y)/$(date +%m)"
+readonly LOGGING_DIR="${HOME}/logs/rsync_to_campus/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose "${LOGGING_DIR}"
 readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m%d).rsync_to_campus.log"
-readonly SUMMARY_DIR="${HOME_DIR}/logs/rsync_to_campus/summary/$(date +%Y)/$(date +%m)"
+readonly SUMMARY_DIR="${HOME}/logs/rsync_to_campus/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents --verbose "${SUMMARY_DIR}"
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_campus_summary.log"
 
