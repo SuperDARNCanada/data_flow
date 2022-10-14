@@ -56,3 +56,6 @@ To start the service, execute the following commands as superuser:
 - `systemctl daemon-reload`
 - `systemctl enable rsync_to_nas.service`
 - `systemctl start rsync_to_nas.service`
+
+To verify it is running:
+- `systemctl status rsync_to_nas.service`

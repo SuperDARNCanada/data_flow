@@ -12,7 +12,7 @@
 #	- jq (installed via zypper)
 # 	- BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
 #
-# This script should be run via an inotify daemon triggerring whenever
+# This script should be run via an inotify daemon triggering whenever
 # 2-hour Borealis site files finish writing
 
 ##############################################################################

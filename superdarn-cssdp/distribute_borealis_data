@@ -55,7 +55,7 @@ readonly DATA_GROUP="sddata"
 # Flag received from rsync_to_nas script to trigger this script
 readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.convert_on_campus_flag_${RADAR_ID}"
 
-# Location of inotify watch directory for flags on site linux
+# Location of inotify watch directory for flags on superdarn-cssdp
 readonly FLAG_DEST="${HOME}/data_flow/.inotify_watchdir"
 
 # Flag sent out to trigger rsync_to_campus script

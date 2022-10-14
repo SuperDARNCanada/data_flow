@@ -29,7 +29,6 @@ set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
 # source the RADAR_ID, SDCOPY and other things
-source "${HOME}/.bashrc"
 # Load in function library
 source "${HOME}/data_flow/library/data_flow_functions.sh"
 
