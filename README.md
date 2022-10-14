@@ -5,7 +5,7 @@ Each server uses different scripts, but all are contained in this repo. Director
 - borealis - The server that creates the Borealis data files (currently rawacf, antennas\_iq and bfiq). 
 - site-linux - The linux server on SuperDARN Canada sites that does further backup/processing and moving of data files
 to the university campus
-- superdarn-cssdp - The linux server at the UofS that currently handles the temporary mirror, uploads to cedar via globus, 
+- superdarn-cssdp - The linux server at the UofS that currently handles uploads to cedar via globus, 
 stages SuperDARN files for other institutions, and backs up data to the campus' long term storage.
 - inotify_daemons - Scripts that use `inotifywait` to monitor the data flow and trigger scripts once the preceding script 
 has finished execution. These scripts are to be set up as a systemd service.
