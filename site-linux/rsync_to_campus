@@ -52,9 +52,6 @@ else
 	# DEST=/home/radar/testing/data_flow_testing/lab_dir #Testing
 fi
 
-# A temp directory for rsync to use in case rsync is killed, it will start up where it left off
-readonly TEMPDEST=".rsync_partial"
-
 # Flag received from rsync_to_nas script to trigger this script
 readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.convert_and_restructure_flag"
 
@@ -105,7 +102,7 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	# Transfer all files found
 	for file in $files; do
 		printf "\nTransferring: ${file}\n"
-		rsync -av --partial --partial-dir=$TEMPDEST --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
+		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
 		# check if transfer was okay using the md5sum program, then remove the file if it matches
 		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
@@ -139,7 +136,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	# Transfer all files found
 	for file in $files; do
 		printf "\nTransferring: ${file}\n"
-		rsync -av --partial --partial-dir=$TEMPDEST --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
+		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
 		# check if transfer was okay using the md5sum program
 		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
