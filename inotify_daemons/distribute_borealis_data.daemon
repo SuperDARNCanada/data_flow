@@ -10,6 +10,7 @@
 RADAR_ID=$1
 
 WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
+LOCK_FILE="${HOME}/data_flow/.distribute_borealis_data_${RADAR_ID}_lock"
 LOGFILE="${HOME}/logs/inotify_daemon.log"
 exec &>> $LOGFILE
 
@@ -21,6 +22,8 @@ do
     if [[ "$FILE" =~ \.convert_on_campus_flag_${RADAR_ID}$ ]]   # Only interested in 2 hour files
     then
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
-        $HOME/data_flow/superdarn-cssdp/distribute_borealis_data $RADAR_ID
+        touch $LOCK_FILE
+        # Lock with radar specific file to ensure only one instance of script runs for each site
+        flock -n --verbose $LOCK_FILE $HOME/data_flow/superdarn-cssdp/distribute_borealis_data $RADAR_ID
     fi
 done

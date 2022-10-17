@@ -106,3 +106,4 @@ venv.bak/
 # Dataflow stuff
 tmp.md5 
 .*flag*
+.*_lock
