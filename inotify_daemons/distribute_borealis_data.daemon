@@ -11,10 +11,11 @@ RADAR_ID=$1
 
 WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
 LOCK_FILE="${HOME}/data_flow/.distribute_borealis_data_${RADAR_ID}_lock"
-LOGFILE="${HOME}/logs/inotify_daemon.log"
+LOGFILE="${HOME}/logs/inotify_daemons/$(echo $(basename $0) | cut -f 1 -d '.')_${RADAR_ID}.log"
 exec &>> $LOGFILE
 
-echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
+echo "Starting $(basename $0) $RADAR_ID at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
+touch $LOCK_FILE
 
 inotifywait -r --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' -e MOVED_TO $WATCH_DIR | \
 while read TIME DIRECTORY ACTION FILE # These must line up with format parameters
@@ -22,7 +23,6 @@ do
     if [[ "$FILE" =~ \.convert_on_campus_flag_${RADAR_ID}$ ]]   # Only interested in 2 hour files
     then
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
-        touch $LOCK_FILE
         # Lock with radar specific file to ensure only one instance of script runs for each site
         flock -n --verbose $LOCK_FILE $HOME/data_flow/superdarn-cssdp/distribute_borealis_data $RADAR_ID
     fi

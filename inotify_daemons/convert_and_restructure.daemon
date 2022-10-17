@@ -7,7 +7,7 @@
 
 
 WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
-LOGFILE="${HOME}/logs/inotify_daemon.log"
+LOGFILE="${HOME}/logs/inotify_daemons/$(basename $0).log"
 exec &>> $LOGFILE
 
 echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"

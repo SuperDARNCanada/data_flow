@@ -7,7 +7,7 @@
 
 # WATCH_DIR="/data/borealis_data"
 WATCH_DIR=${HOME}/testing/data_flow_testing/src #TESTING
-LOGFILE="${HOME}/logs/inotify_daemon.log"
+LOGFILE="${HOME}/logs/inotify_daemons/$(basename $0).log"
 exec &>> $LOGFILE
 
 echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
