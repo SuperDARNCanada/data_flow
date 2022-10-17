@@ -8,6 +8,7 @@
 
 WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
 LOGFILE="${HOME}/logs/inotify_daemon.log"
+exec &>> $LOGFILE
 
 echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 
@@ -16,8 +17,7 @@ while read TIME DIRECTORY ACTION FILE # These must line up with format parameter
 do
     if [[ "$FILE" =~ \.rsync_to_nas_flag$ ]]   # Only interested in 2 hour files
     then
-        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)" >> $LOGFILE 2>&1
-        echo "$TIME $DIRECTORY $ACTION $FILE" >> $LOGFILE 2>&1
-        $HOME/data_flow/site-linux/convert_and_restructure >> $LOGFILE 2>&1
+        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
+        $HOME/data_flow/site-linux/convert_and_restructure
     fi
 done

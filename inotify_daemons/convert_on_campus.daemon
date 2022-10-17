@@ -11,6 +11,7 @@ RADAR_ID=$1
 
 WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
 LOGFILE="${HOME}/logs/inotify_daemon.log"
+exec &>> $LOGFILE
 
 echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 
@@ -19,8 +20,7 @@ while read TIME DIRECTORY ACTION FILE # These must line up with format parameter
 do
     if [[ "$FILE" =~ \.rsync_to_campus_flag_${RADAR_ID}$ ]]   # Only interested in 2 hour files
     then
-        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)" >> $LOGFILE 2>&1
-        echo "$TIME $DIRECTORY $ACTION $FILE" >> $LOGFILE 2>&1
-        $HOME/data_flow/superdarn-cssdp/convert_on_campus $RADAR_ID >> $LOGFILE 2>&1
+        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
+        $HOME/data_flow/superdarn-cssdp/convert_on_campus $RADAR_ID
     fi
 done
