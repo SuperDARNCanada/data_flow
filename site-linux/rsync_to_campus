@@ -56,8 +56,8 @@ fi
 readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.convert_and_restructure_flag"
 
 # Location of inotify watch directory for flags on superdar-cssdp
-# readonly FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
-readonly FLAG_DEST="/home/radar/data_flow/.inotify_watchdir"	# TESTING
+readonly FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
+# readonly FLAG_DEST="/home/radar/data_flow/.inotify_watchdir"	# TESTING
 
 # Flag sent out to trigger auto_borealis_share script
 readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.rsync_to_campus_flag_${RADAR_ID}"
@@ -157,8 +157,8 @@ fi
 
 printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by convert_and_restructure to reset flag
-# touch $FLAG_IN #Testing
 rm --verbose $FLAG_IN
+
 # Send "flag" file to notify mrcopy to start next script
 touch $FLAG_OUT
 rsync -av --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${FLAG_DEST}"

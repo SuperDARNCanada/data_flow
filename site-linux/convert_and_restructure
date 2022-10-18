@@ -208,7 +208,6 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
     fi
 done
 
-# TODO: Send error file to Engineering dashboard
 printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by rsync_to_nas to reset flag
 # and allow inotify to see the next flag sent in

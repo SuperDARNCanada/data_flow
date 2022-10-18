@@ -19,7 +19,8 @@
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
 #
 # This script should be run via an inotify daemon triggerring when the
-# rsync_to_campus script finishes transferring files
+# rsync_to_campus script finishes transferring files. To ensure only one instance
+# runs for each site, use flock within the inotify daemon code
 
 ##############################################################################
 
@@ -77,15 +78,6 @@ date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 
-    #### TODO: Do we need a file lock? Multiple instances of this script may be
-    #### running at same time for each site. Is this okay? Should we prevent this
-    #### or add some safety checks?
-    # Ensure that only a single instance of this script runs for this site
-    # if pidof -o %PPID -x -- "$(basename -- $0) ${RADAR_ID}" > /dev/null; then
-    #     echo "Error: Script $0 is already running. Exiting..."
-    #     exit 1
-    # fi
-
     RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
     source "${HOME}/pydarnio-env/bin/activate"
 
@@ -124,11 +116,9 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     done
 fi
 
-# TODO: Send error file to Engineering dashboard
 printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by convert_and_restructure to reset flag
 # and allow inotify to see the next flag sent in
-# touch $FLAG_IN #TESTING
 rm --verbose $FLAG_IN
 
 # Send out "flag" to trigger next script with inotify
