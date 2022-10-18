@@ -22,6 +22,11 @@
 # the previous 2-hour file. To distinguish between the previous (finished writing) and
 # current (currently writing) 2-hour file, the `find` command must be used as specified
 # in the script below.
+#
+# Param 1: Borealis file name that script was triggered on. This will be used to filter
+#		   out the files currently being written to, using the timestamp in the name.
+#		   File name must be of format YYYYMMDD.HHMM.SS.[rest of filename]
+#		   If no input is given, then script defaults to omitting no files.
 
 ##############################################################################
 
@@ -52,9 +57,16 @@ else
 	readonly DEST="/data/borealis_data/daily"			# Site Linux
 fi
 
-# Threshold (in minutes) for selecting files to transfer with `find`.
-# Set to filter out files currently being written to by Borealis.
-readonly FILE_THRESHOLD=0.1		# 0.1 min = 6 s
+# Using the filename that this script triggered on, a pattern can be determined
+# to omit the current .site file being written in Borealis. The following code
+# trims the input filename, for example "20221018.1200.00.sas.1.rawacf.hdf5.site",
+# down to "20221018.1200.00." and appends "*" to match with all files currently
+# being written by Borealis.  
+if [[ $# -eq 0 ]]; then
+	readonly OMIT_FILE="" # If no parameter given, default to omitting nothing
+else
+	readonly OMIT_FILE="$(echo $1 | cut -f 1-3 -d ".")"
+fi
 
 # Location of inotify watch directory for flags on site linux
 readonly FLAG_DEST="/home/transfer/data_flow/.inotify_watchdir"
@@ -88,19 +100,20 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 	exit 1
 fi
 
-# Sleep for specified time to differentiate files done writing from files currently writing
-sleep 6
-
 # Check if transferring to NAS or site computer.
 # If transferring to site computer, only send rawacf
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
-	search="-name *rawacf.hdf5.* -o -name *bfiq.hdf5.* -o -name *antennas_iq.hdf5.*"
+	search=(\( -name "*rawacf.hdf5.*" -o -name "*bfiq.hdf5.*" -o -name "*antennas_iq.hdf5.*" \))
 else
-	search="-name *rawacf.hdf5.*"
+	search=(\( -name "*rawacf.hdf5.*" \))
 fi
 
-# Get all files that aren't currently being written do
-files=$(find ${SOURCE} \( ${search} \) -cmin +${FILE_THRESHOLD})
+# Get all files that aren't currently being written do. First, find all .site files 
+# in source directory. Then, filter out all files that have same timestamp in the 
+# filename as the file that triggered the script via inotify,
+# This will effectively prevent the script from transferring files currently being
+# written by Borealis
+files=$(find ${SOURCE} "${search[@]}" | grep -vF $OMIT_FILE)
 
 if [[ -n $files ]]; then
 	printf "Placing following files in ${DEST}:\n"

@@ -25,6 +25,6 @@ do
     then
         # This if statement will only trigger once the previous 2-hour file is finished writing
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
-        $HOME/data_flow/borealis/rsync_to_nas
+        $HOME/data_flow/borealis/rsync_to_nas $FILE # Pass current filename so script knows what to omit
     fi
 done
