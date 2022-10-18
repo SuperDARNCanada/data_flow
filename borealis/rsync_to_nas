@@ -14,6 +14,14 @@
 #
 # This script should be run via an inotify daemon triggering whenever
 # 2-hour Borealis site files finish writing
+#
+# inotify watches the directory Borealis writes to, and triggers the rsync_to_nas
+# script only when a 2-hour site file is created. Since these files are only created
+# once, and once they're created the previous 2-hour block is finished writing, 
+# the rsync_to_nas script will execute immediately after Borealis finishes writing
+# the previous 2-hour file. To distinguish between the previous (finished writing) and
+# current (currently writing) 2-hour file, the `find` command must be used as specified
+# in the script below.
 
 ##############################################################################
 

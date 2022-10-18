@@ -4,6 +4,12 @@
 #
 # Inotify script for rsync_to_nas
 # Triggers rsync_to_nas when 2-hour set of Borealis files finish writing
+#
+# inotify watches the directory borealis writes to, and triggers the rsync_to_nas
+# script only when a 2-hour site file is created. Since these files are only created
+# once, and once they're created the previous 2-hour block is finished writing, 
+# the rsync_to_nas script will execute immediately after Borealis finishes writing
+# the 2-hour file
 
 # WATCH_DIR="/data/borealis_data"
 WATCH_DIR=${HOME}/testing/data_flow_testing/src #TESTING
@@ -17,6 +23,7 @@ while read TIME DIRECTORY ACTION FILE # These must line up with format parameter
 do
     if [[ "$FILE" =~ .*\.site$ ]]   # Only interested in 2 hour files
     then
+        # This if statement will only trigger once the previous 2-hour file is finished writing
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
         $HOME/data_flow/borealis/rsync_to_nas
     fi
