@@ -35,12 +35,13 @@ readonly TRANSFER_TO_NAS=true
 
 ##############################################################################
 
+source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # For SAS testing
+source "${HOME}/.profile"	# Get BOREALISPATH and SITE_LINUX
+
 # Specify error behaviour
 set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
-
-source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # For SAS testing
 
 ##############################################################################
 
@@ -75,7 +76,7 @@ readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_nas_summary.lo
 ##############################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
-# exec &>> $LOGFILE
+exec &>> $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
