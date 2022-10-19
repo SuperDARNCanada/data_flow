@@ -185,7 +185,7 @@ done
 printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by convert_and_restructure to reset flag
 # and allow inotify to see the next flag sent in
-rm --verbose $FLAG_IN
+rm --verbose --force $FLAG_IN
 
 # Send out "flag" to trigger next script with inotify
 touch $FLAG_OUT

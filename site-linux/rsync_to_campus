@@ -157,7 +157,7 @@ fi
 
 printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by convert_and_restructure to reset flag
-rm --verbose $FLAG_IN
+rm --verbose --force $FLAG_IN
 
 # Send "flag" file to notify mrcopy to start next script
 touch $FLAG_OUT

@@ -19,15 +19,14 @@
 
 ##############################################################################
 
+source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
+source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # Load in function library # For SAS testing
+source "${HOME}/pydarnio-env/bin/activate"
+
 # Specify error behaviour
 set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
-
-# source the RADARID, SDCOPY and other things
-source "${HOME}/.bashrc"
-# Load in function library
-source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # For SAS testing
 
 ##############################################################################
 
@@ -80,15 +79,20 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 	exit 1
 fi
 
-# Copy the source rawacf file to backup.
-printf "\nBacking up rawacf and bfiq .site files:\n"
-cp --verbose $SOURCE/*rawacf.hdf5.site $BACKUP_DEST
-cp --verbose $SOURCE/*bfiq.hdf5.site $BACKUP_DEST
-
+# Find files to be converted
 RAWACF_CONVERT_FILES=$(find "${SOURCE}" -name "*rawacf.hdf5.site" -type f)
 BFIQ_CONVERT_FILES=$(find "${SOURCE}" -name "*bfiq.hdf5.site" -type f)
 ANTENNAS_IQ_CONVERT_FILES=$(find "${SOURCE}" -name "*antennas_iq.hdf5.site" -type f)
-source "${HOME}/pydarnio-env/bin/activate"
+
+# Copy the source rawacf file to backup.
+printf "\nBacking up rawacf and bfiq .site files:\n"
+if [[ -n $RAWACF_CONVERT_FILES ]]; then
+    cp --verbose --preserve $RAWACF_CONVERT_FILES $BACKUP_DEST
+fi
+if [[ -n $BFIQ_CONVERT_FILES ]]; then
+    cp --verbose --preserve $BFIQ_CONVERT_FILES $BACKUP_DEST
+fi
+
 
 if [[ -n $RAWACF_CONVERT_FILES ]]; then
 	printf "\n\nConverting the following rawacf files:\n"
@@ -211,7 +215,7 @@ done
 printf "\nTriggering next script via inotify...\n"
 # Remove "flag" sent by rsync_to_nas to reset flag
 # and allow inotify to see the next flag sent in
-rm --verbose $FLAG_IN
+rm --verbose --force $FLAG_IN
 
 # Send out "flag" to trigger next script with inotify
 touch $FLAG_OUT
