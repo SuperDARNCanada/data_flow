@@ -3,6 +3,10 @@
 # Author: Theodore Kolkman
 #
 # Inotify script for rsync_to_nas
+#
+# Dependencies:
+#	- inotifywait (installed by zypper in inotify-tools)
+#
 # Triggers rsync_to_nas when 2-hour set of Borealis files finish writing
 #
 # inotify watches the directory borealis writes to, and triggers the rsync_to_nas

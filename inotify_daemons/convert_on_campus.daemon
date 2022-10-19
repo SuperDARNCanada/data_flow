@@ -3,6 +3,10 @@
 # Author: Theodore Kolkman
 #
 # Inotify script for convert_on_campus
+#
+# Dependencies:
+#	- inotifywait (installed by zypper in inotify-tools)
+#
 # Triggers convert_on_campus when rsync_to_campus finishes transferring and sends the flag
 #
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]

@@ -3,6 +3,10 @@
 # Author: Theodore Kolkman
 #
 # Inotify script for convert_and_restructure
+#
+# Dependencies:
+#	- inotifywait (installed by zypper in inotify-tools)
+#
 # Triggers convert_and_restructure when rsync_to_nas completes and sends the flag
 
 

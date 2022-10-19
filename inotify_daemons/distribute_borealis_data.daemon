@@ -3,6 +3,10 @@
 # Author: Theodore Kolkman
 #
 # Inotify script for distribute_borealis_data
+#
+# Dependencies:
+#	- inotifywait (installed by zypper in inotify-tools)
+#
 # Triggers distribute_borealis_data when convert_on_campus finishes and sends the flag
 #
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]

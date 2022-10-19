@@ -3,6 +3,10 @@
 # Author: Theodore Kolkman
 #
 # Inotify script for rsync_to_campus
+#
+# Dependencies:
+#	- inotifywait (installed by zypper in inotify-tools)
+#
 # Triggers rsync_to_campus when convert_and_restructure completes and sends the flag
 
 WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
