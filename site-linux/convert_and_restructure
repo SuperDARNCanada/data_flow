@@ -99,7 +99,7 @@ fi
 
 # Convert rawacf files to array and dmap format
 for f in $RAWACF_CONVERT_FILES; do
-    if [[ " ${RAWACF_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+    if [[ " ${RAWACF_SITES[*]} " =~ " ${RADARID} " ]]; then
         printf "\nConverting ${f}\n"
         printf "python3 remove_record.py $(basename ${f})\n"
         remove_record_output=$(python3 ${HOME}/test_data_flow/data_flow/site-linux/remove_record.py ${f}) # For SAS testing
@@ -146,7 +146,7 @@ fi
 
 # Convert bfiq files to array format
 for f in $BFIQ_CONVERT_FILES; do
-    if [[ " ${BFIQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+    if [[ " ${BFIQ_SITES[*]} " =~ " ${RADARID} " ]]; then
         printf "\nConverting ${f}\n"
         printf "python3 remove_record.py $(basename ${f})\n"
         remove_record_output=$(python3 ${HOME}/test_data_flow/data_flow/site-linux/remove_record.py ${f}) # For SAS testing
@@ -182,7 +182,7 @@ fi
 
 # Convert antennas_iq files to array format
 for f in $ANTENNAS_IQ_CONVERT_FILES; do
-    if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+    if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADARID} " ]]; then
         printf "\nConverting ${f}\n"
         printf "python3 remove_record.py $(basename ${f})\n"
         remove_record_output=$(python3 ${HOME}/test_data_flow/data_flow/site-linux/remove_record.py ${f}) # For SAS testing
