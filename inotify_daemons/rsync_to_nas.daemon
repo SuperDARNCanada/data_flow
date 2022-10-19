@@ -18,17 +18,33 @@
 WATCH_DIR="/data/borealis_data" # For SAS testing
 # WATCH_DIR=${HOME}/testing/data_flow_testing/src #TESTING 
 LOGFILE="${HOME}/logs/inotify_daemons/$(echo $(basename $0) | cut -f 1 -d '.').log"
+FILTER_TIME=15  # Minumum time between script executions
+
 exec &>> $LOGFILE
 
 echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 
+# Inotify is triggered multiple times as multiple 2-hour site files are created. We only want 
+# to have our script execute once when these files are created. When inotify triggers multiple
+# times, each instance is put in a queue by `read`, so after the first time the script executes,
+# it will execute again multiple times in quick succession. To filter out these extra script 
+# calls, the time (in seconds since the epoch) when the script executes the first time is recorded.
+# Then, before executing the script, the current time is compared to the last time it executed. This
+# filters out all the extra inotifywait triggers.
+endtime=0
+
 inotifywait -r --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' -e create $WATCH_DIR | \
 while read TIME DIRECTORY ACTION FILE # These must line up with format parameters
 do
-    if [[ "$FILE" =~ .*\.site$ ]]   # Only interested in 2 hour files
+    if [[ "$FILE" =~ .*\.site$ ]]   # Only interested in 2 hour .site files
     then
-        # This if statement will only trigger once the previous 2-hour file is finished writing
-        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
-        $HOME/test_data_flow/data_flow/borealis/rsync_to_nas $FILE # Pass current filename so script knows what to omit # For SAS testing
+        # If script just executed, then don't execute again
+        cur_time=$(date "+%s")
+        if [[ $(($endtime + $FILTER_TIME)) -lt $cur_time ]]; then
+            # This if statement will only trigger once the previous 2-hour file is finished writing
+            echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
+            $HOME/test_data_flow/data_flow/borealis/rsync_to_nas $FILE # Pass current filename so script knows what to omit # For SAS testing
+            endtime=$(date "+%s")
+        fi
     fi
 done
