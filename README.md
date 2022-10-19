@@ -52,6 +52,8 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
+Install `inotifywait` via zypper with `sudo zypper in inotify-tools` if it is not already installed.
+
 To start the service, execute the following commands as superuser:
 - `systemctl daemon-reload`
 - `systemctl enable rsync_to_nas.service`
