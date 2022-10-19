@@ -31,7 +31,7 @@ set -o pipefail  # don't hide errors within pipes
 
 # source the RADAR_ID, SDCOPY and other things
 # Load in function library
-source "${HOME}/data_flow/library/data_flow_functions.sh"
+source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
@@ -43,20 +43,21 @@ RADAR_ID=$1
 readonly SITES=("cly" "rkn" "lab") #TESTING
 
 # Define directories
-readonly DATA_DIR="/sddata"
+readonly DATA_DIR="/sddata/inotify_data_flow" # For SAS testing
 # DATA_DIR=$HOME/testing/data_flow_testing/sddata #TESTING
 readonly SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir" # this is the source
 readonly RAWACF_DMAP_DEST="${DATA_DIR}/${RADAR_ID}_data"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/${RADAR_ID}_data"
+readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.rsync_to_campus_flag_${RADAR_ID}"
+readonly FLAG_IN="${HOME}/test_data_flow/data_flow/.inotify_watchdir/.rsync_to_campus_flag_${RADAR_ID}" # For SAS testing
 
 # Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="${HOME}/data_flow/.inotify_watchdir"
+readonly FLAG_DEST="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 
 # Flag sent out to trigger rsync_to_campus script
-readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.convert_on_campus_flag_${RADAR_ID}"
+readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.convert_on_campus_flag_${RADAR_ID}" # For SAS testing
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/convert_on_campus/$(date +%Y)/$(date +%m)"
@@ -92,7 +93,7 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     do
         printf "\nConverting ${f}\n"
         printf "python3 borealis_array_to_dmap.py $(basename ${f})\n"
-        python3 "${HOME}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py" $f
+        python3 "${HOME}/data_flow/test_data_flow/superdarn-cssdp/borealis_array_to_dmap.py" $f # For SAS testing
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # move the resulting files if all was successful
@@ -106,8 +107,8 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
             ordinal_id="$(($slice_id + 97))"
             file_character=$(chr $ordinal_id)
             dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
-            mv -v $dmap_file $RAWACF_DMAP_DEST
-            mv -v $f $RAWACF_ARRAY_DEST
+            mv --verbose $dmap_file $RAWACF_DMAP_DEST
+            mv --verbose $f $RAWACF_ARRAY_DEST
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
             printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE

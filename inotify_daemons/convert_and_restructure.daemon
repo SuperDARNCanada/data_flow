@@ -6,7 +6,7 @@
 # Triggers convert_and_restructure when rsync_to_nas completes and sends the flag
 
 
-WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
+WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 LOGFILE="${HOME}/logs/inotify_daemons/$(basename $0).log"
 exec &>> $LOGFILE
 
@@ -18,6 +18,6 @@ do
     if [[ "$FILE" =~ \.rsync_to_nas_flag$ ]]   # Only interested in 2 hour files
     then
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
-        $HOME/data_flow/site-linux/convert_and_restructure
+        $HOME/test_data_flow/data_flow/site-linux/convert_and_restructure # For SAS testing
     fi
 done

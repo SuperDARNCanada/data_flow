@@ -33,7 +33,7 @@ set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
 # Load in functions
-source "${HOME}/data_flow/library/data_flow_functions.sh"
+source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
@@ -41,8 +41,8 @@ readonly RADAR_ID=$1
 
 # Define directories
 # TEST_DIR=/home/radar/testing/data_flow_testing #TESTING
-readonly TEST_DIR=""
-readonly SOURCE="${TEST_DIR}/sddata/${RADAR_ID}_data"
+readonly TEST_DIR="${HOME}/test_data_flow" # For SAS testing
+readonly SOURCE="/sddata/inotify_data_flow/${RADAR_ID}_data" # For SAS testing
 readonly NAS_DIR="${TEST_DIR}/data/borealis_site_data"
 readonly MIRROR_STAGING_DIR="${TEST_DIR}/data/holding/globus"
 readonly BAS_STAGING_DIR="${TEST_DIR}/home/bas/outgoing/${RADAR_ID}"
@@ -54,13 +54,13 @@ readonly DATA_GROUP="sddata"
 # DATA_GROUP=users    # TESTING
 
 # Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.convert_on_campus_flag_${RADAR_ID}"
+readonly FLAG_IN="${HOME}/test_data_flow/data_flow/.inotify_watchdir/.convert_on_campus_flag_${RADAR_ID}" # For SAS testing
 
 # Location of inotify watch directory for flags on superdarn-cssdp
-readonly FLAG_DEST="${HOME}/data_flow/.inotify_watchdir"
+readonly FLAG_DEST="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 
 # Flag sent out to trigger rsync_to_campus script
-readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.distribute_borealis_data_flag_${RADAR_ID}"
+readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.distribute_borealis_data_flag_${RADAR_ID}" # For SAS testing
 
 
 # Create log file. New file created daily

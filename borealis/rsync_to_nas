@@ -40,7 +40,7 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-source "${HOME}/data_flow/library/data_flow_functions.sh"
+source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # For SAS testing
 
 ##############################################################################
 
@@ -51,18 +51,18 @@ readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
 
 # Directory the files will be transferred to
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
-	readonly DEST="/borealis_nfs/borealis_data/daily/"	# NAS
+	readonly DEST="/borealis_nfs/testing/inotify_data_flow/daily/"	# For SAS testing
 	# DEST=${HOME}/testing/data_flow_testing/data/daily #TESTING
 else
 	readonly DEST="/data/borealis_data/daily"			# Site Linux
 fi
 
 # Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="/home/transfer/data_flow/.inotify_watchdir"
+readonly FLAG_DEST="/home/transfer/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 # FLAG_DEST=/home/radar/data_flow/.inotify_watchdir #TESTING
 
 # Flag to send to start next script
-readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.rsync_to_nas_flag"
+readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.rsync_to_nas_flag" # For SAS testing
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/rsync_to_nas/$(date +%Y)/$(date +%m)"
@@ -138,7 +138,7 @@ do
 	if [[ $return_value -eq 0 ]]; then
 		echo "Successfully transferred: ${file}" | tee --append $SUMMARY_FILE
 		echo "Deleting file..."
-		rm --verbose $file
+		# rm --verbose $file # For SAS testing
 	else
 		# If file not transferred successfully, don't delete and try again next time
 		echo "Transfer failed: ${file}" | tee --append $SUMMARY_FILE

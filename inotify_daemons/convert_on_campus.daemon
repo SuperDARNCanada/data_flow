@@ -9,8 +9,8 @@
 
 RADAR_ID=$1
 
-WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
-LOCK_FILE="${HOME}/data_flow/.convert_on_campus_${RADAR_ID}_lock"
+WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+LOCK_FILE="${HOME}/test_data_flow/data_flow/.convert_on_campus_${RADAR_ID}_lock" # For SAS testing
 LOGFILE="${HOME}/logs/inotify_daemons/$(echo $(basename $0) | cut -f 1 -d '.')_${RADAR_ID}.log"
 exec &>> $LOGFILE
 
@@ -24,6 +24,6 @@ do
     then
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
         # Lock with radar specific file to ensure only one instance of script runs for each site
-        flock -n --verbose $LOCK_FILE $HOME/data_flow/superdarn-cssdp/convert_on_campus $RADAR_ID
+        flock -n --verbose $LOCK_FILE $HOME/test_data_flow/data_flow/superdarn-cssdp/convert_on_campus $RADAR_ID # For SAS testing
     fi
 done

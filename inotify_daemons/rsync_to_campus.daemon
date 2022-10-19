@@ -5,7 +5,7 @@
 # Inotify script for rsync_to_campus
 # Triggers rsync_to_campus when convert_and_restructure completes and sends the flag
 
-WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
+WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 LOGFILE="${HOME}/logs/inotify_daemons/$(basename $0).log"
 exec &>> $LOGFILE
 
@@ -17,6 +17,6 @@ do
     if [[ "$FILE" =~ \.convert_and_restructure_flag$ ]]   # Only interested in 2 hour files
     then
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
-        $HOME/data_flow/site-linux/rsync_to_campus
+        $HOME/test_data_flow/data_flow/site-linux/rsync_to_campus # For SAS testing
     fi
 done
