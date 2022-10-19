@@ -6,7 +6,7 @@
 # Triggers rsync_to_campus when convert_and_restructure completes and sends the flag
 
 WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
-LOGFILE="${HOME}/logs/inotify_daemons/$(basename $0).log"
+LOGFILE="${HOME}/logs/inotify_daemons/$(echo $(basename $0) | cut -f 1 -d '.').log"
 exec &>> $LOGFILE
 
 echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
