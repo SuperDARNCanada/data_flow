@@ -37,15 +37,15 @@ file being written there), and when this occurs it starts its respective data fl
 
 ### Setting up the inotify daemon
 To make a daemon with `systemd`, create a `.service` file within `/usr/lib/systemd/system/` (must be super user). For 
-example, the `rsync_to_nas.daemon` is run with the following `rsync_to_nas.service` file:
+example, the `borealis.daemon` is run with the following `borealis_dataflow.service` file:
 
 ```
 [Unit]
-Description=Data flow daemon: rsync_to_nas
+Description=Borealis data flow inotify daemon
 
 [Service]
 User=radar
-ExecStart=/home/radar/data_flow/inotify_daemons/rsync_to_nas.daemon
+ExecStart=/home/radar/data_flow/inotify_daemons/borealis.daemon
 Restart=always
 
 [Install]

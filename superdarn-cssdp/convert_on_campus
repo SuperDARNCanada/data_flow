@@ -15,8 +15,8 @@
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
 #
-# Usage: ./convert_on_campus RADAR_ID
-# Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
+# Usage: ./convert_on_campus RADARID
+# Parameter RADARID: [sas, pgr, rkn, inv, cly]
 #
 # This script should be run via an inotify daemon triggerring when the
 # rsync_to_campus script finishes transferring files. To ensure only one instance
@@ -29,13 +29,12 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-# source the RADAR_ID, SDCOPY and other things
 # Load in function library
 source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh"
 
 ##############################################################################
 
-RADAR_ID=$1
+RADARID=$1
 
 # Sites that have to convert dmap files on campus
 # If a site isn't specified here, then this script is skipped and the flag
@@ -45,18 +44,18 @@ readonly SITES=("cly" "rkn" "lab") #TESTING
 # Define directories
 readonly DATA_DIR="/sddata/inotify_data_flow" # For SAS testing
 # DATA_DIR=$HOME/testing/data_flow_testing/sddata #TESTING
-readonly SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir" # this is the source
-readonly RAWACF_DMAP_DEST="${DATA_DIR}/${RADAR_ID}_data"
-readonly RAWACF_ARRAY_DEST="${DATA_DIR}/${RADAR_ID}_data"
+readonly SOURCE="${DATA_DIR}/${RADARID}_holding_dir" # this is the source
+readonly RAWACF_DMAP_DEST="${DATA_DIR}/${RADARID}_data"
+readonly RAWACF_ARRAY_DEST="${DATA_DIR}/${RADARID}_data"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/convert_on_campus/$(date +%Y)/$(date +%m)"
 mkdir --parents $LOGGING_DIR
-readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).convert_on_campus.log"
+readonly LOGFILE="${LOGGING_DIR}/${RADARID}.$(date +%Y%m%d).convert_on_campus.log"
 readonly  SUMMARY_DIR="${HOME}/logs/convert_on_campus/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents $SUMMARY_DIR
-readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).convert_summary.log"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).convert_summary.log"
 
 ##############################################################################
 
@@ -68,7 +67,7 @@ printf "########################################################################
 printf "Executing $(basename "$0") on $(hostname)\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
-if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
 
     RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
     source "${HOME}/pydarnio-env/bin/activate"
@@ -106,6 +105,8 @@ if [[ " ${SITES[*]} " =~ " ${RADAR_ID} " ]]; then
             mv --verbose $f $PROBLEM_FILES_DEST
         fi
     done
+else
+    printf "\nNot converting files for $RADARID.\n"
 fi
 
 printf "\nFinished convert_on_campus. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
