@@ -2,16 +2,15 @@
 # Copyright 2022 SuperDARN Canada, University of Saskatchewan
 # Author: Theodore Kolkman
 #
-# This script distributes borealis rawacf dmap (bz2) and array (HDF5) 
-# data to the following organizations/locations
+# This script distributes borealis rawacf dmap (bz2) and array (HDF5) data to the following 
+# organizations/locations:
 #   Backs up dmap and array data to campus NAS
 #   Stages dmap and array data for the mirror
-#   Stages dmap data for sending to British Antarctic Survey (BAS), 
-#       Virginia Tech (VT) and National Space Science Center (NSSC)
-# Checks all files for integrity and place them in the correct location
-# if all tests are passed. If any tests fail, the file isn't transferred
-# and a log file explaining what happened is sent to the Engineering 
-# dashboard
+#   Stages dmap data for sending to British Antarctic Survey (BAS), Virginia Tech (VT) and National 
+#       Space Science Center (NSSC)
+# Checks all files for integrity and place them in the correct location if all tests are passed. If 
+# any tests fail, the file isn't transferred and a log file explaining what happened is sent to the 
+# Engineering dashboard
 #
 # Based on auto_borealis_share written by Kevin Krieger
 #
@@ -21,11 +20,10 @@
 # Usage: ./distribute_borealis_data RADAR_ID
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
 #
-# This script should be run via an inotify daemon triggerring when the
-# convert_on_campus script finishes. To ensure only one instance
-# runs for each site, use flock within the inotify daemon code
+# This script should be run via an inotify daemon triggerring when the previous data flow script
+# finishes. To ensure only one instance runs for each site, use flock within the inotify daemon code
 
-##############################################################################
+###################################################################################################
 
 # Specify error behaviour
 set -o errexit   # abort on nonzero exitstatus
@@ -35,12 +33,11 @@ set -o pipefail  # don't hide errors within pipes
 # Load in functions
 source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh"
 
-##############################################################################
+###################################################################################################
 
 readonly RADAR_ID=$1
 
 # Define directories
-# TEST_DIR=/home/radar/testing/data_flow_testing #TESTING
 readonly TEST_DIR="${HOME}/test_data_flow" # For SAS testing
 readonly SOURCE="/sddata/inotify_data_flow/${RADAR_ID}_data" # For SAS testing
 readonly NAS_DIR="${TEST_DIR}/data/borealis_site_data"
@@ -51,7 +48,6 @@ readonly NSSC_STAGING_DIR="${TEST_DIR}/home/nssc/outgoing/${RADAR_ID}"
 
 # Data group for outgoing files
 readonly DATA_GROUP="sddata"
-# DATA_GROUP=users    # TESTING
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/distribute_borealis_data/$(date +%Y)/$(date +%m)"
@@ -61,7 +57,7 @@ readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y)
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_summary.log"
 
-##############################################################################
+###################################################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
 exec &>> $LOGFILE
@@ -94,8 +90,7 @@ for file in $dmap_files; do
 
         # TODO: Review changing of groups and permissions differring across destinations
 
-        # Flag will be > 0 if any transfers fail since verify_transfer
-        # returns 1 for failed transfer
+        # Flag will be > 0 if any transfers fail since verify_transfer. Returns 1 for failed transfer
         transfer_flag=0
 
         # Place file in vtsd outgoing
@@ -126,9 +121,8 @@ for file in $dmap_files; do
         return_value=$?
         transfer_flag=$(($transfer_flag + $return_value))
 
-        # Check that all files were copied successfully
-        # If any transfers failed, leave file in directory so tranfer
-        # can be attempted the next time the script runs
+        # Check that all files were copied successfully. If any transfers failed, leave file in 
+        # directory so tranfer can be attempted the next time the script runs
         if [[ "${transfer_flag}" -eq 0 ]]; then
             echo "File distribution successful: ${file}" | tee --append $SUMMARY_FILE
 

@@ -10,46 +10,41 @@
 # Last Edited: September 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
-# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to
-# superdarn-cssdp on campus and removing them locally after a successful copy.
+# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to superdarn-cssdp on 
+# campus and removing them locally after a successful copy.
 #
 # Dependencies:
 # 	- RADARID and SDCOPY set as environment variables in ${HOME}/.bashrc
 #
-# This script should be run via an inotify daemon triggerring when the
-# convert_and_restructure script finishes
+# This script should be run via an inotify daemon triggerring when the previous data flow script 
+# finishes execution
 
-##############################################################################
+###################################################################################################
 
 # Specify error behaviour
 set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-# SDCOPY=radar@10.65.0.16 #Testing
-
 source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
 source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # Load dataflow functions # For SAS testing
 
-##############################################################################
+###################################################################################################
 
 # Specify which sites will transfer each file type
-readonly DMAP_SITES=("sas" "pgr" "inv") #Testing
-readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #Testing
+readonly DMAP_SITES=("sas" "pgr" "inv")
+readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 # Location rawacf files are transferring from
 readonly DATA_DIR="/borealis_nfs/testing/inotify_data_flow" # For SAS testing
-# DATA_DIR=${HOME}/testing/data_flow_testing/data #TESTING
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
 if [[ ! " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
 	readonly DEST="/sddata/inotify_data_flow/${RADARID}_holding_dir" # For SAS testing
-	# DEST=/home/radar/testing/data_flow_testing/sddata/lab_holding_dir #Testing
 else
 	readonly DEST="/sddata/inotify_data_flow/${RADARID}_data/" # For SAS testing
-	# DEST=/home/radar/testing/data_flow_testing/lab_dir #Testing
 fi
 
 # Create log file. New file created daily
@@ -60,7 +55,7 @@ readonly SUMMARY_DIR="${HOME}/logs/rsync_to_campus/summary/$(date +%Y)/$(date +%
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_campus_summary.log"
 
-##############################################################################
+###################################################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
 exec &>> $LOGFILE
@@ -94,7 +89,7 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
 		printf "\nTransferring: ${file}\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
-		# check if transfer was okay using the md5sum program, then remove the file if it matches
+		# Check if transfer was okay using the md5sum program, then remove the file if it matches
 		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
 		return_value=$?
 		if [[ $return_value -eq 0 ]]; then
@@ -128,7 +123,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 		printf "\nTransferring: ${file}\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
-		# check if transfer was okay using the md5sum program
+		# Check if transfer was okay using the md5sum program
 		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
 		return_value=$?
 		if [[ $return_value -eq 0 ]]; then

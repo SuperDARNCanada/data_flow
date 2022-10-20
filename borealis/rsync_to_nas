@@ -5,35 +5,34 @@
 # Last Edited: September 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
-# A singleton script to copy the data FILES to the on-site linux computer,
-# removing them locally after a successful copy.
+# A singleton script to copy the data FILES to the on-site linux computer, removing them locally 
+# after a successful copy.
 #
 # Dependencies:
 #	- jq (installed via zypper)
 # 	- BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
 #
-# This script should be run via an inotify daemon triggering whenever
-# 2-hour Borealis site files finish writing
+# This script should be run via an inotify daemon triggering whenever 2-hour Borealis site files 
+# finish writing
 #
-# inotify watches the directory Borealis writes to, and triggers the rsync_to_nas
-# script only when a 2-hour site file is created. Since these files are only created
-# once, and once they're created the previous 2-hour block is finished writing, 
-# the rsync_to_nas script will execute immediately after Borealis finishes writing
-# the previous 2-hour file. To distinguish between the previous (finished writing) and
-# current (currently writing) 2-hour file, the `find` command must be used as specified
-# in the script below.
+# inotify watches the directory Borealis writes to, and triggers the rsync_to_nas script only when
+# a 2-hour site file is created. Since these files are only created once, and once they're created
+# the previous 2-hour block is finished writing, the rsync_to_nas script will execute immediately 
+# after Borealis finishes writing the previous 2-hour file. To distinguish between the previous 
+# (finished writing) and current (currently writing) 2-hour file, the `find` command must be used 
+# as specified in the script below.
 #
-# Param 1: Borealis file name that script was triggered on. This will be used to filter
-#		   out the files currently being written to, using the timestamp in the name.
-#		   File name must be of format YYYYMMDD.HHMM.SS.[rest of filename]
-#		   If no input is given, then script defaults to omitting no files.
+# Param 1: Borealis file name that script was triggered on. This will be used to filter out the 
+#		   files currently being written to, using the timestamp in the name. File name must be of 
+#		   format YYYYMMDD.HHMM.SS.[rest of filename]. If no input is given, then script defaults 
+#		   to omitting no files.
 
-##############################################################################
+###################################################################################################
 
 # Transfer to NAS flag. If not true, transfer to $SITE_LINUX computer instead
 readonly TRANSFER_TO_NAS=true
 
-##############################################################################
+###################################################################################################
 
 source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # For SAS testing
 source "${HOME}/.profile"	# Get BOREALISPATH and SITE_LINUX
@@ -43,19 +42,17 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-##############################################################################
+###################################################################################################
 
 # Borealis directory files are transferring from
 # Use jq with -r option source for the data from Borealis config file
 readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
-# SOURCE=/home/radar/testing/data_flow_testing/src #TESTING
 
 # Directory the files will be transferred to
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
-	readonly DEST="/borealis_nfs/testing/inotify_data_flow/daily/"	# For SAS testing
-	# DEST=${HOME}/testing/data_flow_testing/data/daily #TESTING
+	readonly DEST="/borealis_nfs/testing/inotify_data_flow/daily/" # On NAS	# For SAS testing
 else
-	readonly DEST="/data/borealis_data/daily"			# Site Linux
+	readonly DEST="/data/borealis_data/daily" # On Site Linux
 fi
 
 # Create log file. New file created daily
@@ -66,7 +63,7 @@ readonly SUMMARY_DIR="${HOME}/logs/rsync_to_nas/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_nas_summary.log"
 
-##############################################################################
+###################################################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
 exec &>> $LOGFILE
@@ -83,10 +80,10 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 	exit 1
 fi
 
-# Get all files that aren't currently being written do. First, find all .site files 
-# in source directory. Then, filter out all files that have same timestamp in the 
-# filename as the file that triggered the script via inotify. This will effectively 
-# prevent the script from transferring files currently being written by Borealis
+# Get all files that aren't currently being written do. First, find all .site files in source 
+# directory. Then, filter out all files that have same timestamp in the filename as the file that 
+# triggered the script via inotify. This will effectively prevent the script from transferring 
+# files currently being written by Borealis
 
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
 	search=(\( -name "*rawacf.hdf5.*" -o -name "*bfiq.hdf5.*" -o -name "*antennas_iq.hdf5.*" \))
@@ -94,9 +91,9 @@ else
 	search=(\( -name "*rawacf.hdf5.*" \)) # If transferring to site computer, only send rawacf
 fi
 
-# Using the filename that this script triggered on, a pattern can be determined
-# to omit the current .site file being written in Borealis. omit_pattern trims the input 
-# filename, for example "20221018.1200.00.sas.1.rawacf.hdf5.site", down to "20221018.1200.00." 
+# Using the filename that this script triggered on, a pattern can be determined to omit the current
+# .site file being written in Borealis. omit_pattern trims the input filename, for example 
+# "20221018.1200.00.sas.1.rawacf.hdf5.site", down to "20221018.1200.00." 
 if [[ $# -eq 0 ]]; then
 	files=$(find ${SOURCE} "${search[@]}") # If no parameter given, default to omitting nothing
 else

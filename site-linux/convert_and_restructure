@@ -5,19 +5,18 @@
 # Last Edited: September 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
-# A script that uses pydarnio to convert Borealis files to SDARN DMap files
-# as well as restructures the hdf5 files to be multidimensional arrays
-# for better file readability. Backs up the source site files before it
-# begins.
+# A script that uses pydarnio to convert Borealis files to SDARN DMap files as well as restructures
+# the hdf5 files to be multidimensional arrays for better file readability. Backs up the source 
+# site files before it begins.
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
 # 	- RADARNAME and RADARID set as environment variables in $HOME/.bashrc
 #
-# This script should be run via an inotify daemon triggerring when the
-# rsync_to_nas finished transferring files 
+# This script should be run via an inotify daemon that triggers when the previous data flow script
+# finishes executing
 
-##############################################################################
+###################################################################################################
 
 source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
 source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # Load in function library # For SAS testing
@@ -28,11 +27,10 @@ set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-##############################################################################
+###################################################################################################
 
 # Define directories
 readonly DATA_DIR="/borealis_nfs/testing/inotify_data_flow" # For SAS testing
-# DATA_DIR=/home/radar/testing/data_flow_testing/data #TESTING
 readonly SOURCE="${DATA_DIR}/daily" # this is the source
 readonly RAWACF_DMAP_DEST="${DATA_DIR}/rawacf_dmap"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
@@ -42,8 +40,8 @@ readonly BACKUP_DEST="${DATA_DIR}/backup"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Specify which sites will convert each file type
-readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #TESTING
-readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #TESTING
+readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
+readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly ANTENNAS_IQ_SITES=("sas" "cly")
 
 # Create log file. New file created daily
@@ -54,7 +52,7 @@ readonly  SUMMARY_DIR="${HOME}/logs/convert_and_restructure/summary/$(date +%Y)/
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).convert_summary.log"
 
-##############################################################################
+###################################################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
 exec &>> $LOGFILE
@@ -97,16 +95,15 @@ for f in $RAWACF_CONVERT_FILES; do
     if [[ " ${RAWACF_SITES[*]} " =~ " ${RADARID} " ]]; then
         printf "\nConverting ${f}\n"
         printf "python3 remove_record.py $(basename ${f})\n"
-        remove_record_output=$(python3 ${HOME}/test_data_flow/data_flow/site-linux/remove_record.py ${f}) # For SAS testing
-        if [[ -n "$remove_record_output" ]]; then
+        output=$(python3 ${HOME}/test_data_flow/data_flow/site-linux/remove_record.py ${f}) # For SAS testing
+        if [[ -n "$output" ]]; then
             printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
         fi
         printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
         python3 "${HOME}/test_data_flow/data_flow/site-linux/borealis_convert_file.py" --dmap $f # For SAS testing
         ret=$?
         if [[ $ret -eq 0 ]]; then
-            # move the resulting files if all was successful
-            # then remove the source site file.
+            # move the resulting files if all was successful then remove the source site file.
             dmap_file_start="${f%.rawacf.hdf5.site}"
 
             # remove last character(s) (slice_id)
@@ -144,8 +141,8 @@ for f in $BFIQ_CONVERT_FILES; do
     if [[ " ${BFIQ_SITES[*]} " =~ " ${RADARID} " ]]; then
         printf "\nConverting ${f}\n"
         printf "python3 remove_record.py $(basename ${f})\n"
-        remove_record_output=$(python3 ${HOME}/test_data_flow/data_flow/site-linux/remove_record.py ${f}) # For SAS testing
-        if [[ -n "$remove_record_output" ]]; then
+        output=$(python3 ${HOME}/test_data_flow/data_flow/site-linux/remove_record.py ${f}) # For SAS testing
+        if [[ -n "$output" ]]; then
             printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
         fi
         printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
@@ -180,8 +177,8 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
     if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADARID} " ]]; then
         printf "\nConverting ${f}\n"
         printf "python3 remove_record.py $(basename ${f})\n"
-        remove_record_output=$(python3 ${HOME}/test_data_flow/data_flow/site-linux/remove_record.py ${f}) # For SAS testing
-        if [[ -n "$remove_record_output" ]]; then
+        output=$(python3 ${HOME}/test_data_flow/data_flow/site-linux/remove_record.py ${f}) # For SAS testing
+        if [[ -n "$output" ]]; then
             printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
         fi
         printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
