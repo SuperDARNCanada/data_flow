@@ -17,20 +17,17 @@
 
 source "${HOME}/.profile"	# Get SITE_LINUX
 
-WATCH_DIR="/data/borealis_data" # For SAS testing
-# WATCH_DIR=${HOME}/testing/data_flow_testing/src #TESTING 
-LOGFILE="${HOME}/logs/inotify_daemons/$(echo $(basename $0) | cut -f 1 -d '.').log"
-FILTER_TIME=15  # Minumum time between script executions
+readonly WATCH_DIR="/data/borealis_data" # For SAS testing
+readonly LOGFILE="${HOME}/logs/inotify_daemons/$(echo $(basename $0) | cut -f 1 -d '.').log"
+readonly FILTER_TIME=15  # Minumum time between script executions
 
 # Location of inotify watch directory for flags on site linux
 readonly FLAG_DEST="/home/transfer/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
-# FLAG_DEST=/home/radar/data_flow/.inotify_watchdir #TESTING
 
 # Flag to send to start next script
 readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.borealis_flag" # For SAS testing
 
 exec &>> $LOGFILE
-
 echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 
 # Inotify is triggered multiple times as multiple 2-hour site files are created. We only want 
@@ -57,10 +54,8 @@ do
             # Send "flag" file to notify site-linux computer to start next script
             touch $FLAG_OUT
             rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
-            # rsync -av --rsh=ssh "${FLAG_OUT}" "${FLAG_DEST}" #TESTING
 
             echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $(basename $0)"
-
             endtime=$(date "+%s")
         fi
     fi
