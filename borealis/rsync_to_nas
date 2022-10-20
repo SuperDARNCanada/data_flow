@@ -153,6 +153,6 @@ touch $FLAG_OUT
 rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
 # rsync -av --rsh=ssh "${FLAG_OUT}" "${FLAG_DEST}" #TESTING
 
-printf "\nFinished transferring. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n\n" | tee --append $SUMMARY_FILE
+printf "\nFinished rsync_to_nas. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n\n" | tee --append $SUMMARY_FILE
 
 exit

@@ -126,6 +126,6 @@ rm --verbose --force $FLAG_IN
 touch $FLAG_OUT
 rsync -av --rsh=ssh $FLAG_OUT $FLAG_DEST
 
-printf "\nFinished file conversion. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+printf "\nFinished convert_on_campus. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 exit

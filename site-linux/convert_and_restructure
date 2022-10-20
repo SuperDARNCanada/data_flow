@@ -98,7 +98,7 @@ if [[ -n $RAWACF_CONVERT_FILES ]]; then
 	printf "\n\nConverting the following rawacf files:\n"
 	printf '%s\n' "${RAWACF_CONVERT_FILES[@]}"
 else
-	printf "\nNo rawacf files to be converted.\n"
+	printf "\n\nNo rawacf files to be converted.\n"
 fi
 
 # Convert rawacf files to array and dmap format
@@ -142,10 +142,10 @@ done
 
 
 if [[ -n $BFIQ_CONVERT_FILES ]]; then
-	printf "\nConverting the following bfiq files:\n"
+	printf "\n\nConverting the following bfiq files:\n"
 	printf '%s\n' "${BFIQ_CONVERT_FILES[@]}"
 else
-	printf "\nNo bfiq files to be converted.\n"
+	printf "\n\nNo bfiq files to be converted.\n"
 fi
 
 # Convert bfiq files to array format
@@ -178,10 +178,10 @@ done
 
 
 if [[ -n $ANTENNAS_IQ_CONVERT_FILES ]]; then
-	printf "\nConverting the following antennas_iq files:\n"
+	printf "\n\nConverting the following antennas_iq files:\n"
 	printf '%s\n' "${ANTENNAS_IQ_CONVERT_FILES[@]}"
 else
-	printf "\nNo antennas_iq files to be converted.\n"
+	printf "\n\nNo antennas_iq files to be converted.\n"
 fi
 
 # Convert antennas_iq files to array format
@@ -212,7 +212,7 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
     fi
 done
 
-printf "\nTriggering next script via inotify...\n"
+printf "\n\nTriggering next script via inotify...\n"
 # Remove "flag" sent by rsync_to_nas to reset flag
 # and allow inotify to see the next flag sent in
 rm --verbose --force $FLAG_IN
@@ -221,6 +221,6 @@ rm --verbose --force $FLAG_IN
 touch $FLAG_OUT
 rsync -av --rsh=ssh $FLAG_OUT $FLAG_DEST
 
-printf "\nFinished file conversion. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+printf "\nFinished convert_and_restructure. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 exit

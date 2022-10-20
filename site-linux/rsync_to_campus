@@ -93,7 +93,7 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
 	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 
 	if [[ -n $files ]]; then
-		printf "\nPlacing following dmap files in ${SDCOPY}:${DEST}:\n"
+		printf "\n\nPlacing following dmap files in ${SDCOPY}:${DEST}:\n"
 		printf '%s\n' "${files[@]}"
 	else
 		printf "\nNo dmap files found to be transferred.\n"
@@ -127,7 +127,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 	files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
 
 	if [[ -n $files ]]; then
-		printf "\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
+		printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
 		printf '%s\n' "${files[@]}"
 	else
 		printf "\nNo hdf5 files found to be transferred.\n"
@@ -155,7 +155,7 @@ else
 	printf "\nNot transferring any HDF5 files\n"
 fi
 
-printf "\nTriggering next script via inotify...\n"
+printf "\n\nTriggering next script via inotify...\n"
 # Remove "flag" sent by convert_and_restructure to reset flag
 rm --verbose --force $FLAG_IN
 
@@ -163,6 +163,6 @@ rm --verbose --force $FLAG_IN
 touch $FLAG_OUT
 rsync -av --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${FLAG_DEST}"
 
-printf "\nFinished transferring. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+printf "\nFinished rsync_to_campus. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 exit
