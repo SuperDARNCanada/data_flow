@@ -1,0 +1,10 @@
+[Unit]
+Description=Site-Linux data flow inotify daemon
+
+[Service]
+User=transfer
+ExecStart=/home/transfer/data_flow/inotify_daemons/site-linux.daemon
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
