@@ -46,15 +46,6 @@ readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #TESTING
 readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #TESTING
 readonly ANTENNAS_IQ_SITES=("sas" "cly")
 
-# Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME}/test_data_flow/data_flow/.inotify_watchdir/.rsync_to_nas_flag" # For SAS testing
-
-# Location of inotify watch directory for flags on site linux
-readonly FLAG_DEST="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
-
-# Flag sent out to trigger rsync_to_campus script
-readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.convert_and_restructure_flag" # For SAS testing
-
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/convert_and_restructure/$(date +%Y)/$(date +%m)"
 mkdir --parents $LOGGING_DIR
@@ -211,15 +202,6 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         mv --verbose $f  $ANTENNAS_IQ_ARRAY_DEST
     fi
 done
-
-printf "\n\nTriggering next script via inotify...\n"
-# Remove "flag" sent by rsync_to_nas to reset flag
-# and allow inotify to see the next flag sent in
-rm --verbose --force $FLAG_IN
-
-# Send out "flag" to trigger next script with inotify
-touch $FLAG_OUT
-rsync -av --rsh=ssh $FLAG_OUT $FLAG_DEST
 
 printf "\nFinished convert_and_restructure. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 

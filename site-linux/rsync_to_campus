@@ -52,16 +52,6 @@ else
 	# DEST=/home/radar/testing/data_flow_testing/lab_dir #Testing
 fi
 
-# Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME}/test_data_flow/data_flow/.inotify_watchdir/.convert_and_restructure_flag" # For SAS testing
-
-# Location of inotify watch directory for flags on superdar-cssdp
-readonly FLAG_DEST="/home/mrcopy/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
-# readonly FLAG_DEST="/home/radar/data_flow/.inotify_watchdir"	# TESTING
-
-# Flag sent out to trigger auto_borealis_share script
-readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.rsync_to_campus_flag_${RADARID}" # For SAS testing
-
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/rsync_to_campus/$(date +%Y)/$(date +%m)"
 mkdir --parents $LOGGING_DIR
@@ -154,14 +144,6 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 else
 	printf "\nNot transferring any HDF5 files\n"
 fi
-
-printf "\n\nTriggering next script via inotify...\n"
-# Remove "flag" sent by convert_and_restructure to reset flag
-rm --verbose --force $FLAG_IN
-
-# Send "flag" file to notify mrcopy to start next script
-touch $FLAG_OUT
-rsync -av --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${FLAG_DEST}"
 
 printf "\nFinished rsync_to_campus. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 

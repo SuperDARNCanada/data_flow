@@ -27,7 +27,7 @@ readonly FLAG_DEST="/home/transfer/test_data_flow/data_flow/.inotify_watchdir" #
 # FLAG_DEST=/home/radar/data_flow/.inotify_watchdir #TESTING
 
 # Flag to send to start next script
-readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.rsync_to_nas_flag" # For SAS testing
+readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.borealis_flag" # For SAS testing
 
 exec &>> $LOGFILE
 
@@ -55,7 +55,6 @@ do
             $HOME/test_data_flow/data_flow/borealis/rsync_to_nas $FILE # Pass current filename so script knows what to omit # For SAS testing
 
             # Send "flag" file to notify site-linux computer to start next script
-            printf "\nTriggering next script via inotify...\n"
             touch $FLAG_OUT
             rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${FLAG_DEST}"
             # rsync -av --rsh=ssh "${FLAG_OUT}" "${FLAG_DEST}" #TESTING

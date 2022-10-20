@@ -1,0 +1,48 @@
+#!/bin/bash
+# Copyright 2022 SuperDARN Canada, University of Saskatchewan
+# Author: Theodore Kolkman
+#
+# Inotify script for convert_and_restructure
+#
+# Dependencies:
+#	- inotifywait (installed by zypper in inotify-tools)
+#
+# Triggers convert_and_restructure when rsync_to_nas completes and sends the flag
+
+source "${HOME}/.bashrc" # source the RADARID and SDCOPY
+
+WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+LOGFILE="${HOME}/logs/inotify_daemons/$(echo $(basename $0) | cut -f 1 -d '.').log"
+exec &>> $LOGFILE
+
+# Location of inotify watch directory for flags on superdar-cssdp
+readonly FLAG_DEST="/home/mrcopy/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+# readonly FLAG_DEST="/home/radar/data_flow/.inotify_watchdir"	# TESTING
+
+# Flag sent out to trigger auto_borealis_share script
+readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.site-linux_flag_${RADARID}" # For SAS testing
+
+echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
+
+inotifywait -r --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' -e MOVED_TO $WATCH_DIR | \
+while read TIME DIRECTORY ACTION FILE # These must line up with format parameters
+do
+    if [[ "$FILE" =~ \.borealis_flag$ ]]   # Only interested in 2 hour files
+    then
+        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
+
+        echo "Executing convert_and_restructure..."
+        $HOME/test_data_flow/data_flow/site-linux/convert_and_restructure # For SAS testing
+        echo "Executing rsync_to_campus..."
+        $HOME/test_data_flow/data_flow/site-linux/rsync_to_campus # For SAS testing
+
+        # Reset flag by removing .borealis_flag, so inotify can be triggered again
+        rm --verbose --force "${DIRECTORY}/${FILE}"
+
+        # Send "flag" file to notify mrcopy to start next script
+        touch $FLAG_OUT
+        rsync -av --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${FLAG_DEST}"
+
+        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $(basename $0)"
+    fi
+done
