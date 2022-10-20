@@ -44,7 +44,7 @@ as soon as rsync_to_nas finishes. Triggered by flag sent by borealis.daemon.
 - campus.daemon: Runs on SuperDARN-CSSDP. Executes convert_on_campus and distribute_borealis_data sequentially as soon
 as rsync_to_campus finishes. Triggered by flag sent by site-linux.daemon.
 
-Each of these daemons are configured through systemd, as described below. Example `.service.` files are given in 
+Each of these daemons are configured through `systemd`, as described below. Example `.service` files are given in 
 `inotify_daemons/services/`.
 
 ### Setting up the inotify daemon
@@ -68,8 +68,11 @@ Install `inotifywait` via zypper with `sudo zypper in inotify-tools` if it is no
 
 To start the service, execute the following commands as superuser:
 - `systemctl daemon-reload`
-- `systemctl enable rsync_to_nas.service`
-- `systemctl start rsync_to_nas.service`
+- `systemctl enable borealis_dataflow.service`
+- `systemctl start borealis_dataflow.service`
 
 To verify it is running:
-- `systemctl status rsync_to_nas.service`
+- `systemctl status borealis_dataflow.service`
+
+To specify the radar for `campus_dataflow@.service` (using sas as an example):
+- `systemctl [command] campus_dataflow@sas.service`
