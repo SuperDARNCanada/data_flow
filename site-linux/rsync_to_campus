@@ -10,57 +10,42 @@
 # Last Edited: September 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
-# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to
-# superdarn-cssdp on campus and removing them locally after a successful copy.
+# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to superdarn-cssdp on 
+# campus and removing them locally after a successful copy.
 #
 # Dependencies:
 # 	- RADARID and SDCOPY set as environment variables in ${HOME}/.bashrc
 #
-# This script should be run via an inotify daemon triggerring when the
-# convert_and_restructure script finishes
+# This script should be run via an inotify daemon triggerring when the previous data flow script 
+# finishes execution
 
-##############################################################################
+###################################################################################################
 
 # Specify error behaviour
 set -o errexit   # abort on nonzero exitstatus
 set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
-# SDCOPY=radar@10.65.0.16 #Testing
-
 source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
-source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
+source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # Load dataflow functions # For SAS testing
 
-##############################################################################
+###################################################################################################
 
 # Specify which sites will transfer each file type
-readonly DMAP_SITES=("sas" "pgr" "inv") #Testing
-readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab") #Testing
+readonly DMAP_SITES=("sas" "pgr" "inv")
+readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 # Location rawacf files are transferring from
-readonly DATA_DIR="/borealis_nfs/borealis_data"
-# DATA_DIR=${HOME}/testing/data_flow_testing/data #TESTING
+readonly DATA_DIR="/borealis_nfs/testing/inotify_data_flow" # For SAS testing
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
-if [[ ! " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
-	readonly DEST="/sddata/${RADARID}_holding_dir"
-	# DEST=/home/radar/testing/data_flow_testing/sddata/lab_holding_dir #Testing
+if [[ ! " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
+	readonly DEST="/sddata/inotify_data_flow/${RADARID}_holding_dir" # For SAS testing
 else
-	readonly DEST="/sddata/${RADARID}_data/"
-	# DEST=/home/radar/testing/data_flow_testing/lab_dir #Testing
+	readonly DEST="/sddata/inotify_data_flow/${RADARID}_data/" # For SAS testing
 fi
-
-# Flag received from rsync_to_nas script to trigger this script
-readonly FLAG_IN="${HOME}/data_flow/.inotify_watchdir/.convert_and_restructure_flag"
-
-# Location of inotify watch directory for flags on superdar-cssdp
-readonly FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
-# readonly FLAG_DEST="/home/radar/data_flow/.inotify_watchdir"	# TESTING
-
-# Flag sent out to trigger auto_borealis_share script
-readonly FLAG_OUT="${HOME}/data_flow/.inotify_flags/.rsync_to_campus_flag_${RADAR_ID}"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/rsync_to_campus/$(date +%Y)/$(date +%m)"
@@ -70,7 +55,7 @@ readonly SUMMARY_DIR="${HOME}/logs/rsync_to_campus/summary/$(date +%Y)/$(date +%
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_campus_summary.log"
 
-##############################################################################
+###################################################################################################
 
 # Redirect all stdout and sterr in this script to $LOGFILE
 exec &>> $LOGFILE
@@ -88,12 +73,12 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 fi
 
 # Check if this site is transferring dmaps to campus
-if [[ " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
 	# Find all dmap files to transfer
 	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 
 	if [[ -n $files ]]; then
-		printf "\nPlacing following dmap files in ${SDCOPY}:${DEST}:\n"
+		printf "\n\nPlacing following dmap files in ${SDCOPY}:${DEST}:\n"
 		printf '%s\n' "${files[@]}"
 	else
 		printf "\nNo dmap files found to be transferred.\n"
@@ -104,7 +89,7 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		printf "\nTransferring: ${file}\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
-		# check if transfer was okay using the md5sum program, then remove the file if it matches
+		# Check if transfer was okay using the md5sum program, then remove the file if it matches
 		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
 		return_value=$?
 		if [[ $return_value -eq 0 ]]; then
@@ -122,12 +107,12 @@ else
 fi
 
 # Check if this site is transferring HDF5 to campus
-if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 	# Find all hdf5 files to transfer
 	files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
 
 	if [[ -n $files ]]; then
-		printf "\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
+		printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
 		printf '%s\n' "${files[@]}"
 	else
 		printf "\nNo hdf5 files found to be transferred.\n"
@@ -138,7 +123,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		printf "\nTransferring: ${file}\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
-		# check if transfer was okay using the md5sum program
+		# Check if transfer was okay using the md5sum program
 		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
 		return_value=$?
 		if [[ $return_value -eq 0 ]]; then
@@ -155,14 +140,6 @@ else
 	printf "\nNot transferring any HDF5 files\n"
 fi
 
-printf "\nTriggering next script via inotify...\n"
-# Remove "flag" sent by convert_and_restructure to reset flag
-rm --verbose $FLAG_IN
-
-# Send "flag" file to notify mrcopy to start next script
-touch $FLAG_OUT
-rsync -av --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${FLAG_DEST}"
-
-printf "\nFinished transferring. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+printf "\nFinished rsync_to_campus. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 exit
