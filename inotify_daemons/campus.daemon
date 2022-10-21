@@ -17,15 +17,18 @@
 RADAR_ID=$1
 
 readonly WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+mkdir -p $WATCH_DIR
 readonly LOCK_FILE="${HOME}/test_data_flow/data_flow/.${RADAR_ID}_dataflow_lock" # For SAS testing
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')
-readonly LOGFILE="${HOME}/logs/inotify_daemons/${script_name}.log"
+readonly LOGFILE="${HOME}/logs/inotify_daemons/${script_name}_${RADAR_ID}.log"
 
-# Location of inotify watch directory for flags (TODO)
-readonly FLAG_DEST="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+# Location of inotify watch directory for flags. Should match up with next scripts WATCH_DIR (TODO)
+readonly REMOTE_FLAG_DEST="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 
 # Flag sent out to trigger next dataflow script (TODO)
-readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.campus_dataflow_${RADAR_ID}" # For SAS testing
+readonly FLAG_SRC="${HOME}/test_data_flow/data_flow/.inotify_flags" # For SAS testing
+mkdir -p $FLAG_SRC
+readonly FLAG_OUT="${FLAG_SRC}/.campus_dataflow_flag_${RADAR_ID}" # For SAS testing
 
 ###################################################################################################
 
@@ -51,7 +54,7 @@ do
 
         # Send out "flag" to trigger next script with inotify (TODO)
         touch $FLAG_OUT
-        rsync -av --rsh=ssh $FLAG_OUT $FLAG_DEST
+        rsync -av --rsh=ssh $FLAG_OUT $REMOTE_FLAG_DEST
 
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $(basename $0)"
     fi

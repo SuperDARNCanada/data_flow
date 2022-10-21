@@ -15,14 +15,18 @@
 source "${HOME}/.bashrc" # source the RADARID and SDCOPY
 
 readonly WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+mkdir -p $WATCH_DIR
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')
 readonly LOGFILE="${HOME}/logs/inotify_daemons/${script_name}.log"
 
-# Location of inotify watch directory for flags on superdar-cssdp
-readonly FLAG_DEST="/home/mrcopy/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+# Location of inotify watch directory for flags on superdar-cssdp. Should match up with 
+# superdarn-cssdp inotify's WATCH_DIR
+readonly REMOTE_FLAG_DEST="/home/mrcopy/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 
 # Flag sent out to trigger superdarn-cssdp dataflow
-readonly FLAG_OUT="${HOME}/test_data_flow/data_flow/.inotify_flags/.site-linux_flag_${RADARID}" # For SAS testing
+readonly FLAG_SRC="${HOME}/test_data_flow/data_flow/.inotify_flags" # For SAS testing
+mkdir -p $FLAG_SRC
+readonly FLAG_OUT="${FLAG_SRC}/.site-linux_flag_${RADARID}" # For SAS testing
 
 ###################################################################################################
 
@@ -46,7 +50,7 @@ do
 
         # Send "flag" file to notify mrcopy to start next script
         touch $FLAG_OUT
-        rsync -av --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${FLAG_DEST}"
+        rsync -av --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${REMOTE_FLAG_DEST}"
 
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $(basename $0)"
     fi
