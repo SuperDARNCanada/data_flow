@@ -59,8 +59,7 @@ readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_
 
 ###################################################################################################
 
-# Redirect all stdout and sterr in this script to $LOGFILE
-exec &>> $LOGFILE
+exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 

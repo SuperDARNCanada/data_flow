@@ -30,7 +30,7 @@ readonly FLAG_OUT="${FLAG_SRC}/.site-linux_flag_${RADARID}" # For SAS testing
 
 ###################################################################################################
 
-exec &>> $LOGFILE
+exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 
 inotifywait --recursive --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' --event MOVED_TO $WATCH_DIR | \

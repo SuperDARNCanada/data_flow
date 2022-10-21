@@ -25,7 +25,6 @@ import bz2
 import datetime
 import os
 import sys
-from tracemalloc import start
 
 from pydarnio import BorealisRead, BorealisWrite, BorealisConvert
 from pydarnio.exceptions.borealis_exceptions import \
@@ -244,8 +243,7 @@ def main():
 
 
     if __bzip2:
-        # remove the decompressed site file from the directory because it was
-        # generated.
+        # remove the decompressed site file from the directory because it was generated.
         os.remove(borealis_site_file)
 
 if __name__ == "__main__":

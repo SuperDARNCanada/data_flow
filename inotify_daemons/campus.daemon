@@ -25,14 +25,14 @@ readonly LOGFILE="${HOME}/logs/inotify_daemons/${script_name}_${RADAR_ID}.log"
 # Location of inotify watch directory for flags. Should match up with next scripts WATCH_DIR (TODO)
 readonly REMOTE_FLAG_DEST="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 
-# Flag sent out to trigger next dataflow script (TODO)
+# Flag sent out to trigger next dataflow script (TODO: Link with next dataflow step)
 readonly FLAG_SRC="${HOME}/test_data_flow/data_flow/.inotify_flags" # For SAS testing
 mkdir -p $FLAG_SRC
 readonly FLAG_OUT="${FLAG_SRC}/.campus_dataflow_flag_${RADAR_ID}" # For SAS testing
 
 ###################################################################################################
 
-exec &>> $LOGFILE
+exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 echo "Starting $(basename $0) $RADAR_ID at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 touch $LOCK_FILE
 

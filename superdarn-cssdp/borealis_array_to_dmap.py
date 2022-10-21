@@ -22,7 +22,7 @@ import datetime
 import os
 import sys
 
-from pydarnio import BorealisRead, BorealisWrite, BorealisConvert
+from pydarnio import BorealisConvert
 
 
 def usage_msg():
@@ -169,8 +169,6 @@ def main():
     args = parser.parse_args()
 
     start_time = datetime.datetime.utcnow()
-    # sys_call = ' '.join(sys.argv[:])
-    # print(sys_call)
 
     borealis_array_file = args.borealis_array_file
 
@@ -182,8 +180,8 @@ def main():
     array_to_dmap(borealis_array_file, os.path.dirname(borealis_array_file), 
                   scaling_factor)
 
-    dmap_time = datetime.datetime.utcnow()
-    print("Conversion time: {:.2f} seconds".format((dmap_time-start_time).total_seconds())) 
+    end_time = datetime.datetime.utcnow()
+    print("Conversion time: {:.2f} seconds".format((end_time-start_time).total_seconds())) 
 
 
 if __name__ == "__main__":

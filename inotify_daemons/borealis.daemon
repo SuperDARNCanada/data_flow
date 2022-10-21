@@ -34,7 +34,7 @@ readonly FLAG_OUT="${FLAG_SRC}/.borealis_flag"
 
 ###################################################################################################
 
-exec &>> $LOGFILE
+exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 
 # Inotify is triggered multiple times as multiple 2-hour site files are created. We only want to 

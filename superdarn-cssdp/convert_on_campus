@@ -42,8 +42,7 @@ readonly SITES=("cly" "rkn")
 # Define directories
 readonly DATA_DIR="/sddata/inotify_data_flow" # For SAS testing
 readonly SOURCE="${DATA_DIR}/${RADARID}_holding_dir"
-readonly RAWACF_DMAP_DEST="${DATA_DIR}/${RADARID}_data"
-readonly RAWACF_ARRAY_DEST="${DATA_DIR}/${RADARID}_data"
+readonly DEST="${DATA_DIR}/${RADARID}_data"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Create log file. New file created daily
@@ -56,8 +55,7 @@ readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).convert_summ
 
 ###################################################################################################
 
-# Redirect all stdout and sterr in this script to $LOGFILE
-exec &>> $LOGFILE
+exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
@@ -93,8 +91,8 @@ if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
             ordinal_id="$(($slice_id + 97))"
             file_character=$(chr $ordinal_id)
             dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
-            mv --verbose $dmap_file $RAWACF_DMAP_DEST
-            mv --verbose $f $RAWACF_ARRAY_DEST
+            mv --verbose $dmap_file $DEST
+            mv --verbose $f $DEST
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
             printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
