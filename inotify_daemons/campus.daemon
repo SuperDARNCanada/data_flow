@@ -3,7 +3,7 @@
 # Author: Theodore Kolkman
 #
 # Inotify script to be run on SuperDARN-CSSDP. Executes convert_on_campus and 
-# distribute_borealis_data, one after the other#
+# distribute_borealis_data, one after the other
 #
 # Dependencies:
 #	- inotifywait (installed by zypper in inotify-tools)

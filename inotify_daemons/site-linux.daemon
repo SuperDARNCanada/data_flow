@@ -19,7 +19,7 @@ mkdir -p $WATCH_DIR
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')
 readonly LOGFILE="${HOME}/logs/inotify_daemons/${script_name}.log"
 
-# Location of inotify watch directory for flags on superdar-cssdp. Should match up with 
+# Location of inotify watch directory for flags on superdarn-cssdp. Should match up with 
 # superdarn-cssdp inotify's WATCH_DIR
 readonly REMOTE_FLAG_DEST="/home/mrcopy/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 
