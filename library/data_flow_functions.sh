@@ -27,19 +27,6 @@ ord() {
 }
 
 ###################################################################################################
-# Email function. Called if any files fail conversion. 
-# Argument 1 should be the subject
-# Argument 2 should be the body
-###################################################################################################
-send_email () {
-	# Argument 1 should be the subject
-	# Argument 2 should be the body
-	# What email address to send to?
-	EMAILADDRESS="kevin.krieger@usask.ca"
-	echo -e "${2}" | mutt -s "${1}" -- ${EMAILADDRESS}
-}
-
-###################################################################################################
 # Verify transfer of a file using md5sum
 # 
 # Calculates the md5sum of the sent file, and compares it to the md5sum of the source file. If the 
