@@ -72,15 +72,42 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-Install `inotifywait` via zypper with `sudo zypper in inotify-tools` if it is not already installed.
-
-To start the service, execute the following commands as superuser:
+Useful systemctl commands for operating `systemd` daemons:
 - `systemctl daemon-reload`
 - `systemctl enable borealis_dataflow.service`
 - `systemctl start borealis_dataflow.service`
-
-To verify it is running:
 - `systemctl status borealis_dataflow.service`
+- `systemctl restart borealis_dataflow.service`
+- `systemctl stop borealis_dataflow.service`
+- `systemctl disable borealis_dataflow.service`
 
-To specify the radar for `campus_dataflow@.service` (using sas as an example):
-- `systemctl [command] campus_dataflow@sas.service`
+
+### Installing data flow
+
+To use this data flow repository, follow the following steps:
+
+1. Clone data flow repository
+2. Install `inotifywait` via zypper with `sudo zypper in inotify-tools` if it is not already 
+installed.
+3. Set up ssh between current computer and next computer in dataflow to work without password. This
+is required for the sending of inotify flags between computers.
+    - As the user running the dataflow, create a key (if no key already created):
+    `ssh-keygen -t ecdsa -b 521`
+    - Copy the public key to the destination computer: `ssh-copy-id user@host`
+    - Computers that must be linked: Borealis -> Site-Linux, Site-Linux -> SuperDARN-CSSDP
+4. Install the inotify daemon for the respective computer (for example, install borealis.daemon 
+with borealis_dataflow.service on the Borealis computer). As super user, do the following:
+    - Copy the correct `.service` file from `inotify_daemons/services/` to 
+    `/usr/lib/systemd/system/`
+    - Reload the daemons: `systemctl daemon-reload`
+    - Enable the daemon: `systemctl enable [dataflow].service`
+    - Start the daemon: `systemctl start [dataflow].service`
+    - Check that the daemon is running: `systemctl status [dataflow].service`
+    - To specify the radar for `campus_dataflow@.service` (using sas as an example): 
+    `systemctl [command] campus_dataflow@sas.service`
+5. Check the logs to ensure the data flow is working correctly
+    - The inotify daemon logs are available in the `~/logs/inotify_daemons/` directory
+    - The data flow script logs are available in the `~/logs/[script name]` directory
+6. For telemetry purposes, summary logs are availabe for each script in the 
+`~/logs/[script name]/summary/` directory. These logs contain the status of all operations on each
+   file and easily parseable to monitor data flow operation.

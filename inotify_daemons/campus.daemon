@@ -19,8 +19,11 @@ RADAR_ID=$1
 readonly WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
 mkdir -p $WATCH_DIR
 readonly LOCK_FILE="${HOME}/test_data_flow/data_flow/.${RADAR_ID}_dataflow_lock" # For SAS testing
+
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')
-readonly LOGFILE="${HOME}/logs/inotify_daemons/${script_name}_${RADAR_ID}.log"
+readonly LOG_DIR="${HOME}/logs/inotify_daemons"
+mkdir -p $LOG_DIR
+readonly LOGFILE="${LOG_DIR}/${script_name}_${RADAR_ID}.log"
 
 # Location of inotify watch directory for flags. Should match up with next scripts WATCH_DIR (TODO)
 readonly REMOTE_FLAG_DEST="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing

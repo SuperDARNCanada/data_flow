@@ -19,8 +19,12 @@
 source "${HOME}/.profile"	# Get SITE_LINUX
 
 readonly WATCH_DIR="/data/borealis_data" # For SAS testing
+
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')
-readonly LOGFILE="${HOME}/logs/inotify_daemons/${script_name}.log"
+readonly LOG_DIR="${HOME}/logs/inotify_daemons"
+mkdir -p $LOG_DIR
+readonly LOGFILE="${LOG_DIR}/${script_name}.log"
+
 readonly FILTER_TIME=15  # Minumum time between script executions
 
 # Location of inotify watch directory for flags on site linux. Should match up with site-linux
