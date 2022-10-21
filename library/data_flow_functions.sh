@@ -8,8 +8,8 @@
 
 
 ###################################################################################################
-# Convert decimal value to corresponding ascii character for use in dmap file
-# names. Example: `chr 99` would print 'c'.
+# Convert decimal value to corresponding ascii character for use in dmap file names. Example: 
+# `chr 99` would print 'c'.
 # Argument 1: Ascii decimal value between 1 and 256
 ###################################################################################################
 chr() {
@@ -18,8 +18,8 @@ chr() {
 }
 
 ###################################################################################################
-# Convert ascii character to corresponding decimal value. Example: `ord c` 
-# would print 99). Using C-style character set
+# Convert ascii character to corresponding decimal value. Example: `ord c` would print 99. Using 
+# C-style character set
 # Argument 1: Ascii character
 ###################################################################################################
 ord() {
