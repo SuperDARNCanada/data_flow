@@ -152,7 +152,7 @@ for file in $array_files; do
         printf "\nArray file failed h5stat test: ${file}\n" | tee --append $SUMMARY_FILE
     else
         printf "\nDistributing ${file}\n"
-        chmod --verbose 664 "${file}"
+        chmod --verbose 644 "${file}"
 
         file_name=$(basename $file)
 
