@@ -94,7 +94,8 @@ fi
 # .site file being written in Borealis. omit_pattern trims the input filename, for example 
 # "20221018.1200.00.sas.1.rawacf.hdf5.site", down to "20221018.1200.00." 
 if [[ $# -eq 0 ]]; then
-	files=$(find ${SOURCE} "${search[@]}") # If no parameter given, default to omitting nothing
+	# Default to omitting nothing and grabbing files not written to in last 5 minutes
+	files=$(find ${SOURCE} "${search[@]}" -cmin +5) 
 else
 	omit_pattern="$(echo $1 | cut --fields 1-3 --delimiter ".")"
 	files=$(find ${SOURCE} "${search[@]}" | grep --invert-match --fixed-strings $omit_pattern)
