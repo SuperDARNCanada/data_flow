@@ -63,7 +63,7 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
 # Date in UTC format for logging
-echo "Executing $(basename "$0") on $(hostname)" | tee --append $SUMMARY_FILE
+echo "Executing $0 on $(hostname)" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Ensure that only a single instance of this script runs.
@@ -86,7 +86,7 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
 
 	# Transfer all files found
 	for file in $files; do
-		printf "\nTransferring: ${file}\n"
+		printf "\nTransferring: ${file} to ${SDCOPY}:${DEST}\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
 		# Check if transfer was okay using the md5sum program, then remove the file if it matches
@@ -120,7 +120,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 
 	# Transfer all files found
 	for file in $files; do
-		printf "\nTransferring: ${file}\n"
+		printf "\nTransferring: ${file} to ${SDCOPY}:${DEST}\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
 		# Check if transfer was okay using the md5sum program
@@ -140,6 +140,6 @@ else
 	printf "\nNot transferring any HDF5 files\n"
 fi
 
-printf "\nFinished rsync_to_campus. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 exit

@@ -39,7 +39,7 @@ readonly FLAG_OUT="${FLAG_SRC}/.borealis_flag"
 ###################################################################################################
 
 exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
-echo "Starting $(basename $0) at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
+echo "Starting $0 at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 
 # Inotify is triggered multiple times as multiple 2-hour site files are created. We only want to 
 # have our script execute once when these files are created. When inotify triggers multiple times, 
@@ -60,7 +60,7 @@ do
 
         # This if statement will only trigger once the previous 2-hour file is finished writing
         if [[ $(($endtime + $FILTER_TIME)) -lt $cur_time ]]; then
-            echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
+            echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0"
 
             # Pass current filename so script knows what to omit
             $HOME/data_flow/borealis/rsync_to_nas $FILE
@@ -68,8 +68,9 @@ do
             # Send "flag" file to notify site-linux computer to start next script
             touch $FLAG_OUT
             rsync -av --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${REMOTE_FLAG_DEST}"
+            echo "Sent ${FLAG_OUT} to  ${SITE_LINUX}:${REMOTE_FLAG_DEST}"
 
-            echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $(basename $0)"
+            printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"
             endtime=$(date "+%s")
         fi
     fi

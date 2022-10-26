@@ -70,7 +70,7 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
 # Date in UTC format for logging
-printf "Executing $(basename "$0") on $(hostname)\n" | tee --append $SUMMARY_FILE
+printf "Executing $0 on $(hostname)\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Ensure that only a single instance of this script runs.
@@ -113,6 +113,7 @@ for file in $files
 do
 	if [[ "$TRANSFER_TO_NAS" == true ]]; then
 		# rsync file to NAS
+		printf "\nTransferring: $file to $DEST\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $DEST
 
 		# check if transfer was okay using the md5sum program, then remove the file if it matches
@@ -137,6 +138,6 @@ do
 	fi
 done
 
-printf "\nFinished rsync_to_nas. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n\n" | tee --append $SUMMARY_FILE
+printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n\n" | tee --append $SUMMARY_FILE
 
 exit

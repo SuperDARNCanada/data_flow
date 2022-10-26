@@ -59,7 +59,7 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
-printf "Executing $(basename "$0") on $(hostname)\n" | tee --append $SUMMARY_FILE
+printf "Executing $0 on $(hostname)\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
@@ -103,6 +103,6 @@ else
     printf "\nNot converting files for $RADARID.\n"
 fi
 
-printf "\nFinished convert_on_campus. End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 exit

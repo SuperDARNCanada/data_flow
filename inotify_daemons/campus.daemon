@@ -36,7 +36,7 @@ readonly FLAG_OUT="${FLAG_SRC}/.campus_dataflow_flag_${RADAR_ID}"
 ###################################################################################################
 
 exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
-echo "Starting $(basename $0) $RADAR_ID at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
+echo "Starting $0 $RADAR_ID at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 touch $LOCK_FILE
 
 inotifywait --recursive --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' --event MOVED_TO $WATCH_DIR | \
@@ -44,7 +44,7 @@ while read TIME DIRECTORY ACTION FILE # These must line up with format parameter
 do
     if [[ "$FILE" =~ \.site-linux_flag_${RADAR_ID}$ ]]   # Only interested in 2 hour files
     then
-        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
+        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0"
 
         # Lock with radar specific file to ensure only one instance of script runs for each site
         echo "Executing convert_on_campus..."
@@ -58,7 +58,9 @@ do
         # Send out "flag" to trigger next script with inotify (TODO)
         touch $FLAG_OUT
         rsync -av --rsh=ssh $FLAG_OUT $REMOTE_FLAG_DEST
+        echo "Sent ${FLAG_OUT} to  ${REMOTE_FLAG_DEST}"
 
-        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $(basename $0)"
+
+        printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"
     fi
 done
