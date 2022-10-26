@@ -31,20 +31,19 @@ set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
 # Load in functions
-source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh"
+source "${HOME}/data_flow/library/data_flow_functions.sh"
 
 ###################################################################################################
 
 readonly RADAR_ID=$1
 
 # Define directories
-readonly TEST_DIR="${HOME}/test_data_flow" # For SAS testing
-readonly SOURCE="/sddata/inotify_data_flow/${RADAR_ID}_data" # For SAS testing
-readonly NAS_DIR="${TEST_DIR}/data/borealis_site_data"
-readonly MIRROR_STAGING_DIR="${TEST_DIR}/data/holding/globus"
-readonly BAS_STAGING_DIR="${TEST_DIR}/home/bas/outgoing/${RADAR_ID}"
-readonly VT_STAGING_DIR="${TEST_DIR}/home/vtsd/outgoing/${RADAR_ID}"
-readonly NSSC_STAGING_DIR="${TEST_DIR}/home/nssc/outgoing/${RADAR_ID}"
+readonly SOURCE="/sddata/${RADAR_ID}_data"
+readonly NAS_DIR="/data/borealis_site_data"
+readonly MIRROR_STAGING_DIR="/data/holding/globus"
+readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADAR_ID}"
+readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADAR_ID}"
+readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADAR_ID}"
 
 # Data group for outgoing files
 readonly DATA_GROUP="sddata"

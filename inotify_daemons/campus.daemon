@@ -16,9 +16,9 @@
 
 RADAR_ID=$1
 
-readonly WATCH_DIR="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+readonly WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
 mkdir -p $WATCH_DIR
-readonly LOCK_FILE="${HOME}/test_data_flow/data_flow/.${RADAR_ID}_dataflow_lock" # For SAS testing
+readonly LOCK_FILE="${HOME}/data_flow/.${RADAR_ID}_dataflow_lock"
 
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')
 readonly LOG_DIR="${HOME}/logs/inotify_daemons"
@@ -26,12 +26,12 @@ mkdir -p $LOG_DIR
 readonly LOGFILE="${LOG_DIR}/${script_name}_${RADAR_ID}.log"
 
 # Location of inotify watch directory for flags. Should match up with next scripts WATCH_DIR (TODO)
-readonly REMOTE_FLAG_DEST="${HOME}/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+readonly REMOTE_FLAG_DEST="${HOME}/data_flow/.inotify_watchdir"
 
 # Flag sent out to trigger next dataflow script (TODO: Link with next dataflow step)
-readonly FLAG_SRC="${HOME}/test_data_flow/data_flow/.inotify_flags" # For SAS testing
+readonly FLAG_SRC="${HOME}/data_flow/.inotify_flags"
 mkdir -p $FLAG_SRC
-readonly FLAG_OUT="${FLAG_SRC}/.campus_dataflow_flag_${RADAR_ID}" # For SAS testing
+readonly FLAG_OUT="${FLAG_SRC}/.campus_dataflow_flag_${RADAR_ID}"
 
 ###################################################################################################
 
@@ -48,9 +48,9 @@ do
 
         # Lock with radar specific file to ensure only one instance of script runs for each site
         echo "Executing convert_on_campus..."
-        flock -n $LOCK_FILE $HOME/test_data_flow/data_flow/superdarn-cssdp/convert_on_campus $RADAR_ID # For SAS testing
+        flock -n $LOCK_FILE $HOME/data_flow/superdarn-cssdp/convert_on_campus $RADAR_ID
         echo "Executing distribute_borealis_data..."
-        flock -n $LOCK_FILE $HOME/test_data_flow/data_flow/superdarn-cssdp/distribute_borealis_data $RADAR_ID # For SAS testing
+        flock -n $LOCK_FILE $HOME/data_flow/superdarn-cssdp/distribute_borealis_data $RADAR_ID
 
         # Reset flag by removing .site-linux_flag_RADARID, so inotify can be triggered again
         rm --verbose --force "${DIRECTORY}${FILE}"

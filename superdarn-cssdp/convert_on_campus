@@ -29,7 +29,7 @@ set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
 # Load in function library
-source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh"
+source "${HOME}/data_flow/library/data_flow_functions.sh"
 
 ###################################################################################################
 
@@ -40,7 +40,7 @@ RADARID=$1
 readonly SITES=("cly" "rkn")
 
 # Define directories
-readonly DATA_DIR="/sddata/inotify_data_flow" # For SAS testing
+readonly DATA_DIR="/sddata"
 readonly SOURCE="${DATA_DIR}/${RADARID}_holding_dir"
 readonly DEST="${DATA_DIR}/${RADARID}_data"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
@@ -78,7 +78,7 @@ if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
     do
         printf "\nConverting ${f}\n"
         printf "python3 borealis_array_to_dmap.py $(basename ${f})\n"
-        python3 "${HOME}/data_flow/test_data_flow/superdarn-cssdp/borealis_array_to_dmap.py" $f # For SAS testing
+        python3 "${HOME}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py" $f
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # Move the resulting files if all was successful then remove the source site file.

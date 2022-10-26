@@ -27,7 +27,7 @@ set -o nounset   # abort on unbound variable
 set -o pipefail  # don't hide errors within pipes
 
 source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
-source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # Load dataflow functions # For SAS testing
+source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
 
 ###################################################################################################
 
@@ -36,15 +36,15 @@ readonly DMAP_SITES=("sas" "pgr" "inv")
 readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 # Location rawacf files are transferring from
-readonly DATA_DIR="/borealis_nfs/testing/inotify_data_flow" # For SAS testing
+readonly DATA_DIR="/borealis_nfs/borealis_data"
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
 if [[ ! " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
-	readonly DEST="/sddata/inotify_data_flow/${RADARID}_holding_dir" # For SAS testing
+	readonly DEST="/sddata/${RADARID}_holding_dir"
 else
-	readonly DEST="/sddata/inotify_data_flow/${RADARID}_data/" # For SAS testing
+	readonly DEST="/sddata/${RADARID}_data/"
 fi
 
 # Create log file. New file created daily

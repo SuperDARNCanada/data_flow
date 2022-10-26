@@ -34,7 +34,7 @@ readonly TRANSFER_TO_NAS=true
 
 ###################################################################################################
 
-source "${HOME}/test_data_flow/data_flow/library/data_flow_functions.sh" # For SAS testing
+source "${HOME}/data_flow/library/data_flow_functions.sh"
 source "${HOME}/.profile"	# Get BOREALISPATH and SITE_LINUX
 
 # Specify error behaviour
@@ -50,7 +50,7 @@ readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
 
 # Directory the files will be transferred to
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
-	readonly DEST="/borealis_nfs/testing/inotify_data_flow/daily/" # On NAS	# For SAS testing
+	readonly DEST="/borealis_nfs/borealis_data/daily/" # On NAS
 else
 	readonly DEST="/data/borealis_data/daily" # On Site Linux
 fi
@@ -129,7 +129,7 @@ do
 	if [[ $return_value -eq 0 ]]; then
 		echo "Successfully transferred: ${file}" | tee --append $SUMMARY_FILE
 		echo "Deleting file..."
-		# rm --verbose $file # For SAS testing
+		rm --verbose $file
 	else
 		# If file not transferred successfully, don't delete and try again next time
 		echo "Transfer failed: ${file}" | tee --append $SUMMARY_FILE

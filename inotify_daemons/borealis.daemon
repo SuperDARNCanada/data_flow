@@ -18,7 +18,7 @@
 
 source "${HOME}/.profile"	# Get SITE_LINUX
 
-readonly WATCH_DIR="/data/borealis_data" # For SAS testing
+readonly WATCH_DIR="/data/borealis_data"
 
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')
 readonly LOG_DIR="${HOME}/logs/inotify_daemons"
@@ -29,10 +29,10 @@ readonly FILTER_TIME=15  # Minumum time between script executions
 
 # Location of inotify watch directory for flags on site linux. Should match up with site-linux
 # inotify's WATCH_DIR
-readonly REMOTE_FLAG_DEST="/home/transfer/test_data_flow/data_flow/.inotify_watchdir" # For SAS testing
+readonly REMOTE_FLAG_DEST="/home/transfer/data_flow/.inotify_watchdir"
 
 # Flag to send to start next script
-readonly FLAG_SRC="${HOME}/test_data_flow/data_flow/.inotify_flags" # For SAS testing
+readonly FLAG_SRC="${HOME}/data_flow/.inotify_flags"
 mkdir -p $FLAG_SRC
 readonly FLAG_OUT="${FLAG_SRC}/.borealis_flag" 
 
@@ -63,7 +63,7 @@ do
             echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $(basename $0)"
 
             # Pass current filename so script knows what to omit
-            $HOME/test_data_flow/data_flow/borealis/rsync_to_nas $FILE # For SAS testing
+            $HOME/data_flow/borealis/rsync_to_nas $FILE
 
             # Send "flag" file to notify site-linux computer to start next script
             touch $FLAG_OUT
