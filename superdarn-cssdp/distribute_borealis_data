@@ -16,6 +16,7 @@
 #
 # Dependencies:
 #   - hdf5 (zypper in hdf5)
+#	- ssh link established between SuperDARN-CSSDP and TELEMETRY computers
 #
 # Usage: ./distribute_borealis_data RADAR_ID
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
@@ -54,7 +55,12 @@ mkdir --parents $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).distribute_borealis_data.log"
 readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents $SUMMARY_DIR
-readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_summary.log"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_borealis_data_summary.log"
+
+# Define variables needed to rsync summary files back to campus
+readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/distribute_borealis_data"
+readonly TELEMETRY="telemetry@chapman.usask.ca"
+readonly RSH="ssh -p 2222"
 
 ###################################################################################################
 
@@ -163,6 +169,10 @@ for file in $array_files; do
         printf "File distribution successful: ${file}\n" | tee --append $SUMMARY_FILE
     fi
 done
+
+# Sync summary log file with campus
+printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n"
+rsync --archive --rsh=$RSH $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 

@@ -13,6 +13,7 @@
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
+#	- ssh link established between SuperDARN-CSSDP and TELEMETRY computers
 #
 # Usage: ./convert_on_campus RADARID
 # Parameter RADARID: [sas, pgr, rkn, inv, cly]
@@ -51,7 +52,12 @@ mkdir --parents $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/${RADARID}.$(date +%Y%m%d).convert_on_campus.log"
 readonly  SUMMARY_DIR="${HOME}/logs/convert_on_campus/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents $SUMMARY_DIR
-readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).convert_summary.log"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).convert_on_campus_summary.log"
+
+# Define variables needed to rsync summary files back to campus
+readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/convert_on_campus"
+readonly TELEMETRY="telemetry@chapman.usask.ca"
+readonly RSH="ssh -p 2222"
 
 ###################################################################################################
 
@@ -102,6 +108,10 @@ if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
 else
     printf "\nNot converting files for $RADARID.\n"
 fi
+
+# Sync summary log file with campus
+printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n"
+rsync --archive --rsh=$RSH $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 

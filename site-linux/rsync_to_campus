@@ -15,6 +15,8 @@
 #
 # Dependencies:
 # 	- RADARID and SDCOPY set as environment variables in ${HOME}/.bashrc
+#	- ssh link established between Site-Linux and SDCOPY computers
+#	- ssh link established between Site-Linux and TELEMETRY computers
 #
 # This script should be run via an inotify daemon triggerring when the previous data flow script 
 # finishes execution
@@ -54,6 +56,11 @@ readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m%d).rsync_to_campus.log"
 readonly SUMMARY_DIR="${HOME}/logs/rsync_to_campus/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_campus_summary.log"
+
+# Define variables needed to rsync summary files back to campus
+readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/rsync_to_campus"
+readonly TELEMETRY="telemetry@chapman.usask.ca"
+readonly RSH="ssh -p 2222"
 
 ###################################################################################################
 
@@ -139,6 +146,10 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 else
 	printf "\nNot transferring any HDF5 files\n"
 fi
+
+# Sync summary log file with campus
+printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n"
+rsync --archive --rsh=$RSH $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 

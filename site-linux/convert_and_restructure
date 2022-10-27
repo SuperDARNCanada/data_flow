@@ -12,6 +12,7 @@
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
 # 	- RADARNAME and RADARID set as environment variables in $HOME/.bashrc
+#	- ssh link established between Site-Linux and TELEMETRY computers
 #
 # This script should be run via an inotify daemon that triggers when the previous data flow script
 # finishes executing
@@ -50,7 +51,12 @@ mkdir --parents $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m%d).convert_and_restructure.log"
 readonly  SUMMARY_DIR="${HOME}/logs/convert_and_restructure/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents $SUMMARY_DIR
-readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).convert_summary.log"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).convert_and_restructure_summary.log"
+
+# Define variables needed to rsync summary files back to campus
+readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/convert_and_restructure"
+readonly TELEMETRY="telemetry@chapman.usask.ca"
+readonly RSH="ssh -p 2222"
 
 ###################################################################################################
 
@@ -199,6 +205,10 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         mv --verbose $f  $ANTENNAS_IQ_ARRAY_DEST
     fi
 done
+
+# Sync summary log file with campus
+printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n"
+rsync --archive --rsh=$RSH $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
