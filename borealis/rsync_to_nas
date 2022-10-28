@@ -2,11 +2,17 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Kevin Krieger
 #
-# Last Edited: September 2022 by Theo Kolkman
+# Last Edited: October 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
-# A singleton script to copy the data FILES to the on-site linux computer, removing them locally 
-# after a successful copy.
+# A singleton script to move Borealis files from the Borealis computer to the site NAS. Files are
+# copied first and removed once copy is confirmed to be successful. This script is to be run on the
+# site Borealis computer.
+#
+# To move files to the Site-Linux computer instead: 
+#	1. Set TRANSFER_TO_NAS to false, 
+#	2. Ensure SITE_LINUX is set correctly within $HOME/.profile
+#	3. Ensure the directory specified in the DEST variable exists on the Site-Linux computer
 #
 # Dependencies:
 #	- jq (installed via zypper)
@@ -16,7 +22,7 @@
 # This script should be run via an inotify daemon triggering whenever 2-hour Borealis site files 
 # finish writing
 #
-# inotify watches the directory Borealis writes to, and triggers the rsync_to_nas script only when
+# Inotify watches the directory Borealis writes to, and triggers the rsync_to_nas script only when
 # a 2-hour site file is created. Since these files are only created once, and once they're created
 # the previous 2-hour block is finished writing, the rsync_to_nas script will execute immediately 
 # after Borealis finishes writing the previous 2-hour file. To distinguish between the previous 
@@ -26,7 +32,7 @@
 # Param 1: Borealis file name that script was triggered on. This will be used to filter out the 
 #		   files currently being written to, using the timestamp in the name. File name must be of 
 #		   format YYYYMMDD.HHMM.SS.[rest of filename]. If no input is given, then script defaults 
-#		   to omitting no files.
+#		   to omitting only files written to in the last 5 minutes.
 
 ###################################################################################################
 
@@ -112,7 +118,7 @@ if [[ -n $files ]]; then
 	printf "Placing following files in ${DEST}:\n"
 	printf '%s\n' "${files[@]}"
 else
-	printf "No files to be transferred.\n"
+	printf "No files to be transferred.\n" | tee --append $SUMMARY_FILE
 fi
 
 # Transfer files
@@ -135,20 +141,20 @@ do
 	fi
 
 	if [[ $return_value -eq 0 ]]; then
-		echo "Successfully transferred: ${file}" | tee --append $SUMMARY_FILE
-		echo "Deleting file..."
+		printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "Deleting file...\n"
 		rm --verbose $file
 	else
 		# If file not transferred successfully, don't delete and try again next time
-		echo "Transfer failed: ${file}" | tee --append $SUMMARY_FILE
-		echo "File not deleted."
+		printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "File not deleted.\n"
 	fi
 done
 
-# Sync summary log file with campus
-printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
+printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
-printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n\n" | tee --append $SUMMARY_FILE
+# Sync summary log file with campus
+printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
 
 exit

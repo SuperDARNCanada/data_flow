@@ -36,7 +36,7 @@ readonly FLAG_OUT="${FLAG_SRC}/.campus_dataflow_flag_${RADARID}"
 ###################################################################################################
 
 exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
-echo "Starting $0 $RADARID at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
+printf "Starting $0 $RADARID at $(date --utc "+%Y%m%d %H:%M:%S UTC")\n"
 touch $LOCK_FILE
 
 inotifywait --recursive --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' --event MOVED_TO $WATCH_DIR | \
@@ -44,12 +44,12 @@ while read TIME DIRECTORY ACTION FILE # These must line up with format parameter
 do
     if [[ "$FILE" =~ \.site-linux_flag_${RADARID}$ ]]   # Only interested in 2 hour files
     then
-        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0"
+        printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0\n"
 
         # Lock with radar specific file to ensure only one instance of script runs for each site
-        echo "Executing convert_on_campus..."
+        printf "Executing convert_on_campus...\n"
         flock -n $LOCK_FILE $HOME/data_flow/superdarn-cssdp/convert_on_campus $RADARID
-        echo "Executing distribute_borealis_data..."
+        printf "Executing distribute_borealis_data...\n"
         flock -n $LOCK_FILE $HOME/data_flow/superdarn-cssdp/distribute_borealis_data $RADARID
 
         # Reset flag by removing .site-linux_flag_RADARID, so inotify can be triggered again
@@ -58,7 +58,7 @@ do
         # Send out "flag" to trigger next script with inotify (TODO)
         touch $FLAG_OUT
         rsync -av --rsh=ssh $FLAG_OUT $REMOTE_FLAG_DEST
-        echo "Sent ${FLAG_OUT} to  ${REMOTE_FLAG_DEST}"
+        printf "Sent ${FLAG_OUT} to  ${REMOTE_FLAG_DEST}\n"
 
 
         printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"

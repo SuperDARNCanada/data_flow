@@ -78,16 +78,17 @@ if [[ -n $dmap_files ]]; then
     printf "\nDistributing the following dmap files:\n" 
     printf '%s\n' "${dmap_files[@]}"
 else
-    printf "\nNo dmap files found to be transferred.\n"
+    printf "\nNo dmap files found to be distributed.\n" | tee --append $SUMMARY_FILE
 fi
 
 # Iterate over all dmap files to be transferred
 for file in $dmap_files; do
+    printf "\n"
     bzip2 --test $file
     if [[ $? -eq 2 ]]; then
-        printf "\nDMAP file failed bzip2 test: ${file}\n" | tee --append $SUMMARY_FILE
+        printf "DMAP file failed bzip2 test: ${file}\n" | tee --append $SUMMARY_FILE
     else
-        printf "\nDistributing ${file}\n"
+        printf "Distributing ${file}\n"
         chmod --verbose 664 $file
 
         file_name=$(basename $file)
@@ -128,7 +129,7 @@ for file in $dmap_files; do
         # Check that all files were copied successfully. If any transfers failed, leave file in 
         # directory so tranfer can be attempted the next time the script runs
         if [[ "${transfer_flag}" -eq 0 ]]; then
-            echo "File distribution successful: ${file}" | tee --append $SUMMARY_FILE
+            printf "File distribution successful: ${file}\n" | tee --append $SUMMARY_FILE
 
             # Move file to campus NAS for long term storage
             year=$(echo ${file_name} | cut --characters 1-4)
@@ -137,7 +138,7 @@ for file in $dmap_files; do
             mkdir --parents $nas_site_dir
             mv --verbose $file $nas_site_dir
         else
-            echo "File distribution failed: ${file}" | tee --append $SUMMARY_FILE
+            printf "File distribution failed: ${file}\n" | tee --append $SUMMARY_FILE
         fi
     fi
 done
@@ -148,15 +149,16 @@ if [[ -n $array_files ]]; then
     printf "\nDistributing the following array files:\n" 
     printf '%s\n' "${array_files[@]}"
 else
-    printf "\nNo array files found to be transferred.\n"
+    printf "\nNo array files found to be distributed.\n" | tee --append $SUMMARY_FILE
 fi
 
 for file in $array_files; do
+    printf "\n"
     h5stat $file >& /dev/null
     if [[ $? -ne 0 ]]; then
-        printf "\nArray file failed h5stat test: ${file}\n" | tee --append $SUMMARY_FILE
+        printf "Array file failed h5stat test: ${file}\n" | tee --append $SUMMARY_FILE
     else
-        printf "\nDistributing ${file}\n"
+        printf "Distributing ${file}\n"
         chmod --verbose 644 "${file}"
 
         file_name=$(basename $file)
@@ -170,10 +172,10 @@ for file in $array_files; do
     fi
 done
 
-# Sync summary log file with campus
-printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
-
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+
+# Sync summary log file with campus
+printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
 
 exit

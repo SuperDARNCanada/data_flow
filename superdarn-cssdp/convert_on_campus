@@ -2,14 +2,15 @@
 # Copyright 2021 SuperDARN Canada, University of Saskatchewan
 # Author: Marci Detwiller
 #
-# Last Edited: September 2022 by Theo Kolkman
+# Last Edited: October 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
-# A script that uses pydarnio to convert Borealis files to SDARN DMap files. Uses 
+# A script that uses pydarnio to convert Borealis rawacf files to SuperDARN DMap files. Uses the
 # borealis_array_to_dmap.py script to convert already-restructured array files to dmap. 
 # 
-# To be run on SuperDARN-CSSDP when bandwidth limits exist at site and both hdf5 and dmap files 
-# will not be transferred 
+# This script is executed for all sites, but only performs conversions for sites specified in the
+# SITES array. Only sites that have bandwidth limits and don't transfer dmap files to campus should
+# be specified in this array.
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
@@ -106,13 +107,13 @@ if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
         fi
     done
 else
-    printf "\nNot converting files for $RADARID.\n"
+    printf "\nNot converting files for $RADARID.\n" | tee --append $SUMMARY_FILE
 fi
 
-# Sync summary log file with campus
-printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
-
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+
+# Sync summary log file with campus
+printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
 
 exit

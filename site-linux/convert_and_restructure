@@ -2,12 +2,19 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Marci Detwiller
 #
-# Last Edited: September 2022 by Theo Kolkman
+# Last Edited: October 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
-# A script that uses pydarnio to convert Borealis files to SDARN DMap files as well as restructures
-# the hdf5 files to be multidimensional arrays for better file readability. Backs up the source 
-# site files before it begins.
+# A script that uses pydarnio to convert Borealis files to SuperDARN DMap files as well as 
+# restructures the hdf5 files to be multidimensional arrays for better file readability. Backs up 
+# the source site files before it begins. This script is to be run on the Site-Linux computer.
+#
+# To modify this script to operate on files stored on the Site-Linux computer instead of the NAS:
+#   1. Change DATA_DIR to the directory on the Site-Linux computer Borealis data is stored. This 
+#      directory must have the same structure as the NAS directory (daily, backup, rawacf_array
+#      directories etc.)
+#   2. Specify which files are to be converted by add/removing the RADARID of the respective site 
+#      from the *.SITES arrays
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
@@ -70,7 +77,7 @@ date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Ensure that only a single instance of this script runs.
 if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
-	echo "Error: Script $0 is already running. Exiting..."
+	printf "Error: Script $0 is already running. Exiting...\n"
 	exit 1
 fi
 
@@ -80,20 +87,22 @@ BFIQ_CONVERT_FILES=$(find "${SOURCE}" -name "*bfiq.hdf5.site" -type f)
 ANTENNAS_IQ_CONVERT_FILES=$(find "${SOURCE}" -name "*antennas_iq.hdf5.site" -type f)
 
 # Copy the source rawacf file to backup.
-printf "\nBacking up rawacf and bfiq .site files:\n"
 if [[ -n $RAWACF_CONVERT_FILES ]]; then
+    printf "\nBacking up rawacf .site files\n"
     cp --verbose --preserve $RAWACF_CONVERT_FILES $BACKUP_DEST
 fi
 if [[ -n $BFIQ_CONVERT_FILES ]]; then
+    printf "\nBacking up bfiq .site files\n"
     cp --verbose --preserve $BFIQ_CONVERT_FILES $BACKUP_DEST
 fi
 
 
+printf "\n\n"
 if [[ -n $RAWACF_CONVERT_FILES ]]; then
-	printf "\n\nConverting the following rawacf files:\n"
+	printf "Converting the following rawacf files:\n"
 	printf '%s\n' "${RAWACF_CONVERT_FILES[@]}"
 else
-	printf "\n\nNo rawacf files to be converted.\n"
+	printf "No rawacf files to be converted.\n"
 fi
 
 # Convert rawacf files to array and dmap format
@@ -135,11 +144,12 @@ for f in $RAWACF_CONVERT_FILES; do
 done
 
 
+printf "\n\n"
 if [[ -n $BFIQ_CONVERT_FILES ]]; then
-	printf "\n\nConverting the following bfiq files:\n"
+	printf "Converting the following bfiq files:\n"
 	printf '%s\n' "${BFIQ_CONVERT_FILES[@]}"
 else
-	printf "\n\nNo bfiq files to be converted.\n"
+	printf "No bfiq files to be converted.\n"
 fi
 
 # Convert bfiq files to array format
@@ -171,11 +181,12 @@ for f in $BFIQ_CONVERT_FILES; do
 done
 
 
+printf "\n\n"
 if [[ -n $ANTENNAS_IQ_CONVERT_FILES ]]; then
-	printf "\n\nConverting the following antennas_iq files:\n"
+	printf "Converting the following antennas_iq files:\n"
 	printf '%s\n' "${ANTENNAS_IQ_CONVERT_FILES[@]}"
 else
-	printf "\n\nNo antennas_iq files to be converted.\n"
+	printf "No antennas_iq files to be converted.\n"
 fi
 
 # Convert antennas_iq files to array format
@@ -206,10 +217,10 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
     fi
 done
 
-# Sync summary log file with campus
-printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
-
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+
+# Sync summary log file with campus
+printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
 
 exit

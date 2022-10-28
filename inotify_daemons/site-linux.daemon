@@ -34,18 +34,18 @@ readonly FLAG_OUT="${FLAG_SRC}/.site-linux_flag_${RADARID}"
 ###################################################################################################
 
 exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
-echo "Starting $0 at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
+printf "Starting $0 at $(date --utc "+%Y%m%d %H:%M:%S UTC")\n"
 
 inotifywait --recursive --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' --event MOVED_TO $WATCH_DIR | \
 while read TIME DIRECTORY ACTION FILE # These must line up with format parameters
 do
     if [[ "$FILE" =~ \.borealis_flag$ ]]   # Only interested in 2 hour files
     then
-        echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0"
+        printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0\n"
 
-        echo "Executing convert_and_restructure..."
+        printf "Executing convert_and_restructure...\n"
         $HOME/data_flow/site-linux/convert_and_restructure
-        echo "Executing rsync_to_campus..."
+        printf "Executing rsync_to_campus...\n"
         $HOME/data_flow/site-linux/rsync_to_campus
 
         # Reset flag by removing .borealis_flag, so inotify can be triggered again
@@ -54,7 +54,7 @@ do
         # Send "flag" file to notify mrcopy to start next script
         touch $FLAG_OUT
         rsync -av --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${REMOTE_FLAG_DEST}"
-        echo "Sent ${FLAG_OUT} to  ${SDCOPY}:${REMOTE_FLAG_DEST}"
+        printf "Sent ${FLAG_OUT} to  ${SDCOPY}:${REMOTE_FLAG_DEST}\n"
 
         printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"
     fi

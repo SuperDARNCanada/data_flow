@@ -1,17 +1,19 @@
 #!/bin/bash
-# rsync_to_campus
+# Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Dieter Andre
-# Modification: August 6th 2019
-# Simplified and changed to a loop over all files instead of acting on all files at once.
 #
-# Modification: November 22 2019
-# Removed SDCOPY details from file
-#
-# Last Edited: September 2022 by Theo Kolkman
+# Last Edited: October 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
 # A singleton script to transfer rawacf dmap and hdf5 files from site NAS to superdarn-cssdp on 
-# campus and removing them locally after a successful copy.
+# campus. Files are copied first and removed once copy is confirmed to be successful. 
+#
+# To modify this script to transfer files from a local Site-Linux directory instead of the NAS:
+#   1. Change DATA_DIR to the directory on the Site-Linux computer Borealis data is stored. This 
+#      directory must have the same structure as the NAS directory (rawacf_array and rawacf_dmap
+#	   directories specifically)
+#   2. Specify which files are to be transferred by add/removing the RADARID of the respective site 
+#      from the *.SITES arrays
 #
 # Dependencies:
 # 	- RADARID and SDCOPY set as environment variables in ${HOME}/.bashrc
@@ -70,12 +72,12 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
 # Date in UTC format for logging
-echo "Executing $0 on $(hostname)" | tee --append $SUMMARY_FILE
+printf "Executing $0 on $(hostname)\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Ensure that only a single instance of this script runs.
 if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
-	echo "Error: Script $0 is already running. Exiting..."
+	printf "Error: Script $0 is already running. Exiting...\n"
 	exit 1
 fi
 
@@ -100,17 +102,17 @@ if [[ " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
 		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
 		return_value=$?
 		if [[ $return_value -eq 0 ]]; then
-			echo "Successfully transferred: ${file}" | tee --append $SUMMARY_FILE
-			echo "Deleting file..."
+			printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+			printf "Deleting file...\n"
 			rm --verbose $file
 		else
             # If file not transferred successfully, don't delete and try again next time
-			echo "Transfer failed: ${file}" | tee --append $SUMMARY_FILE
-			echo "File not deleted."
+			printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+			printf "File not deleted.\n"
 		fi
 	done
 else
-	printf "\nNot transferring any dmap files"
+	printf "\nNot transferring any dmap files\n" | tee --append $SUMMARY_FILE
 fi
 
 # Check if this site is transferring HDF5 to campus
@@ -134,23 +136,23 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
 		return_value=$?
 		if [[ $return_value -eq 0 ]]; then
-			echo "Successfully transferred: ${file}" | tee --append $SUMMARY_FILE
-			echo "Deleting file..."
+			printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+			printf "Deleting file...\n"
 			rm --verbose $file
 		else
             # If file not transferred successfully, don't delete and try again next time
-			echo "Transfer failed: ${file}" | tee --append $SUMMARY_FILE
-			echo "File not deleted."
+			printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+			printf "File not deleted.\n"
 		fi
 	done
 else
-	printf "\nNot transferring any HDF5 files\n"
+	printf "\nNot transferring any HDF5 files\n" | tee --append $SUMMARY_FILE
 fi
 
-# Sync summary log file with campus
-printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
-
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+
+# Sync summary log file with campus
+printf "\nSyncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
 
 exit
