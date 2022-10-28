@@ -18,8 +18,8 @@
 #   - hdf5 (zypper in hdf5)
 #	- ssh link established between SuperDARN-CSSDP and TELEMETRY computers
 #
-# Usage: ./distribute_borealis_data RADAR_ID
-# Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
+# Usage: ./distribute_borealis_data RADARID
+# Parameter RADARID: [sas, pgr, rkn, inv, cly]
 #
 # This script should be run via an inotify daemon triggerring when the previous data flow script
 # finishes. To ensure only one instance runs for each site, use flock within the inotify daemon code
@@ -36,15 +36,15 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"
 
 ###################################################################################################
 
-readonly RADAR_ID=$1
+readonly RADARID=$1
 
 # Define directories
-readonly SOURCE="/sddata/${RADAR_ID}_data"
+readonly SOURCE="/sddata/${RADARID}_data"
 readonly NAS_DIR="/data/borealis_site_data"
 readonly MIRROR_STAGING_DIR="/data/holding/globus"
-readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADAR_ID}"
-readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADAR_ID}"
-readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADAR_ID}"
+readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADARID}"
+readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADARID}"
+readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADARID}"
 
 # Data group for outgoing files
 readonly DATA_GROUP="sddata"
@@ -52,10 +52,10 @@ readonly DATA_GROUP="sddata"
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/distribute_borealis_data/$(date +%Y)/$(date +%m)"
 mkdir --parents $LOGGING_DIR
-readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).distribute_borealis_data.log"
+readonly LOGFILE="${LOGGING_DIR}/${RADARID}.$(date +%Y%m%d).distribute_borealis_data.log"
 readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents $SUMMARY_DIR
-readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_borealis_data_summary.log"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).distribute_borealis_data_summary.log"
 
 # Define variables needed to rsync summary files back to campus
 readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/distribute_borealis_data"
@@ -133,7 +133,7 @@ for file in $dmap_files; do
             # Move file to campus NAS for long term storage
             year=$(echo ${file_name} | cut --characters 1-4)
             month=$(echo ${file_name} | cut --characters 5-6)
-            nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/"
+            nas_site_dir="${NAS_DIR}/${RADARID}_rawacf_dmap/${year}/${month}/"
             mkdir --parents $nas_site_dir
             mv --verbose $file $nas_site_dir
         else
@@ -163,7 +163,7 @@ for file in $array_files; do
 
         year=$(echo ${file_name} | cut --characters 1-4)
         month=$(echo ${file_name} | cut --characters 5-6)
-        nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf/${year}/${month}/"
+        nas_site_dir="${NAS_DIR}/${RADARID}_rawacf/${year}/${month}/"
         mkdir --parents $nas_site_dir
         mv --verbose $file $nas_site_dir
         printf "File distribution successful: ${file}\n" | tee --append $SUMMARY_FILE

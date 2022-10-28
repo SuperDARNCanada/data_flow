@@ -10,20 +10,20 @@
 #
 # Triggers from flag sent by Site-Linux computer inotify daemon when rsync_to_campus finishes
 #
-# Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
+# Parameter RADARID: [sas, pgr, rkn, inv, cly]
 
 ###################################################################################################
 
-RADAR_ID=$1
+RADARID=$1
 
 readonly WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
 mkdir -p $WATCH_DIR
-readonly LOCK_FILE="${HOME}/data_flow/.${RADAR_ID}_dataflow_lock"
+readonly LOCK_FILE="${HOME}/data_flow/.${RADARID}_dataflow_lock"
 
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')
 readonly LOG_DIR="${HOME}/logs/inotify_daemons"
 mkdir -p $LOG_DIR
-readonly LOGFILE="${LOG_DIR}/${script_name}_${RADAR_ID}.log"
+readonly LOGFILE="${LOG_DIR}/${script_name}_${RADARID}.log"
 
 # Location of inotify watch directory for flags. Should match up with next scripts WATCH_DIR (TODO)
 readonly REMOTE_FLAG_DEST="${HOME}/data_flow/.inotify_watchdir"
@@ -31,26 +31,26 @@ readonly REMOTE_FLAG_DEST="${HOME}/data_flow/.inotify_watchdir"
 # Flag sent out to trigger next dataflow script (TODO: Link with next dataflow step)
 readonly FLAG_SRC="${HOME}/data_flow/.inotify_flags"
 mkdir -p $FLAG_SRC
-readonly FLAG_OUT="${FLAG_SRC}/.campus_dataflow_flag_${RADAR_ID}"
+readonly FLAG_OUT="${FLAG_SRC}/.campus_dataflow_flag_${RADARID}"
 
 ###################################################################################################
 
 exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
-echo "Starting $0 $RADAR_ID at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
+echo "Starting $0 $RADARID at $(date --utc "+%Y%m%d %H:%M:%S UTC")"
 touch $LOCK_FILE
 
 inotifywait --recursive --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' --event MOVED_TO $WATCH_DIR | \
 while read TIME DIRECTORY ACTION FILE # These must line up with format parameters
 do
-    if [[ "$FILE" =~ \.site-linux_flag_${RADAR_ID}$ ]]   # Only interested in 2 hour files
+    if [[ "$FILE" =~ \.site-linux_flag_${RADARID}$ ]]   # Only interested in 2 hour files
     then
         echo "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0"
 
         # Lock with radar specific file to ensure only one instance of script runs for each site
         echo "Executing convert_on_campus..."
-        flock -n $LOCK_FILE $HOME/data_flow/superdarn-cssdp/convert_on_campus $RADAR_ID
+        flock -n $LOCK_FILE $HOME/data_flow/superdarn-cssdp/convert_on_campus $RADARID
         echo "Executing distribute_borealis_data..."
-        flock -n $LOCK_FILE $HOME/data_flow/superdarn-cssdp/distribute_borealis_data $RADAR_ID
+        flock -n $LOCK_FILE $HOME/data_flow/superdarn-cssdp/distribute_borealis_data $RADARID
 
         # Reset flag by removing .site-linux_flag_RADARID, so inotify can be triggered again
         rm --verbose --force "${DIRECTORY}${FILE}"
