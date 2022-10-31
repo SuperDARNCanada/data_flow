@@ -81,16 +81,19 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 	exit 1
 fi
 
+printf "Transferring from: $DATA_DIR\n" | tee --append $SUMMARY_FILE
+printf "Transferring to: $SDCOPY:$DEST\n\n" | tee --append $SUMMARY_FILE
+
 # Check if this site is transferring dmaps to campus
 if [[ " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
 	# Find all dmap files to transfer
 	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 
 	if [[ -n $files ]]; then
-		printf "\n\nPlacing following dmap files in ${SDCOPY}:${DEST}:\n"
+		printf "\nPlacing following dmap files in ${SDCOPY}:${DEST}:\n"
 		printf '%s\n' "${files[@]}"
 	else
-		printf "\nNo dmap files found to be transferred.\n"
+		printf "No dmap files found to be transferred.\n" | tee --append $SUMMARY_FILE
 	fi
 
 	# Transfer all files found
@@ -124,7 +127,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 		printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
 		printf '%s\n' "${files[@]}"
 	else
-		printf "\nNo hdf5 files found to be transferred.\n"
+		printf "\nNo hdf5 files found to be transferred.\n" | tee --append $SUMMARY_FILE
 	fi
 
 	# Transfer all files found

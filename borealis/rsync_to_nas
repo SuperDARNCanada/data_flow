@@ -98,8 +98,10 @@ fi
 # files currently being written by Borealis
 
 if [[ "$TRANSFER_TO_NAS" == true ]]; then
+	printf "Transferring to NAS: $DEST\n" | tee --append $SUMMARY_FILE
 	search=(\( -name "*rawacf.hdf5.*" -o -name "*bfiq.hdf5.*" -o -name "*antennas_iq.hdf5.*" \))
 else
+	printf "Transferring to Site-Linux: $DEST\n" | tee --append $SUMMARY_FILE
 	search=(\( -name "*rawacf.hdf5.*" \)) # If transferring to site computer, only send rawacf
 fi
 

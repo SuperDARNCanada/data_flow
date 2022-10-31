@@ -71,14 +71,16 @@ date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
 
+    printf "Conversion directory: $DATA_DIR\n\n"
+
     RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
     source "${HOME}/pydarnio-env/bin/activate"
 
     if [[ -n $RAWACF_CONVERT_FILES ]]; then
-        printf "\nConverting the following files:\n"
+        printf "Converting the following files:\n"
         printf '%s\n' "${RAWACF_CONVERT_FILES[@]}"
     else
-        printf "\nNo files to be converted.\n"
+        printf "No files to be converted.\n" | tee --append $SUMMARY_FILE
     fi
 
     for f in $RAWACF_CONVERT_FILES

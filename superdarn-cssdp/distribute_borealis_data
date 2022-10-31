@@ -44,7 +44,7 @@ readonly NAS_DIR="/data/borealis_site_data"
 readonly MIRROR_STAGING_DIR="/data/holding/globus"
 readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADARID}"
 readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADARID}"
-readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADARID}"
+# readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADARID}"
 
 # Data group for outgoing files
 readonly DATA_GROUP="sddata"
@@ -71,14 +71,20 @@ printf "########################################################################
 printf "Executing $(basename "$0") on $(hostname)\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
+printf "Distributing from: $SOURCE\n"
+printf "Distributing to: \n\
+        \tNAS: $NAS_DIR\n\
+        \tMirror: $MIRROR_STAGING_DIR\n\
+        \tInstitutions: $BAS_STAGING_DIR\t$VT_STAGING_DIR\n\n"
+
 dmap_files=$(find ${SOURCE} -name "*rawacf.bz2" -maxdepth 1)
 array_files=$(find ${SOURCE} -name "*rawacf.hdf5" -maxdepth 1)
 
 if [[ -n $dmap_files ]]; then
-    printf "\nDistributing the following dmap files:\n" 
+    printf "Distributing the following dmap files:\n" 
     printf '%s\n' "${dmap_files[@]}"
 else
-    printf "\nNo dmap files found to be distributed.\n" | tee --append $SUMMARY_FILE
+    printf "No dmap files found to be distributed.\n" | tee --append $SUMMARY_FILE
 fi
 
 # Iterate over all dmap files to be transferred

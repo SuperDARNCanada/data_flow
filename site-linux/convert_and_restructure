@@ -81,6 +81,8 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 	exit 1
 fi
 
+printf "Conversion directory: $DATA_DIR\n\n" | tee --append $SUMMARY_FILE
+
 # Find files to be converted
 RAWACF_CONVERT_FILES=$(find "${SOURCE}" -name "*rawacf.hdf5.site" -type f)
 BFIQ_CONVERT_FILES=$(find "${SOURCE}" -name "*bfiq.hdf5.site" -type f)
@@ -88,11 +90,11 @@ ANTENNAS_IQ_CONVERT_FILES=$(find "${SOURCE}" -name "*antennas_iq.hdf5.site" -typ
 
 # Copy the source rawacf file to backup.
 if [[ -n $RAWACF_CONVERT_FILES ]]; then
-    printf "\nBacking up rawacf .site files\n"
+    printf "Backing up rawacf .site files\n"
     cp --verbose --preserve $RAWACF_CONVERT_FILES $BACKUP_DEST
 fi
 if [[ -n $BFIQ_CONVERT_FILES ]]; then
-    printf "\nBacking up bfiq .site files\n"
+    printf "Backing up bfiq .site files\n"
     cp --verbose --preserve $BFIQ_CONVERT_FILES $BACKUP_DEST
 fi
 
@@ -102,7 +104,7 @@ if [[ -n $RAWACF_CONVERT_FILES ]]; then
 	printf "Converting the following rawacf files:\n"
 	printf '%s\n' "${RAWACF_CONVERT_FILES[@]}"
 else
-	printf "No rawacf files to be converted.\n"
+	printf "No rawacf files found to be converted.\n" | tee --append $SUMMARY_FILE
 fi
 
 # Convert rawacf files to array and dmap format
@@ -149,7 +151,7 @@ if [[ -n $BFIQ_CONVERT_FILES ]]; then
 	printf "Converting the following bfiq files:\n"
 	printf '%s\n' "${BFIQ_CONVERT_FILES[@]}"
 else
-	printf "No bfiq files to be converted.\n"
+	printf "No bfiq files found to be converted.\n" | tee --append $SUMMARY_FILE
 fi
 
 # Convert bfiq files to array format
@@ -186,7 +188,7 @@ if [[ -n $ANTENNAS_IQ_CONVERT_FILES ]]; then
 	printf "Converting the following antennas_iq files:\n"
 	printf '%s\n' "${ANTENNAS_IQ_CONVERT_FILES[@]}"
 else
-	printf "No antennas_iq files to be converted.\n"
+	printf "No antennas_iq files found to be converted.\n" | tee --append $SUMMARY_FILE
 fi
 
 # Convert antennas_iq files to array format
