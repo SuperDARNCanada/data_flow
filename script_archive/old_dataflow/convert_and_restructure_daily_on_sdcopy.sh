@@ -78,7 +78,7 @@ for f in ${RAWACF_CONVERT_FILES}
 do
     echo "" >> ${LOGFILE} 2>&1
     echo "python3 ${HOME}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py ${f}" >> ${LOGFILE} 2>&1
-    python3 ${HOME}/data_flow/script_archive/borealis_array_to_dmap.py ${f} >> ${LOGFILE} 2>&1
+    python3 ${HOME}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py ${f} >> ${LOGFILE} 2>&1
     ret=$?
     if [ $ret -eq 0 ]; then
         # move the resulting files if all was successful
