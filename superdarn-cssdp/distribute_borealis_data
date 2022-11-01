@@ -71,11 +71,12 @@ printf "########################################################################
 printf "Executing $(basename "$0") on $(hostname)\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
-printf "Distributing from: $SOURCE\n"
+tabs 4
+printf "Distributing from: $SOURCE\n" | tee --append $SUMMARY_FILE
 printf "Distributing to: \n\
         \tNAS: $NAS_DIR\n\
         \tMirror: $MIRROR_STAGING_DIR\n\
-        \tInstitutions: $BAS_STAGING_DIR\t$VT_STAGING_DIR\n\n"
+        \tInstitutions: $BAS_STAGING_DIR\t$VT_STAGING_DIR\n\n" | tee --append $SUMMARY_FILE
 
 dmap_files=$(find ${SOURCE} -name "*rawacf.bz2" -maxdepth 1)
 array_files=$(find ${SOURCE} -name "*rawacf.hdf5" -maxdepth 1)
