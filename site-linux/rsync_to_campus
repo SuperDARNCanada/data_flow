@@ -37,7 +37,7 @@ source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functi
 
 # Specify which sites will transfer each file type
 readonly DMAP_SITES=("sas" "pgr" "inv")
-readonly HDF5_SITES=("sas" "pgr" "inv" "cly" "rkn")
+readonly ARRAY_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 # Location rawacf files are transferring from
 readonly DATA_DIR="/borealis_nfs/borealis_data"
@@ -119,7 +119,7 @@ else
 fi
 
 # Check if this site is transferring HDF5 to campus
-if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ " ${ARRAY_SITES[*]} " =~ " ${RADARID} " ]]; then
 	# Find all hdf5 files to transfer
 	files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
 
@@ -127,7 +127,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 		printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
 		printf '%s\n' "${files[@]}"
 	else
-		printf "\nNo hdf5 files found to be transferred.\n" | tee --append $SUMMARY_FILE
+		printf "\nNo array files found to be transferred.\n" | tee --append $SUMMARY_FILE
 	fi
 
 	# Transfer all files found
@@ -149,7 +149,7 @@ if [[ " ${HDF5_SITES[*]} " =~ " ${RADARID} " ]]; then
 		fi
 	done
 else
-	printf "\nNot transferring any HDF5 files\n" | tee --append $SUMMARY_FILE
+	printf "\nNot transferring any array files\n" | tee --append $SUMMARY_FILE
 fi
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE

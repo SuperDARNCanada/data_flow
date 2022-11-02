@@ -92,6 +92,8 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 	exit 1
 fi
 
+printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
+
 # Get all files that aren't currently being written do. First, find all .site files in source 
 # directory. Then, filter out all files that have same timestamp in the filename as the file that 
 # triggered the script via inotify. This will effectively prevent the script from transferring 
