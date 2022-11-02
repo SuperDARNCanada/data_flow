@@ -12,6 +12,7 @@ What we want to parse:
 """
 import argparse
 import os
+import json
 from glob import glob
 from socket import gethostbyaddr
 from datetime import datetime, timedelta
@@ -36,8 +37,10 @@ def usage_msg():
 def argument_parser():
     parser = argparse.ArgumentParser(usage=usage_msg())
     parser.add_argument("log_dir", help="Path to the directory that holds all data flow summary logfiles to be parsed.")
+    parser.add_argument("out_file", help="File that the parsed data will be written to. Will be JSON format")
     parser.add_argument("-n", metavar="NUM_DAYS", type=int, default=7, nargs="?",
                         help="Number of days to collect logfile information for. Defaults to 7 days")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Print final parsed output in readable format")
 
     return parser
 
@@ -411,12 +414,17 @@ def get_file_datetime(filename):
 if __name__ == '__main__':
     p = argument_parser()
     args = p.parse_args()
+    # Read in arguments
+    log_dir = args.log_dir
+    out_file = args.out_file
+    num_days = args.n
+    verbose = args.verbose
 
     scripts = ["rsync_to_nas", "convert_and_restructure", "rsync_to_campus", "convert_on_campus",
                "distribute_borealis_data"]
-    summary_dict = get_dataflow_overview("/home/radar/testing/pythonTesting", scripts)
+    summary_dict = get_dataflow_overview(log_dir, scripts)
 
-    detailed_dict = parse_logfile("/home/radar/testing/pythonTesting", scripts, 3)
+    detailed_dict = parse_logfile(log_dir, scripts, num_days)
 
     overall_dict = {}
     for script in scripts:
@@ -424,9 +432,24 @@ if __name__ == '__main__':
         overall_dict[script]['summary'] = summary_dict[script]
         overall_dict[script]['stats'] = detailed_dict[script]
 
-    for i in overall_dict:
-        print(i)
-        for j in overall_dict[i]:
-            print('\t', j)
-            for k in overall_dict[i][j]:
-                print('\t\t', k, ':', overall_dict[i][j][k])
+    # Print output in readable format
+    if verbose:
+        for i in overall_dict:
+            print(i)
+            for j in overall_dict[i]:
+                print('\t', j)
+                for k in overall_dict[i][j]:
+                    val = overall_dict[i][j][k]
+                    if isinstance(val, list) and len(val) > 0:
+                        print('\t\t', k, ':', val[0])
+                        for index, item in enumerate(val):
+                            if index == 0:
+                                pass
+                            else:
+                                print('\t\t  ', ' '*len(k), item)
+                    else:
+                        print('\t\t', k, ':', overall_dict[i][j][k])
+
+    # Write parse dictionary to json file
+    with open(out_file, 'w') as fp:
+        json.dump(overall_dict, fp, indent=4)
