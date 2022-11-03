@@ -25,11 +25,6 @@
 
 ###################################################################################################
 
-# Specify error behaviour
-set -o errexit   # abort on nonzero exitstatus
-set -o nounset   # abort on unbound variable
-set -o pipefail  # don't hide errors within pipes
-
 # Load in function library
 source "${HOME}/data_flow/library/data_flow_functions.sh"
 

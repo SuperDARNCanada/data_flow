@@ -44,11 +44,6 @@ readonly TRANSFER_TO_NAS=true
 source "${HOME}/data_flow/library/data_flow_functions.sh"
 source "${HOME}/.profile"	# Get BOREALISPATH and SITE_LINUX
 
-# Specify error behaviour
-set -o errexit   # abort on nonzero exitstatus
-set -o nounset   # abort on unbound variable
-set -o pipefail  # don't hide errors within pipes
-
 ###################################################################################################
 
 # Borealis directory files are transferring from

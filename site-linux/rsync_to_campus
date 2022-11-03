@@ -25,11 +25,6 @@
 
 ###################################################################################################
 
-# Specify error behaviour
-set -o errexit   # abort on nonzero exitstatus
-set -o nounset   # abort on unbound variable
-set -o pipefail  # don't hide errors within pipes
-
 source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
 source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
 
