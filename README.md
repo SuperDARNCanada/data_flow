@@ -14,6 +14,7 @@ storage.
 once the preceding script has finished execution. These scripts are to be set up as a `systemd` 
 service. Example service files are within the `inotify_daemons/services/` directory.
 - library - Bash functions used by data flow scripts.
+- tools - Various scripts used alongside the data flow. Ex: log parsing scripts
 - script_archive - Old unused data flow scripts.
 
 ### How it works
@@ -95,6 +96,7 @@ is required for the sending of inotify flags between computers.
     `ssh-keygen -t ecdsa -b 521`
     - Copy the public key to the destination computer: `ssh-copy-id user@host`
     - Computers that must be linked: Borealis -> Site-Linux, Site-Linux -> SuperDARN-CSSDP
+    - For telemetry purposes, each data flow computer must also be linked to Chapman
 4. Install the inotify daemon for the respective computer (for example, install borealis.daemon 
 with borealis_dataflow.service on the Borealis computer). As super user, do the following:
     - Copy the correct `.service` file from `inotify_daemons/services/` to 
@@ -110,4 +112,6 @@ with borealis_dataflow.service on the Borealis computer). As super user, do the 
     - The data flow script logs are available in the `~/logs/[script name]` directory
 6. For telemetry purposes, summary logs are availabe for each script in the 
 `~/logs/[script name]/summary/` directory. These logs contain the status of all operations on each
-   file and easily parseable to monitor data flow operation.
+file and easily parseable to monitor data flow operation. Each script rsyncs the summary files to 
+Chapman for uploading to the Engineering dashboard. SSH password-free connection must be setup 
+between each computer and Chapman for this to work correctly. 
