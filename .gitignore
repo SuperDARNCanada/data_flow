@@ -109,3 +109,4 @@ tmp.md5
 .*_lock
 .inotify_flags
 .inotify_watchdir
+*.dat
