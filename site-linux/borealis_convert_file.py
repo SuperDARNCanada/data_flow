@@ -17,6 +17,8 @@ The script will :
     and then write to file as the given filename, with extensions 
     '.[borealis_filetype].hdf5.site' replaced with [dmap_filetype].dmap. 
     The script will also bzip the resulting dmap file.
+3. if --low_memory is specified, the restructure method will use a memory
+    saving, slower, BorealisRestructure module.
 
 """
 
@@ -26,7 +28,7 @@ import datetime
 import os
 import sys
 
-from pydarnio import BorealisRead, BorealisWrite, BorealisConvert
+from pydarnio import BorealisRead, BorealisWrite, BorealisConvert, BorealisRestructure
 from pydarnio.exceptions.borealis_exceptions import \
      BorealisConvert2RawacfError, BorealisConvert2IqdatError
 
@@ -39,7 +41,7 @@ def usage_msg():
     :returns: the usage message
     """
 
-    usage_message = """ borealis_converter.py [-h] [--dmap] borealis_site_file
+    usage_message = """ borealis_converter.py [-h] [--dmap] [--low_memory] borealis_site_file
 
     Pass in the filename you wish to convert (should end in '.hdf5.site' ('.bz2' optional)).
     The script will decompress if a bzipped hdf5 site file with 'bz2' extension is provided.
@@ -60,6 +62,8 @@ def borealis_conversion_parser():
                                                     "convert. "
                                                     "(e.g. 20190327.2210.38.sas.0.bfiq.hdf5.site)")
     parser.add_argument("--dmap", action="store_true", help="Also convert file to dmap format")
+    parser.add_argument("--low_memory", action="store_true", help="Restructure the file in a memory "
+                                                                  "saving, but slower, method.")
 
     return parser
 
@@ -168,24 +172,32 @@ def borealis_site_to_dmap_files(filename, borealis_filetype, slice_id, dmap_file
     return bz2_filename
 
 
-def borealis_site_to_array_file(filename, borealis_filetype, array_filename):
+def borealis_site_to_array_file(filename, borealis_filetype, array_filename, low_memory):
     """
     Takes a Borealis site structured file and writes an array restructured file
     to the same directory as the input site file.
+
+    If low_memory flag set, use BorealisRestructure to save memory. Otherwise, use 
+    regular BorealisRead and BorealisWrite
 
     Returns
     -------
     array_filename
         array restructured filename (zlib compressed)
     """
-    borealis_reader = BorealisRead(filename, borealis_filetype,
-                                   borealis_file_structure='site')
-    arrays = borealis_reader.arrays # restructures the input records to arrays
-    borealis_writer = BorealisWrite(array_filename, arrays, borealis_filetype,
-                                    borealis_file_structure='array')
+    if low_memory:
+        # Specify zlib so compression is the same as BorealisWrite
+        borealis_writer = BorealisRestructure(filename, array_filename, borealis_filetype, 
+                                              outfile_structure='array', hdf5_compression='zlib')
+        return borealis_writer.outfile_name
 
-    array_filename = borealis_writer.filename # overwrite to as generated
-    return array_filename
+    else: 
+        borealis_reader = BorealisRead(filename, borealis_filetype,
+                                    borealis_file_structure='site')
+        arrays = borealis_reader.arrays # restructures the input records to arrays
+        borealis_writer = BorealisWrite(array_filename, arrays, borealis_filetype,
+                                        borealis_file_structure='array')
+        return borealis_writer.filename # overwrite to as generated
 
 
 def main():
@@ -203,6 +215,7 @@ def main():
         __bzip2 = False
 
     dmap = args.dmap
+    low_memory = args.low_memory
 
     # .bz2, if at end of filename, was removed in the decompression.
     borealis_filetype = borealis_site_file.split('.')[-3] # XXX.hdf5.site
@@ -215,8 +228,9 @@ def main():
     array_filename = '.'.join(borealis_site_file.split('.')[0:-1]) # all but .site
 
     written_array_filename = borealis_site_to_array_file(borealis_site_file,
-                                                        borealis_filetype,
-                                                        array_filename)
+                                                         borealis_filetype,
+                                                         array_filename,
+                                                         low_memory)
 
     print('Wrote array to: {}'.format(written_array_filename))
     array_time = datetime.datetime.utcnow()

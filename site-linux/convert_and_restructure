@@ -45,7 +45,8 @@ readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 # Specify which sites will convert each file type
 readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
-readonly ANTENNAS_IQ_SITES=("sas" "cly")
+readonly ANTENNAS_IQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
+readonly LOW_MEMORY_SITES=("pgr" "inv" "rkn")
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/convert_and_restructure/$(date +%Y)/$(date +%m)"
@@ -195,9 +196,17 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         if [[ -n "$output" ]]; then
             printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
         fi
-        printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
-        python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" $f
+
+        # Use BorealisRestructure if site has low memory
+        if [[ " ${LOW_MEMORY_SITES[*]} " =~ " ${RADARID} " ]]; then 
+            printf "python3 borealis_convert_file.py --low_memory $(basename ${f})\n"
+            python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --low_memory $f
+        else 
+            printf "python3 borealis_convert_file.py $(basename ${f})\n"
+            python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" $f
+        fi
         ret=$?
+        
         if [ $ret -eq 0 ]; then
             # then remove source site file.
             array_file="${f%.site}"
