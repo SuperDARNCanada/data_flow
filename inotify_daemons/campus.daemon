@@ -57,7 +57,7 @@ do
 
         # Send out "flag" to trigger next script with inotify (TODO)
         touch $FLAG_OUT
-        rsync -av --rsh=ssh $FLAG_OUT $REMOTE_FLAG_DEST
+        rsync -a --rsh=ssh $FLAG_OUT $REMOTE_FLAG_DEST
         printf "Sent ${FLAG_OUT} to  ${REMOTE_FLAG_DEST}\n"
 
 

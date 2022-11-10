@@ -77,6 +77,12 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 	exit 1
 fi
 
+# Get status info on data_flow and pyDARNio repos
+printf "data_flow repo: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
+		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+printf "pyDARNio repo: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
+		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+        
 printf "Conversion directory: $DATA_DIR\n\n" | tee --append $SUMMARY_FILE
 
 # Find files to be converted
@@ -206,7 +212,7 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
             python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" $f
         fi
         ret=$?
-        
+
         if [ $ret -eq 0 ]; then
             # then remove source site file.
             array_file="${f%.site}"

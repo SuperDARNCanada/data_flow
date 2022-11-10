@@ -87,6 +87,12 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 	exit 1
 fi
 
+# Get status info on data_flow and pyDARNio repos
+printf "data_flow repo: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
+		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+printf "pyDARNio repo: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
+		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+
 printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 
 # Get all files that aren't currently being written do. First, find all .site files in source 

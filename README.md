@@ -107,10 +107,17 @@ with borealis_dataflow.service on the Borealis computer). As super user, do the 
     - Check that the daemon is running: `systemctl status [dataflow].service`
     - To specify the radar for `campus_dataflow@.service` (using sas as an example): 
     `systemctl [command] campus_dataflow@sas.service`
-5. Check the logs to ensure the data flow is working correctly
+5. Ensure the pydarnio-env virtual environment is set up in home directory and configured correctly.
+    - To link pydarnio-env/ to the current branch in the ~/pyDARNio local repo, do the following 
+    commands:
+        - `source ~/pydarnio-env/bin/activate`
+        - `pip install -e ~/pyDARNio`
+    - If the `-e` is omitted, the pydarnio-env will just be installed with the current branch of
+    ~/pyDARNio, and won't be updated if the branch changes.
+6. Check the logs to ensure the data flow is working correctly
     - The inotify daemon logs are available in the `~/logs/inotify_daemons/` directory
     - The data flow script logs are available in the `~/logs/[script name]` directory
-6. For telemetry purposes, summary logs are availabe for each script in the 
+7. For telemetry purposes, summary logs are availabe for each script in the 
 `~/logs/[script name]/summary/` directory. These logs contain the status of all operations on each
 file and easily parseable to monitor data flow operation. Each script rsyncs the summary files to 
 Chapman for uploading to the Engineering dashboard. SSH password-free connection must be setup 

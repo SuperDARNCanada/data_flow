@@ -66,6 +66,12 @@ date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
 
+    # Get status info on data_flow and pyDARNio repos
+    printf "data_flow repo: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
+            $(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+    printf "pyDARNio repo: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
+            $(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+
     printf "Conversion directory: $DATA_DIR\n\n"
 
     RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
