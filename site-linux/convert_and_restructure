@@ -10,11 +10,7 @@
 # the source site files before it begins. This script is to be run on the Site-Linux computer.
 #
 # To modify this script to operate on files stored on the Site-Linux computer instead of the NAS:
-#   1. Change DATA_DIR to the directory on the Site-Linux computer Borealis data is stored. This 
-#      directory must have the same structure as the NAS directory (daily, backup, rawacf_array
-#      directories etc.)
-#   2. Specify which files are to be converted by add/removing the RADARID of the respective site 
-#      from the *.SITES arrays
+#	1. Remove RADARID for the specified site from NAS_SITES in config.sh
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
@@ -26,14 +22,19 @@
 
 ###################################################################################################
 
-source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
+source "${HOME}/.bashrc"    # source the RADARID, SDCOPY and other things
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
 source "${HOME}/data_flow/library/data_flow_functions.sh" # Load in function library
 source "${HOME}/pydarnio-env/bin/activate"
 
 ###################################################################################################
 
 # Define directories
-readonly DATA_DIR="/borealis_nfs/borealis_data"
+if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+	readonly DATA_DIR="/borealis_nfs/borealis_data" # On NAS
+else
+	readonly DATA_DIR="/data/borealis_data" # On Site Linux
+fi
 readonly SOURCE="${DATA_DIR}/daily" # this is the source
 readonly RAWACF_DMAP_DEST="${DATA_DIR}/rawacf_dmap"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
@@ -41,12 +42,6 @@ readonly BFIQ_ARRAY_DEST="${DATA_DIR}/bfiq_array"
 readonly ANTENNAS_IQ_ARRAY_DEST="${DATA_DIR}/antennas_iq_array"
 readonly BACKUP_DEST="${DATA_DIR}/backup"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
-
-# Specify which sites will convert each file type
-readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
-readonly BFIQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
-readonly ANTENNAS_IQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
-readonly LOW_MEMORY_SITES=("pgr" "inv" "rkn")
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/convert_and_restructure/$(date +%Y)/$(date +%m)"
@@ -56,10 +51,8 @@ readonly  SUMMARY_DIR="${HOME}/logs/convert_and_restructure/summary/$(date +%Y)/
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).convert_and_restructure_summary.log"
 
-# Define variables needed to rsync summary files back to campus
-readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/convert_and_restructure"
-readonly TELEMETRY="telemetry@chapman.usask.ca"
-readonly RSH="ssh -p 2222"
+# Telemetry directory for this script and site
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/convert_and_restructure"
 
 ###################################################################################################
 
@@ -82,7 +75,7 @@ printf "data_flow repo: $(git -C ${HOME}/data_flow status | grep "On branch"), l
 		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 printf "pyDARNio repo: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
-        
+
 printf "Conversion directory: $DATA_DIR\n\n" | tee --append $SUMMARY_FILE
 
 # Find files to be converted
@@ -118,21 +111,33 @@ for f in $RAWACF_CONVERT_FILES; do
         if [[ -n "$output" ]]; then
             printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
         fi
-        printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
-        python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --dmap $f
+
+        # Don't produce dmap files if only array files are transferred to campus
+        if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
+            printf "python3 borealis_convert_file.py $(basename ${f})\n"
+            python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" $f
+        else
+            printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
+            python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --dmap $f
+        fi
+
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # move the resulting files if all was successful then remove the source site file.
-            dmap_file_start="${f%.rawacf.hdf5.site}"
 
-            # remove last character(s) (slice_id)
-            slice_id="${dmap_file_start##*.}"
-            dmap_file_wo_slice_id="${dmap_file_start%${slice_id}}"
+            if [[ ! " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
+                dmap_file_start="${f%.rawacf.hdf5.site}"
 
-            ordinal_id="$(($slice_id + 97))"
-            file_character=$(chr $ordinal_id)
-            dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
-            mv --verbose $dmap_file $RAWACF_DMAP_DEST
+                # remove last character(s) (slice_id)
+                slice_id="${dmap_file_start##*.}"
+                dmap_file_wo_slice_id="${dmap_file_start%${slice_id}}"
+
+                ordinal_id="$(($slice_id + 97))"
+                file_character=$(chr $ordinal_id)
+                dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
+                mv --verbose $dmap_file $RAWACF_DMAP_DEST
+            fi
+
             array_file="${f%.site}"
             mv --verbose $array_file $RAWACF_ARRAY_DEST
             rm --verbose $f
@@ -165,7 +170,7 @@ for f in $BFIQ_CONVERT_FILES; do
         if [[ -n "$output" ]]; then
             printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
         fi
-        printf "python3 borealis_convert_file.py --dmap $(basename ${f})\n"
+        printf "python3 borealis_convert_file.py $(basename ${f})\n"
         python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" $f
         ret=$?
         if [[ $ret -eq 0 ]]; then
@@ -232,7 +237,7 @@ done
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 # Sync summary log file with campus
-printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
+printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit

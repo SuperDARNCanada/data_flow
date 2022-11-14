@@ -26,8 +26,8 @@
 
 ###################################################################################################
 
-# Load in functions
-source "${HOME}/data_flow/library/data_flow_functions.sh"
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
+source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in functions
 
 ###################################################################################################
 
@@ -52,10 +52,8 @@ readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y)
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).distribute_borealis_data_summary.log"
 
-# Define variables needed to rsync summary files back to campus
-readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/distribute_borealis_data"
-readonly TELEMETRY="telemetry@chapman.usask.ca"
-readonly RSH="ssh -p 2222"
+# Telemetry directory for this script and site
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/distribute_borealis_data"
 
 ###################################################################################################
 
@@ -106,7 +104,6 @@ for file in $dmap_files; do
         transfer_flag=0
 
         # Place file in vtsd outgoing
-        ls -l $file
         cp --preserve --verbose $file $VT_STAGING_DIR
         chgrp --verbose $DATA_GROUP "${VT_STAGING_DIR}/${file_name}"   
         verify_transfer $file "${VT_STAGING_DIR}/${file_name}" 
@@ -182,7 +179,7 @@ done
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 # Sync summary log file with campus
-printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
+printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit

@@ -25,16 +25,17 @@
 
 ###################################################################################################
 
-# Load in function library
-source "${HOME}/data_flow/library/data_flow_functions.sh"
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
+source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in function library
+source "${HOME}/pydarnio-env/bin/activate"
 
 ###################################################################################################
 
 RADARID=$1
 
-# Sites that have to convert dmap files on campus. If a site isn't specified here, then this script 
-# is skipped and the next data flow script executes immediately
-readonly SITES=("cly" "rkn")
+# Sites that have to convert dmap files on campus are specified in LOW_BANDWIDTH_SITES within the
+# config file. If a site isn't specified there, then this script is skipped and the next data flow 
+# script executes immediately
 
 # Define directories
 readonly DATA_DIR="/sddata"
@@ -50,10 +51,8 @@ readonly  SUMMARY_DIR="${HOME}/logs/convert_on_campus/summary/$(date +%Y)/$(date
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).convert_on_campus_summary.log"
 
-# Define variables needed to rsync summary files back to campus
-readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/convert_on_campus"
-readonly TELEMETRY="telemetry@chapman.usask.ca"
-readonly RSH="ssh -p 2222"
+# Telemetry directory for this script and site
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/convert_on_campus"
 
 ###################################################################################################
 
@@ -64,7 +63,7 @@ printf "########################################################################
 printf "Executing $0 on $(hostname)\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
-if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
 
     # Get status info on data_flow and pyDARNio repos
     printf "data_flow repo: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
@@ -75,7 +74,6 @@ if [[ " ${SITES[*]} " =~ " ${RADARID} " ]]; then
     printf "Conversion directory: $DATA_DIR\n\n"
 
     RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
-    source "${HOME}/pydarnio-env/bin/activate"
 
     if [[ -n $RAWACF_CONVERT_FILES ]]; then
         printf "Converting the following files:\n"
@@ -116,7 +114,7 @@ fi
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 # Sync summary log file with campus
-printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
+printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit

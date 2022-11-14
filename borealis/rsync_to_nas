@@ -10,7 +10,7 @@
 # site Borealis computer.
 #
 # To move files to the Site-Linux computer instead: 
-#	1. Set TRANSFER_TO_NAS to false, 
+#	1. Remove RADARID for the specified site from NAS_SITES in config.sh
 #	2. Ensure SITE_LINUX is set correctly within $HOME/.profile
 #	3. Ensure the directory specified in the DEST variable exists on the Site-Linux computer
 #
@@ -36,22 +36,20 @@
 
 ###################################################################################################
 
-# Transfer to NAS flag. If not true, transfer to $SITE_LINUX computer instead
-readonly TRANSFER_TO_NAS=true
-
-###################################################################################################
-
-source "${HOME}/data_flow/library/data_flow_functions.sh"
 source "${HOME}/.profile"	# Get BOREALISPATH and SITE_LINUX
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
+source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in function library
 
 ###################################################################################################
+
+readonly RADARID=$(hostname | cut --characters 1-3)
 
 # Borealis directory files are transferring from
 # Use jq with -r option source for the data from Borealis config file
 readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
 
 # Directory the files will be transferred to
-if [[ "$TRANSFER_TO_NAS" == true ]]; then
+if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
 	readonly DEST="/borealis_nfs/borealis_data/daily/" # On NAS
 else
 	readonly DEST="/data/borealis_data/daily" # On Site Linux
@@ -65,11 +63,8 @@ readonly SUMMARY_DIR="${HOME}/logs/rsync_to_nas/summary/$(date +%Y)/$(date +%m)"
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_nas_summary.log"
 
-# Define variables needed to rsync summary files back to campus
-readonly RADARID=$(hostname | cut --characters 1-3)
-readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/rsync_to_nas"
-readonly TELEMETRY="telemetry@chapman.usask.ca"
-readonly RSH="ssh -p 2222"
+# Telemetry directory for this script and site
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/rsync_to_nas"
 
 ###################################################################################################
 
@@ -93,14 +88,14 @@ printf "data_flow repo: $(git -C ${HOME}/data_flow status | grep "On branch"), l
 printf "pyDARNio repo: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
-printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
+printf "Transferring from: $SOURCE\n\n" | tee --append $SUMMARY_FILE
 
 # Get all files that aren't currently being written do. First, find all .site files in source 
 # directory. Then, filter out all files that have same timestamp in the filename as the file that 
 # triggered the script via inotify. This will effectively prevent the script from transferring 
 # files currently being written by Borealis
 
-if [[ "$TRANSFER_TO_NAS" == true ]]; then
+if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
 	printf "Transferring to NAS: $DEST\n" | tee --append $SUMMARY_FILE
 	search=(\( -name "*rawacf.hdf5.*" -o -name "*bfiq.hdf5.*" -o -name "*antennas_iq.hdf5.*" \))
 else
@@ -129,7 +124,7 @@ fi
 # Transfer files
 for file in $files
 do
-	if [[ "$TRANSFER_TO_NAS" == true ]]; then
+	if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
 		# rsync file to NAS
 		printf "\nTransferring: $file to $DEST\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $DEST
@@ -159,7 +154,7 @@ done
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 # Sync summary log file with campus
-printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
+printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit

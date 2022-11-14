@@ -22,7 +22,7 @@ readonly WATCH_DIR="/data/borealis_data"
 
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')
 readonly LOG_DIR="${HOME}/logs/inotify_daemons"
-mkdir -p $LOG_DIR
+mkdir --parents $LOG_DIR
 readonly LOGFILE="${LOG_DIR}/${script_name}.log"
 
 readonly FILTER_TIME=15  # Minumum time between script executions in seconds
@@ -33,7 +33,7 @@ readonly REMOTE_FLAG_DEST="/home/transfer/data_flow/.inotify_watchdir"
 
 # Flag to send to start next script
 readonly FLAG_SRC="${HOME}/data_flow/.inotify_flags"
-mkdir -p $FLAG_SRC
+mkdir --parents $FLAG_SRC
 readonly FLAG_OUT="${FLAG_SRC}/.borealis_flag" 
 
 ###################################################################################################
@@ -63,12 +63,12 @@ do
             printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0\n"
 
             # Pass current filename so script knows what to omit
-            printf "Executing rsync_to_nas...\n"
+            printf "Executing rsync_to_nas $FILE\n"
             $HOME/data_flow/borealis/rsync_to_nas $FILE
 
             # Send "flag" file to notify site-linux computer to start next script
             touch $FLAG_OUT
-            rsync -a --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${REMOTE_FLAG_DEST}"
+            rsync --archive --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${REMOTE_FLAG_DEST}"
             printf "Sent ${FLAG_OUT} to  ${SITE_LINUX}:${REMOTE_FLAG_DEST}\n"
 
             printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"

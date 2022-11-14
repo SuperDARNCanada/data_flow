@@ -9,11 +9,7 @@
 # campus. Files are copied first and removed once copy is confirmed to be successful. 
 #
 # To modify this script to transfer files from a local Site-Linux directory instead of the NAS:
-#   1. Change DATA_DIR to the directory on the Site-Linux computer Borealis data is stored. This 
-#      directory must have the same structure as the NAS directory (rawacf_array and rawacf_dmap
-#	   directories specifically)
-#   2. Specify which files are to be transferred by add/removing the RADARID of the respective site 
-#      from the *.SITES arrays
+#	1. Remove RADARID for the specified site from NAS_SITES in config.sh
 #
 # Dependencies:
 # 	- RADARID and SDCOPY set as environment variables in ${HOME}/.bashrc
@@ -26,21 +22,22 @@
 ###################################################################################################
 
 source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
 source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
 
 ###################################################################################################
 
-# Specify which sites will transfer each file type
-readonly DMAP_SITES=("sas" "pgr" "inv")
-readonly ARRAY_SITES=("sas" "pgr" "inv" "cly" "rkn")
-
 # Location rawacf files are transferring from
-readonly DATA_DIR="/borealis_nfs/borealis_data"
+if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+	readonly DATA_DIR="/borealis_nfs/borealis_data" # On NAS
+else
+	readonly DATA_DIR="/data/borealis_data" # On Site Linux
+fi
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
-if [[ ! " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
 	readonly DEST="/sddata/${RADARID}_holding_dir"
 else
 	readonly DEST="/sddata/${RADARID}_data/"
@@ -54,10 +51,8 @@ readonly SUMMARY_DIR="${HOME}/logs/rsync_to_campus/summary/$(date +%Y)/$(date +%
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_campus_summary.log"
 
-# Define variables needed to rsync summary files back to campus
-readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs/${RADARID}/rsync_to_campus"
-readonly TELEMETRY="telemetry@chapman.usask.ca"
-readonly RSH="ssh -p 2222"
+# Telemetry directory for this script and site
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/rsync_to_campus"
 
 ###################################################################################################
 
@@ -86,7 +81,7 @@ printf "Transferring from: $DATA_DIR\n" | tee --append $SUMMARY_FILE
 printf "Transferring to: $SDCOPY:$DEST\n\n" | tee --append $SUMMARY_FILE
 
 # Check if this site is transferring dmaps to campus
-if [[ " ${DMAP_SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ ! " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
 	# Find all dmap files to transfer
 	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 
@@ -119,44 +114,40 @@ else
 	printf "\nNot transferring any dmap files\n" | tee --append $SUMMARY_FILE
 fi
 
-# Check if this site is transferring HDF5 to campus
-if [[ " ${ARRAY_SITES[*]} " =~ " ${RADARID} " ]]; then
-	# Find all hdf5 files to transfer
-	files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
 
-	if [[ -n $files ]]; then
-		printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
-		printf '%s\n' "${files[@]}"
-	else
-		printf "\nNo array files found to be transferred.\n" | tee --append $SUMMARY_FILE
-	fi
+# Find all hdf5 files to transfer
+files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
 
-	# Transfer all files found
-	for file in $files; do
-		printf "\nTransferring: ${file} to ${SDCOPY}:${DEST}\n"
-		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
-
-		# Check if transfer was okay using the md5sum program
-		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
-		return_value=$?
-		if [[ $return_value -eq 0 ]]; then
-			printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
-			printf "Deleting file...\n"
-			rm --verbose $file
-		else
-            # If file not transferred successfully, don't delete and try again next time
-			printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
-			printf "File not deleted.\n"
-		fi
-	done
+if [[ -n $files ]]; then
+	printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
+	printf '%s\n' "${files[@]}"
 else
-	printf "\nNot transferring any array files\n" | tee --append $SUMMARY_FILE
+	printf "\nNo array files found to be transferred.\n" | tee --append $SUMMARY_FILE
 fi
+
+# Transfer all files found
+for file in $files; do
+	printf "\nTransferring: ${file} to ${SDCOPY}:${DEST}\n"
+	rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
+
+	# Check if transfer was okay using the md5sum program
+	verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
+	return_value=$?
+	if [[ $return_value -eq 0 ]]; then
+		printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "Deleting file...\n"
+		rm --verbose $file
+	else
+		# If file not transferred successfully, don't delete and try again next time
+		printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "File not deleted.\n"
+	fi
+done
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 # Sync summary log file with campus
-printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_DIR\n\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_DIR
+printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit

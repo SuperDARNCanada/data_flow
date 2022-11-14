@@ -22,12 +22,11 @@ source "${HOME}/pydarnio-env/bin/activate"
 
 # Define directories
 readonly DATA_DIR="/borealis_nfs/borealis_data"
-# readonly SOURCE="${DATA_DIR}/antennas_iq_array" # this is the source
-SOURCE="/home/radar/testing/data_flow_testing/src"
+readonly SOURCE="${DATA_DIR}/antennas_iq_array" # this is the source
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Specify which sites will convert each file type
-readonly ANTENNAS_IQ_SITES=("sas" "pgr" "inv" "cly" "rkn" "lab")
+readonly ANTENNAS_IQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly LOW_MEMORY_SITES=("pgr" "inv" "rkn")
 
 # Create log file. New file created daily
@@ -70,7 +69,7 @@ else
 	printf "No antennas_iq files found to be converted.\n" | tee --append $SUMMARY_FILE
 fi
 
-printf "Number of files converting: ${#ANTENNAS_IQ_CONVERT_FILES[@]}\n\n"
+printf "Number of files converting: $(echo $ANTENNAS_IQ_CONVERT_FILES | wc -w)\n\n"
 count=1
 
 # Convert antennas_iq files to array format

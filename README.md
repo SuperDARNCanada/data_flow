@@ -122,3 +122,5 @@ with borealis_dataflow.service on the Borealis computer). As super user, do the 
 file and easily parseable to monitor data flow operation. Each script rsyncs the summary files to 
 Chapman for uploading to the Engineering dashboard. SSH password-free connection must be setup 
 between each computer and Chapman for this to work correctly. 
+8. To modify the data flow easily, a `config.sh` file is provided. This file specifies:
+    - If the data flow can use the NAS at a site
