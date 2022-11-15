@@ -83,12 +83,12 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 fi
 
 # Get status info on data_flow and pyDARNio repos
-printf "data_flow repo: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
+printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
-printf "pyDARNio repo: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
+printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
-printf "Transferring from: $SOURCE\n\n" | tee --append $SUMMARY_FILE
+printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 
 # Get all files that aren't currently being written do. First, find all .site files in source 
 # directory. Then, filter out all files that have same timestamp in the filename as the file that 
@@ -96,10 +96,10 @@ printf "Transferring from: $SOURCE\n\n" | tee --append $SUMMARY_FILE
 # files currently being written by Borealis
 
 if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
-	printf "Transferring to NAS: $DEST\n" | tee --append $SUMMARY_FILE
+	printf "Transferring to NAS: $DEST\n\n" | tee --append $SUMMARY_FILE
 	search=(\( -name "*rawacf.hdf5.*" -o -name "*bfiq.hdf5.*" -o -name "*antennas_iq.hdf5.*" \))
 else
-	printf "Transferring to Site-Linux: $DEST\n" | tee --append $SUMMARY_FILE
+	printf "Transferring to Site-Linux: $DEST\n\n" | tee --append $SUMMARY_FILE
 	search=(\( -name "*rawacf.hdf5.*" \)) # If transferring to site computer, only send rawacf
 fi
 
@@ -109,9 +109,11 @@ fi
 if [[ $# -eq 0 ]]; then
 	# Default to omitting nothing and grabbing files not written to in last 5 minutes
 	files=$(find ${SOURCE} "${search[@]}" -cmin +5) 
+	printf "No input file specified, filtering all recent files instead\n"
 else
 	omit_pattern="$(echo $1 | cut --fields 1-3 --delimiter ".")"
 	files=$(find ${SOURCE} "${search[@]}" | grep --invert-match --fixed-strings $omit_pattern)
+	printf "Filtering out files with pattern ${omit_pattern}"
 fi
 
 if [[ -n $files ]]; then
@@ -126,7 +128,7 @@ for file in $files
 do
 	if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
 		# rsync file to NAS
-		printf "\nTransferring: $file to $DEST\n"
+		printf "\nTransferring: $file\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $DEST
 
 		# check if transfer was okay using the md5sum program, then remove the file if it matches
@@ -154,7 +156,7 @@ done
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 # Sync summary log file with campus
-printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
 rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit

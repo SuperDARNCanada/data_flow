@@ -6,6 +6,11 @@
 
 ###################################################################################################
 
+# Valid site RADARID values
+readonly VALID_RADARIDS=("sas" "pgr" "inv" "cly" "rkn")
+
+###################################################################################################
+
 # Transfer to NAS flag. If not true, transfer to $SITE_LINUX computer instead
 # Changes what data is transferred and converted, and where the data flows through
 readonly NAS_SITES=("sas" "pgr" "inv" "cly" "rkn")

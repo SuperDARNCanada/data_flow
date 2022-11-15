@@ -33,6 +33,16 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in functions
 
 readonly RADARID=$1
 
+if [[ $# -ne 1 ]]; then
+    printf "Usage: ./convert_on_campus RADARID\n"
+    exit 1
+fi
+
+if [[ ! " ${VALID_RADARIDS[*]} " =~ " ${RADARID} " ]]; then
+    printf "\"$RADARID\" is not a valid radar ID\n"
+    exit 1
+fi
+
 # Define directories
 readonly SOURCE="/sddata/${RADARID}_data"
 readonly NAS_DIR="/data/borealis_site_data"
@@ -65,9 +75,9 @@ printf "Executing $(basename "$0") on $(hostname)\n" | tee --append $SUMMARY_FIL
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Get status info on data_flow and pyDARNio repos
-printf "data_flow repo: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
+printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
-printf "pyDARNio repo: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
+printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
 printf "Distributing from: $SOURCE\n" | tee --append $SUMMARY_FILE
@@ -76,8 +86,8 @@ printf "Distributing to: \n\
         \tMirror: $MIRROR_STAGING_DIR\n\
         \tInstitutions: $BAS_STAGING_DIR\t$VT_STAGING_DIR\n\n" | tee --append $SUMMARY_FILE
 
-dmap_files=$(find ${SOURCE} -name "*rawacf.bz2" -maxdepth 1)
-array_files=$(find ${SOURCE} -name "*rawacf.hdf5" -maxdepth 1)
+dmap_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.bz2")
+array_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.hdf5")
 
 if [[ -n $dmap_files ]]; then
     printf "Distributing the following dmap files:\n" 
@@ -179,7 +189,7 @@ done
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 # Sync summary log file with campus
-printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
 rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit

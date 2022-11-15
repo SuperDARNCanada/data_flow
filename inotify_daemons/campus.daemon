@@ -14,6 +14,11 @@
 
 ###################################################################################################
 
+if [[ $# -ne 1 ]]; then
+    printf "Usage: ./campus.daemon RADARID\n"
+    exit 1
+fi
+
 RADARID=$1
 
 readonly WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"

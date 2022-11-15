@@ -72,9 +72,9 @@ if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
 fi
 
 # Get status info on data_flow and pyDARNio repos
-printf "data_flow repo: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
+printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
-printf "pyDARNio repo: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
+printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
 printf "Transferring from: $DATA_DIR\n" | tee --append $SUMMARY_FILE
@@ -111,7 +111,7 @@ if [[ ! " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
 		fi
 	done
 else
-	printf "\nNot transferring any dmap files\n" | tee --append $SUMMARY_FILE
+	printf "Not transferring any dmap files\n" | tee --append $SUMMARY_FILE
 fi
 
 
@@ -127,7 +127,7 @@ fi
 
 # Transfer all files found
 for file in $files; do
-	printf "\nTransferring: ${file} to ${SDCOPY}:${DEST}\n"
+	printf "\nTransferring: ${file}\n"
 	rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
 	# Check if transfer was okay using the md5sum program
@@ -147,7 +147,7 @@ done
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 # Sync summary log file with campus
-printf "Syncing $SUMMARY_FILE to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
 rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit
