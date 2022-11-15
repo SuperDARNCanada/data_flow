@@ -95,7 +95,7 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         if [ $ret -eq 0 ]; then
             # then remove source site file.
             # The array file will remain in the source directory (antennas_iq_array)
-            # rm --verbose $f
+            rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
             printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
