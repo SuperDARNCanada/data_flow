@@ -15,7 +15,7 @@ import os
 import json
 from glob import glob
 from socket import gethostbyaddr
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 
 
 def usage_msg():
@@ -47,7 +47,8 @@ def argument_parser():
 
 def get_dataflow_overview(log_directory, scripts):
     """
-
+    Collects summary data on each scripts operation. This data includes hostname, source and destination directories,
+    and types of SuperDARN files operated on
     :param log_directory: Directory to start searching for summary logfiles
     :param scripts: List of all scripts to search for. Possible scripts are: ['rsync_to_nas', 'convert_and_restructure',
     'rsync_to_campus', 'convert_on_campus', 'distribute_borealis_data']
@@ -92,55 +93,56 @@ def get_dataflow_overview(log_directory, scripts):
                     latest_entry = []
 
         # Iterate through latest entry and fill out summary dictionary
-        conversion_files = ['rawacf', 'antennas_iq']  # Filetypes converted
         transferring_files = ['array', 'dmap']  # Filetypes sent back to campus
         converting_on_campus = True  # If convert_on_campus is converting for this site
 
-        for line in latest_entry:
+        for index, line in enumerate(latest_entry):
 
             # Get hostname executing script
             if line.startswith("Executing"):
                 # Ex): "Executing /home/radar/data_flow/borealis/rsync_to_nas on sasborealis"
                 summary_data[script]['host'] = line.split()[-1]
+                # Get last execution time
+                date_string = latest_entry[index + 1].split()[0:2]
+                date_string = ' '.join(date_string)
+                dt_format = "%Y%m%d %H:%M:%S"
+                dt = datetime.strptime(date_string, dt_format)
+                date_string = dt.strftime("%Y-%d-%m %H:%M:%S")
+                summary_data[script]['last_executed'] = date_string
 
-            # Summary entries unique to rsync_to_nas
-            if script == 'rsync_to_nas':
-                if line.startswith("Transferring from:"):
+            # Get git repo info
+            if line.startswith(("data_flow", "pyDARNio")):
+                git_repo = line.split()[0]  # data_flow or pyDARNio
+                git_info = [line.split()[-7], ' '.join(line.split()[-3:-1])]
+                summary_data[script][f'{git_repo}_branch'] = git_info
+
+            # Summary entries unique to transfer scripts
+            if script in ['rsync_to_nas', 'rsync_to_campus', 'distribute_borealis_data']:
+                if line.startswith(("Transferring from:", "Distributing from:")):
                     summary_data[script]['source'] = line.split()[-1]
 
-                if line.startswith("Transferring to"):
-                    # Ex): "Transferring to NAS: /borealis_nfs/borealis_data/daily/"
-                    summary_data[script]['destination'] = line.split()[2][:-1]  # Trim ':' off end of string
-                    summary_data[script]['destination_directory'] = line.split()[3]
-
-            # Summary entries unique to convert_and_restructure
-            if script == 'convert_and_restructure':
+            # Summary entries unique to conversion scripts
+            if script in ['convert_and_restructure', 'convert_on_campus']:
                 if line.startswith("Conversion"):
                     # Ex): "Conversion directory: /borealis_nfs/borealis_data"
                     summary_data[script]['data_directory'] = line.split()[-1]
 
-                if line.startswith("Not converting:"):
-                    # Ex): "Not converting: /borealis_nfs/borealis_data/daily/20221101.0400.00.sas.0.antennas_iq.hdf5.site"
-                    file_name = line.split()[-1]
-                    if 'rawacf' in file_name:
-                        conversion_files.remove('rawacf')
-                    if 'antennas_iq' in file_name:
-                        conversion_files.remove('antennas_iq')
+            # Summary entries unique to rsync_to_nas
+            if script == 'rsync_to_nas':
+                if line.startswith("Transferring to"):
+                    # Ex): "Transferring to NAS: /borealis_nfs/borealis_data/daily/"
+                    summary_data[script]['destination'] = line.split()[2][:-1]  # Trim ':' off end of string
 
             # Summary entries unique to rsync_to_campus
             if script == 'rsync_to_campus':
-                if line.startswith("Transferring from:"):
-                    # Ex) Transferring from: /borealis_nfs/borealis_data
-                    summary_data[script]['source'] = line.split()[-1]
-
                 if line.startswith("Transferring to:"):
                     # Ex) "Transferring to: mrcopy@128.233.224.39:/sddata/sas_data/"
                     full_destination = line.split()[-1].split(':')
                     dest_addr = full_destination[0]  # Ex) mrcopy@128.233.224.39
                     dest_ip = dest_addr.split("@")[1]  # Ex) 128.233.224.39
 
-                    summary_data[script]['destination'] = gethostbyaddr(dest_ip)[0]  # Convert IP to domain name
-                    summary_data[script]['destination_directory'] = full_destination[1]  # Ex) /sddata/sas_data/
+                    summary_data[script]['destination'] = gethostbyaddr(dest_ip)[0].split('.')[0]  # Convert IP to domain name
+                    # summary_data[script]['destination_directory'] = full_destination[1]  # Ex) /sddata/sas_data/
 
                 if line.startswith("Not transferring any"):
                     if 'dmap' in line:
@@ -152,26 +154,6 @@ def get_dataflow_overview(log_directory, scripts):
                 if line.startswith("Not converting"):
                     # Ex) "Not converting files for sas."
                     converting_on_campus = False
-
-            if script == 'distribute_borealis_data':
-                if line.startswith("Distributing from:"):
-                    # Ex) "Distributing from: /sddata/sas_data"
-                    summary_data[script]['source'] = line.split()[-1]
-
-                if line.startswith("NAS:"):
-                    # Ex) "    NAS: /data/borealis_site_data"
-                    summary_data[script]['NAS_directory'] = line.split()[-1]
-
-                if line.startswith("Mirror:"):
-                    # Ex) "    Mirror: /data/holding/globus
-                    summary_data[script]['mirror_staging'] = line.split()[-1]
-
-                if line.startswith("Institutions:"):
-                    # Ex) "    Institutions: /home/bas/outgoing/sas    /home/vtsd/outgoing/sas
-                    summary_data[script]['institutions_staging'] = line.split()[1:3]
-
-        if script == 'convert_and_restructure':
-            summary_data[script]['convert_filetype'] = conversion_files
 
         if script == 'rsync_to_campus':
             summary_data[script]['transfer_filetype'] = transferring_files
@@ -207,6 +189,7 @@ def parse_logfile(log_directory, scripts, n):
 
     dataflow_stats = {}
     threshold = 1
+    old_log_threshold = timedelta(days=n)
 
     for script in scripts:
         # Find all log files for script
@@ -217,7 +200,14 @@ def parse_logfile(log_directory, scripts, n):
 
         # Get the n latest logfiles
         latest_logs = sorted(logs, key=os.path.getmtime, reverse=True)[0:n]
-        # print(latest_logs)
+        # Remove all logs older than n days
+        copy = latest_logs.copy()
+        for log in latest_logs:
+            log_dt = datetime.fromtimestamp(os.path.getmtime(log))
+            current_dt = datetime.now()
+            if current_dt - old_log_threshold > log_dt:
+                copy.remove(log)
+        latest_logs = copy
 
         if script == 'rsync_to_nas':
             dataflow_stats['rsync_to_nas'] = parse_transfer_logs(latest_logs, threshold)
@@ -256,6 +246,7 @@ def parse_transfer_logs(logfiles, threshold):
     successful_files = 0    # Number of successful files transferred
     no_action = False       # Flag to check if script executed transfers when it was triggered
     empty_runs = 0          # Number of times the script performed no transfers
+    transfer_times = []
 
     for log in logfiles:
         with open(log) as f:
@@ -288,13 +279,32 @@ def parse_transfer_logs(logfiles, threshold):
                     failed_files.append(filename)
                     no_action = False
 
+                # Calculate the total transfer time
+                if line.startswith("Finished"):
+                    date_string = ' '.join(line.split()[-3:-1])
+                    dt_format = "%Y%m%d %H:%M:%S"
+                    end_dt = datetime.strptime(date_string, dt_format)     # datetime transfer occurred
+                    transfer_time = end_dt - transfer_dt
+                    transfer_times.append(transfer_time)
+
     total_files = successful_files + len(failed_files)
+    if total_files > 0:
+        success_rate = successful_files/total_files*100
+    else:
+        success_rate = 0
+
+    if len(transfer_times) > 0:
+        avg = sum(transfer_times, timedelta(0)) / len(transfer_times)
+    else:
+        avg = sum(transfer_times, timedelta(0))
+    average_time = (datetime.min + avg).time()
 
     stats['total_file_count'] = total_files
-    stats['successful_file_count'] = successful_files
-    stats['failed_files'] = failed_files
-    stats['old_files'] = old_files
+    stats['success_rate'] = f"{str(success_rate)}%"
+    stats['average_time'] = average_time.strftime("%H:%M:%S")
     stats['empty_runs'] = empty_runs
+    stats['old_files'] = old_files
+    stats['failed_files'] = failed_files
 
     return stats
 
@@ -322,6 +332,7 @@ def parse_convert_logs(logfiles, threshold):
     successful_antennas_iq = 0  # Number of successful antennas_iq conversions
     no_action = False       # Flag to check if script executed transfers when it was triggered
     empty_runs = 0          # Number of times the script performed no transfers
+    transfer_times = []
 
     for log in logfiles:
         with open(log) as f:
@@ -372,27 +383,41 @@ def parse_convert_logs(logfiles, threshold):
                     filename = line.split()[-1][:-1]
                     records_removed.append(filename)
 
+                # Calculate the total transfer time
+                if line.startswith("Finished"):
+                    date_string = ' '.join(line.split()[-3:-1])
+                    dt_format = "%Y%m%d %H:%M:%S"
+                    end_dt = datetime.strptime(date_string, dt_format)  # datetime transfer occurred
+                    transfer_time = end_dt - transfer_dt
+                    transfer_times.append(transfer_time)
+
     total_rawacf = successful_rawacf + len(failed_rawacf)
     total_antennas_iq = successful_antennas_iq + len(failed_antennas_iq)
     total_file_count = total_antennas_iq + total_rawacf
 
+    if total_file_count > 0:
+        success_rate = (successful_rawacf + successful_antennas_iq)/total_file_count*100
+    else:
+        success_rate = 0
+
+    if len(transfer_times) > 0:
+        avg = sum(transfer_times, timedelta(0)) / len(transfer_times)
+    else:
+        avg = sum(transfer_times, timedelta(0))
+    average_time = (datetime.min + avg).time()
+
+    stats['total_file_count'] = total_file_count
+    stats['success_rate'] = f"{str(success_rate)}%"
+    stats['average_time'] = average_time.strftime("%H:%M:%S")
+    stats['empty_runs'] = empty_runs
+    stats['old_files'] = old_files
+
     if scriptname == 'convert_and_restructure':
-        stats['total_file_count'] = total_file_count
-        stats['successful_rawacf_count'] = successful_rawacf
-        stats['successful_antennas_iq_count'] = successful_antennas_iq
         stats['failed_rawacf'] = failed_rawacf
         stats['failed_antennas_iq'] = failed_antennas_iq
-        stats['old_files'] = old_files
         stats['records_removed'] = records_removed
-        stats['empty_runs'] = empty_runs
-    elif scriptname == 'convert_on_campus':
-        stats['total_file_count'] = total_file_count
-        stats['successful_file_count'] = successful_rawacf
-        stats['failed filed'] = failed_rawacf
-        stats['old_files'] = old_files
-        stats['empty_runs'] = empty_runs
     else:
-        raise Exception(f"Script name {scriptname} not valid")
+        stats['failed files'] = failed_rawacf
 
     return stats
 
