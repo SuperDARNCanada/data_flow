@@ -238,6 +238,6 @@ printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC"
 
 # Sync summary log file with campus
 printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
+rsync --archive --rsh="$TELEMETRY_RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit

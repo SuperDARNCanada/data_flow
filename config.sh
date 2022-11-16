@@ -25,14 +25,14 @@ readonly ANTENNAS_IQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 # Special case sites. If a site is specified here, the data flow will be slightly altered to 
 # accomodate the site
-readonly LOW_MEMORY_SITES=("pgr" "inv" "cly" "rkn")   # Sites that can't restructure antennas_iq files normally
-readonly LOW_BANDWIDTH_SITES=("cly" "rkn")      # Sites that don't transfer dmap files to campus
+readonly LOW_MEMORY_SITES=("pgr" "inv" "cly" "rkn")
+readonly LOW_BANDWIDTH_SITES=("cly" "rkn")
 
 ###################################################################################################
 
 # Define variables needed for telemetry
 readonly TELEMETRY_DIR="/home/telemetry/data_flow_logs"
 readonly TELEMETRY="telemetry@chapman.usask.ca"
-readonly RSH="ssh -p 2222"
+readonly TELEMETRY_RSH="ssh -p 2222"
 
 ###################################################################################################

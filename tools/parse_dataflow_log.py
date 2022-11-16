@@ -2,13 +2,7 @@
 Copyright 2022 SuperDARN Canada, University of Saskatchewan
 Author: Theodore Kolkman
 
-TODO: Clean up this sandbox
-What we want to parse:
-- All files that failed conversion/transfer
-- All files that have records removed (conv_and_rest)
-- If no files are transferred/converted
-- If bzip2 / hdf5 tests fail
-- If files older than x days are present
+This script parses data flow logfiles in a specific directory for telemetry data on the data flow.
 """
 import argparse
 import os
@@ -150,6 +144,7 @@ def get_dataflow_overview(log_directory, scripts):
                     if 'array' in line:
                         transferring_files.remove('array')
 
+            # Summary entries unique to convert_on_campus
             if script == 'convert_on_campus':
                 if line.startswith("Not converting"):
                     # Ex) "Not converting files for sas."
@@ -188,7 +183,7 @@ def parse_logfile(log_directory, scripts, n):
             raise ValueError(f"{s} not a valid script name")
 
     dataflow_stats = {}
-    threshold = 1
+    old_file_threshold = 1  # Days
     old_log_threshold = timedelta(days=n)
 
     for script in scripts:
@@ -210,19 +205,19 @@ def parse_logfile(log_directory, scripts, n):
         latest_logs = copy
 
         if script == 'rsync_to_nas':
-            dataflow_stats['rsync_to_nas'] = parse_transfer_logs(latest_logs, threshold)
+            dataflow_stats['rsync_to_nas'] = parse_transfer_logs(latest_logs, old_file_threshold)
 
         if script == 'convert_and_restructure':
-            dataflow_stats['convert_and_restructure'] = parse_convert_logs(latest_logs, threshold)
+            dataflow_stats['convert_and_restructure'] = parse_convert_logs(latest_logs, old_file_threshold)
 
         if script == 'rsync_to_campus':
-            dataflow_stats['rsync_to_campus'] = parse_transfer_logs(latest_logs, threshold)
+            dataflow_stats['rsync_to_campus'] = parse_transfer_logs(latest_logs, old_file_threshold)
 
         if script == 'convert_on_campus':
-            dataflow_stats['convert_on_campus'] = parse_convert_logs(latest_logs, threshold)
+            dataflow_stats['convert_on_campus'] = parse_convert_logs(latest_logs, old_file_threshold)
 
         if script == 'distribute_borealis_data':
-            dataflow_stats['distribute_borealis_data'] = parse_transfer_logs(latest_logs, threshold)
+            dataflow_stats['distribute_borealis_data'] = parse_transfer_logs(latest_logs, old_file_threshold)
 
     return dataflow_stats
 
@@ -246,7 +241,7 @@ def parse_transfer_logs(logfiles, threshold):
     successful_files = 0    # Number of successful files transferred
     no_action = False       # Flag to check if script executed transfers when it was triggered
     empty_runs = 0          # Number of times the script performed no transfers
-    transfer_times = []
+    execution_times = []    # List of times each script took to execute
 
     for log in logfiles:
         with open(log) as f:
@@ -285,22 +280,24 @@ def parse_transfer_logs(logfiles, threshold):
                     dt_format = "%Y%m%d %H:%M:%S"
                     end_dt = datetime.strptime(date_string, dt_format)     # datetime transfer occurred
                     transfer_time = end_dt - transfer_dt
-                    transfer_times.append(transfer_time)
+                    execution_times.append(transfer_time)
 
+    # Calculate the script success rate
     total_files = successful_files + len(failed_files)
     if total_files > 0:
         success_rate = successful_files/total_files*100
     else:
         success_rate = 0
 
-    if len(transfer_times) > 0:
-        avg = sum(transfer_times, timedelta(0)) / len(transfer_times)
+    # Calculate average time for the script to execute
+    if len(execution_times) > 0:
+        avg = sum(execution_times, timedelta(0)) / len(execution_times)
     else:
-        avg = sum(transfer_times, timedelta(0))
+        avg = sum(execution_times, timedelta(0))
     average_time = (datetime.min + avg).time()
 
     stats['file_count'] = total_files
-    stats['success_rate'] = f"{str(success_rate)}%"
+    stats['success_rate'] = f"{success_rate:.2f}%"
     stats['average_time'] = average_time.strftime("%H:%M:%S")
     stats['empty_runs'] = empty_runs
     stats['old_files'] = old_files
@@ -330,9 +327,9 @@ def parse_convert_logs(logfiles, threshold):
     old_files = []              # List containing all files older than the
     successful_rawacf = 0       # Number of successful rawacf conversions
     successful_antennas_iq = 0  # Number of successful antennas_iq conversions
-    no_action = False       # Flag to check if script executed transfers when it was triggered
-    empty_runs = 0          # Number of times the script performed no transfers
-    transfer_times = []
+    no_action = False           # Flag to check if script executed transfers when it was triggered
+    empty_runs = 0              # Number of times the script performed no transfers
+    execution_times = []        # List of times each script took to execute
 
     for log in logfiles:
         with open(log) as f:
@@ -390,7 +387,7 @@ def parse_convert_logs(logfiles, threshold):
                     dt_format = "%Y%m%d %H:%M:%S"
                     end_dt = datetime.strptime(date_string, dt_format)  # datetime transfer occurred
                     transfer_time = end_dt - transfer_dt
-                    transfer_times.append(transfer_time)
+                    execution_times.append(transfer_time)
 
     total_rawacf = successful_rawacf + len(failed_rawacf)
     total_antennas_iq = successful_antennas_iq + len(failed_antennas_iq)
@@ -401,18 +398,19 @@ def parse_convert_logs(logfiles, threshold):
     else:
         success_rate = 0
 
-    if len(transfer_times) > 0:
-        avg = sum(transfer_times, timedelta(0)) / len(transfer_times)
+    if len(execution_times) > 0:
+        avg = sum(execution_times, timedelta(0)) / len(execution_times)
     else:
-        avg = sum(transfer_times, timedelta(0))
+        avg = sum(execution_times, timedelta(0))
     average_time = (datetime.min + avg).time()
 
     stats['file_count'] = file_count
-    stats['success_rate'] = f"{str(success_rate)}%"
+    stats['success_rate'] = f"{success_rate:.2f}%"
     stats['average_time'] = average_time.strftime("%H:%M:%S")
     stats['empty_runs'] = empty_runs
     stats['old_files'] = old_files
 
+    # Store script specific data
     if scriptname == 'convert_and_restructure':
         stats['failed_rawacf'] = failed_rawacf
         stats['failed_antennas_iq'] = failed_antennas_iq
@@ -453,6 +451,7 @@ if __name__ == '__main__':
 
     today = datetime.now().strftime("%Y-%m-%d %H:%M")
     print(f"\n{today}")
+    print(f"Parsing logs in {log_dir}")
 
     overall_dict = {}
     for script in scripts:
@@ -479,6 +478,8 @@ if __name__ == '__main__':
                     else:
                         print('\t\t', k, ':', overall_dict[i][j][k])
 
-    # Write parse dictionary to json file
+    # Write parsed dictionary to json file
     with open(out_file, 'w') as fp:
         json.dump(overall_dict, fp, indent=4)
+
+    print("Finished parsing logs")

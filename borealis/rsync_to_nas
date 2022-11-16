@@ -10,7 +10,7 @@
 # site Borealis computer.
 #
 # To move files to the Site-Linux computer instead: 
-#	1. Remove RADARID for the specified site from NAS_SITES in config.sh
+#	1. Remove the RADARID of the site from NAS_SITES in config.sh
 #	2. Ensure SITE_LINUX is set correctly within $HOME/.profile
 #	3. Ensure the directory specified in the DEST variable exists on the Site-Linux computer
 #
@@ -45,8 +45,8 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in function li
 readonly RADARID=$(hostname | cut --characters 1-3)
 
 # Borealis directory files are transferring from
-# Use jq with -r option source for the data from Borealis config file
-readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq -r '.data_directory')"
+# Use jq to read the Borealis data directory from the Borealis config file
+readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq --raw-output '.data_directory')"
 
 # Directory the files will be transferred to
 if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
@@ -100,7 +100,7 @@ if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
 	search=(\( -name "*rawacf.hdf5.*" -o -name "*bfiq.hdf5.*" -o -name "*antennas_iq.hdf5.*" \))
 else
 	printf "Transferring to Site-Linux: $DEST\n\n" | tee --append $SUMMARY_FILE
-	search=(\( -name "*rawacf.hdf5.*" \)) # If transferring to site computer, only send rawacf
+	search=(\( -name "*rawacf.hdf5.*" \)) 	# If transferring to site computer, only send rawacf
 fi
 
 # Using the filename that this script triggered on, a pattern can be determined to omit the current
@@ -157,6 +157,6 @@ printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC"
 
 # Sync summary log file with campus
 printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
-rsync --archive --rsh="$RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
+rsync --archive --rsh="$TELEMETRY_RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
 exit
