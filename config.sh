@@ -25,7 +25,7 @@ readonly ANTENNAS_IQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 # Special case sites. If a site is specified here, the data flow will be slightly altered to 
 # accomodate the site
-readonly LOW_MEMORY_SITES=("pgr" "inv" "rkn")   # Sites that can't restructure antennas_iq files normally
+readonly LOW_MEMORY_SITES=("pgr" "inv" "cly" "rkn")   # Sites that can't restructure antennas_iq files normally
 readonly LOW_BANDWIDTH_SITES=("cly" "rkn")      # Sites that don't transfer dmap files to campus
 
 ###################################################################################################
