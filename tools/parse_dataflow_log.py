@@ -112,8 +112,8 @@ def get_dataflow_overview(log_directory, scripts):
 
             # Get git repo info
             if line.startswith(("data_flow", "pyDARNio")):
-                git_repo = line.split()[0]  # data_flow or pyDARNio
-                git_info = [line.split()[-7], ' '.join(line.split()[-3:-1])]
+                git_repo = line.split()[0].split(':')[0]  # data_flow or pyDARNio, trim off ':'
+                git_info = [line.split()[-7][:-1], ' '.join(line.split()[-3:-1])]
                 summary_data[script][f'{git_repo}_branch'] = git_info
 
             # Summary entries unique to transfer scripts
@@ -267,7 +267,7 @@ def parse_transfer_logs(logfiles, threshold):
                 # Check if successful file is old
                 if 'successful' in line.lower():
                     successful_files += 1
-                    filename = line.split()[-1]
+                    filename = line.split()[-1].split('/')[-1]
                     file_dt = get_file_datetime(filename)   # datetime file was created
                     if transfer_dt - threshold > file_dt:
                         old_files.append(filename)
@@ -275,7 +275,7 @@ def parse_transfer_logs(logfiles, threshold):
 
                 # Record all failed transfers
                 if 'failed' in line:
-                    filename = line.split()[-1]
+                    filename = line.split()[-1].split('/')[-1]
                     failed_files.append(filename)
                     no_action = False
 
@@ -299,7 +299,7 @@ def parse_transfer_logs(logfiles, threshold):
         avg = sum(transfer_times, timedelta(0))
     average_time = (datetime.min + avg).time()
 
-    stats['total_file_count'] = total_files
+    stats['file_count'] = total_files
     stats['success_rate'] = f"{str(success_rate)}%"
     stats['average_time'] = average_time.strftime("%H:%M:%S")
     stats['empty_runs'] = empty_runs
@@ -358,7 +358,8 @@ def parse_convert_logs(logfiles, threshold):
 
                 # Check if successful file is old
                 if line.startswith("Successfully converted:"):
-                    filename = line.split()[-1]
+                    filename = line.split()[-1].split('/')[-1]
+                    print(filename)
                     if 'rawacf' in filename:
                         successful_rawacf += 1
                     if 'antennas_iq' in filename:
@@ -371,7 +372,7 @@ def parse_convert_logs(logfiles, threshold):
 
                 # Record all failed conversions/restructures
                 if line.startswith("File failed to convert:"):
-                    filename = line.split()[-1]
+                    filename = line.split()[-1].split('/')[-1]
                     if 'rawacf' in filename:
                         failed_rawacf.append(filename)
                     if 'antennas_iq' in filename:
@@ -380,7 +381,7 @@ def parse_convert_logs(logfiles, threshold):
 
                 # Record all files that have records removed
                 if line.startswith("Removed records from"):
-                    filename = line.split()[-1][:-1]
+                    filename = line.split()[-1][:-1].split('/')[-1]
                     records_removed.append(filename)
 
                 # Calculate the total transfer time
@@ -393,10 +394,10 @@ def parse_convert_logs(logfiles, threshold):
 
     total_rawacf = successful_rawacf + len(failed_rawacf)
     total_antennas_iq = successful_antennas_iq + len(failed_antennas_iq)
-    total_file_count = total_antennas_iq + total_rawacf
+    file_count = total_antennas_iq + total_rawacf
 
-    if total_file_count > 0:
-        success_rate = (successful_rawacf + successful_antennas_iq)/total_file_count*100
+    if file_count > 0:
+        success_rate = (successful_rawacf + successful_antennas_iq)/file_count*100
     else:
         success_rate = 0
 
@@ -406,7 +407,7 @@ def parse_convert_logs(logfiles, threshold):
         avg = sum(transfer_times, timedelta(0))
     average_time = (datetime.min + avg).time()
 
-    stats['total_file_count'] = total_file_count
+    stats['file_count'] = file_count
     stats['success_rate'] = f"{str(success_rate)}%"
     stats['average_time'] = average_time.strftime("%H:%M:%S")
     stats['empty_runs'] = empty_runs
@@ -430,7 +431,6 @@ def get_file_datetime(filename):
     """
 
     dt_format = "%Y%m%d.%H%M"
-    filename = filename.split('/')[-1]
     filename = filename.split('.')[0:2]
     filename = '.'.join(filename)
     return datetime.strptime(filename, dt_format)
@@ -451,11 +451,15 @@ if __name__ == '__main__':
 
     detailed_dict = parse_logfile(log_dir, scripts, num_days)
 
+    today = datetime.now().strftime("%Y-%m-%d %H:%M")
+    print(f"\n{today}")
+
     overall_dict = {}
     for script in scripts:
         overall_dict[script] = {}
         overall_dict[script]['summary'] = summary_dict[script]
         overall_dict[script]['stats'] = detailed_dict[script]
+        overall_dict[script]['stats']['days_parsed'] = f"{num_days} days"
 
     # Print output in readable format
     if verbose:
