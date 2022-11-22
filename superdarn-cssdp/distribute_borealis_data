@@ -71,7 +71,7 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
-printf "Executing $(basename "$0") on $(hostname)\n" | tee --append $SUMMARY_FILE
+printf "Executing $(basename "$0") on $(hostname) for ${RADARID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Get status info on data_flow and pyDARNio repos

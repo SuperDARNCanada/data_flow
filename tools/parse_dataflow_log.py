@@ -2,14 +2,20 @@
 Copyright 2022 SuperDARN Canada, University of Saskatchewan
 Author: Theodore Kolkman
 
-This script parses data flow logfiles in a specific directory for telemetry data on the data flow.
+TODO: Clean up this sandbox
+What we want to parse:
+- All files that failed conversion/transfer
+- All files that have records removed (conv_and_rest)
+- If no files are transferred/converted
+- If bzip2 / hdf5 tests fail
+- If files older than x days are present
 """
 import argparse
 import os
 import json
 from glob import glob
 from socket import gethostbyaddr
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 
 
 def usage_msg():
@@ -19,10 +25,13 @@ def usage_msg():
     :return: The usage message
     """
 
-    usage_message = """ parse_dataflow_log.py [-h] [-n NUM_DAYS] log_directory
+    usage_message = """ parse_dataflow_log.py [-h] [-v] [--site_id SITE_ID] [-n NUM_DAYS] -- log_dir out_dir
     
-    This script will parse the summary log files for all found dataflow scripts, and produce a json file containing 
-    information on the logs.
+    This script will parse the summary log files for all found dataflow scripts and collect telemetry info and 
+    statistics. This data will be stored in two separate json files:
+    - One for on-site data flow scripts
+    - One for on-campus data flow scripts
+    Each json file will be split into two sections: Summary and Statistics. 
     """
 
     return usage_message
@@ -31,7 +40,9 @@ def usage_msg():
 def argument_parser():
     parser = argparse.ArgumentParser(usage=usage_msg())
     parser.add_argument("log_dir", help="Path to the directory that holds all data flow summary logfiles to be parsed.")
-    parser.add_argument("out_file", help="File that the parsed data will be written to. Will be JSON format")
+    parser.add_argument("out_dir", nargs="?", help="Directory the json files should be written to. Defaults to log_dir")
+    parser.add_argument("--site_id", help="Site ID of the data flow logs to be parsed. Specifies radar id in outfile "
+                                          "name. Ex) sas, rkn, pgr")
     parser.add_argument("-n", metavar="NUM_DAYS", type=int, default=7, nargs="?",
                         help="Number of days to collect logfile information for. Defaults to 7 days")
     parser.add_argument("-v", "--verbose", action="store_true", help="Print final parsed output in readable format")
@@ -144,7 +155,6 @@ def get_dataflow_overview(log_directory, scripts):
                     if 'array' in line:
                         transferring_files.remove('array')
 
-            # Summary entries unique to convert_on_campus
             if script == 'convert_on_campus':
                 if line.startswith("Not converting"):
                     # Ex) "Not converting files for sas."
@@ -183,7 +193,7 @@ def parse_logfile(log_directory, scripts, n):
             raise ValueError(f"{s} not a valid script name")
 
     dataflow_stats = {}
-    old_file_threshold = 1  # Days
+    threshold = 1
     old_log_threshold = timedelta(days=n)
 
     for script in scripts:
@@ -205,19 +215,19 @@ def parse_logfile(log_directory, scripts, n):
         latest_logs = copy
 
         if script == 'rsync_to_nas':
-            dataflow_stats['rsync_to_nas'] = parse_transfer_logs(latest_logs, old_file_threshold)
+            dataflow_stats['rsync_to_nas'] = parse_transfer_logs(latest_logs, threshold)
 
         if script == 'convert_and_restructure':
-            dataflow_stats['convert_and_restructure'] = parse_convert_logs(latest_logs, old_file_threshold)
+            dataflow_stats['convert_and_restructure'] = parse_convert_logs(latest_logs, threshold)
 
         if script == 'rsync_to_campus':
-            dataflow_stats['rsync_to_campus'] = parse_transfer_logs(latest_logs, old_file_threshold)
+            dataflow_stats['rsync_to_campus'] = parse_transfer_logs(latest_logs, threshold)
 
         if script == 'convert_on_campus':
-            dataflow_stats['convert_on_campus'] = parse_convert_logs(latest_logs, old_file_threshold)
+            dataflow_stats['convert_on_campus'] = parse_convert_logs(latest_logs, threshold)
 
         if script == 'distribute_borealis_data':
-            dataflow_stats['distribute_borealis_data'] = parse_transfer_logs(latest_logs, old_file_threshold)
+            dataflow_stats['distribute_borealis_data'] = parse_transfer_logs(latest_logs, threshold)
 
     return dataflow_stats
 
@@ -241,7 +251,7 @@ def parse_transfer_logs(logfiles, threshold):
     successful_files = 0    # Number of successful files transferred
     no_action = False       # Flag to check if script executed transfers when it was triggered
     empty_runs = 0          # Number of times the script performed no transfers
-    execution_times = []    # List of times each script took to execute
+    transfer_times = []
 
     for log in logfiles:
         with open(log) as f:
@@ -280,20 +290,18 @@ def parse_transfer_logs(logfiles, threshold):
                     dt_format = "%Y%m%d %H:%M:%S"
                     end_dt = datetime.strptime(date_string, dt_format)     # datetime transfer occurred
                     transfer_time = end_dt - transfer_dt
-                    execution_times.append(transfer_time)
+                    transfer_times.append(transfer_time)
 
-    # Calculate the script success rate
     total_files = successful_files + len(failed_files)
     if total_files > 0:
         success_rate = successful_files/total_files*100
     else:
         success_rate = 0
 
-    # Calculate average time for the script to execute
-    if len(execution_times) > 0:
-        avg = sum(execution_times, timedelta(0)) / len(execution_times)
+    if len(transfer_times) > 0:
+        avg = sum(transfer_times, timedelta(0)) / len(transfer_times)
     else:
-        avg = sum(execution_times, timedelta(0))
+        avg = sum(transfer_times, timedelta(0))
     average_time = (datetime.min + avg).time()
 
     stats['file_count'] = total_files
@@ -327,9 +335,9 @@ def parse_convert_logs(logfiles, threshold):
     old_files = []              # List containing all files older than the
     successful_rawacf = 0       # Number of successful rawacf conversions
     successful_antennas_iq = 0  # Number of successful antennas_iq conversions
-    no_action = False           # Flag to check if script executed transfers when it was triggered
-    empty_runs = 0              # Number of times the script performed no transfers
-    execution_times = []        # List of times each script took to execute
+    no_action = False       # Flag to check if script executed transfers when it was triggered
+    empty_runs = 0          # Number of times the script performed no transfers
+    transfer_times = []
 
     for log in logfiles:
         with open(log) as f:
@@ -356,7 +364,7 @@ def parse_convert_logs(logfiles, threshold):
                 # Check if successful file is old
                 if line.startswith("Successfully converted:"):
                     filename = line.split()[-1].split('/')[-1]
-                    print(filename)
+                    # print(filename)
                     if 'rawacf' in filename:
                         successful_rawacf += 1
                     if 'antennas_iq' in filename:
@@ -387,7 +395,7 @@ def parse_convert_logs(logfiles, threshold):
                     dt_format = "%Y%m%d %H:%M:%S"
                     end_dt = datetime.strptime(date_string, dt_format)  # datetime transfer occurred
                     transfer_time = end_dt - transfer_dt
-                    execution_times.append(transfer_time)
+                    transfer_times.append(transfer_time)
 
     total_rawacf = successful_rawacf + len(failed_rawacf)
     total_antennas_iq = successful_antennas_iq + len(failed_antennas_iq)
@@ -398,10 +406,10 @@ def parse_convert_logs(logfiles, threshold):
     else:
         success_rate = 0
 
-    if len(execution_times) > 0:
-        avg = sum(execution_times, timedelta(0)) / len(execution_times)
+    if len(transfer_times) > 0:
+        avg = sum(transfer_times, timedelta(0)) / len(transfer_times)
     else:
-        avg = sum(execution_times, timedelta(0))
+        avg = sum(transfer_times, timedelta(0))
     average_time = (datetime.min + avg).time()
 
     stats['file_count'] = file_count
@@ -410,7 +418,6 @@ def parse_convert_logs(logfiles, threshold):
     stats['empty_runs'] = empty_runs
     stats['old_files'] = old_files
 
-    # Store script specific data
     if scriptname == 'convert_and_restructure':
         stats['failed_rawacf'] = failed_rawacf
         stats['failed_antennas_iq'] = failed_antennas_iq
@@ -434,52 +441,81 @@ def get_file_datetime(filename):
     return datetime.strptime(filename, dt_format)
 
 
+def print_dataflow_dict(dataflow_dict):
+    for i in dataflow_dict:
+        print(i)
+        for j in dataflow_dict[i]:
+            print('\t', j)
+            for k in dataflow_dict[i][j]:
+                val = dataflow_dict[i][j][k]
+                if isinstance(val, list) and len(val) > 0:
+                    print('\t\t', k, ':', val[0])
+                    for index, item in enumerate(val):
+                        if index == 0:
+                            pass
+                        else:
+                            print('\t\t  ', ' ' * len(k), item)
+                else:
+                    print('\t\t', k, ':', dataflow_dict[i][j][k])
+
+
 if __name__ == '__main__':
     p = argument_parser()
     args = p.parse_args()
+
     # Read in arguments
     log_dir = args.log_dir
-    out_file = args.out_file
     num_days = args.n
     verbose = args.verbose
 
-    scripts = ["rsync_to_nas", "convert_and_restructure", "rsync_to_campus", "convert_on_campus",
-               "distribute_borealis_data"]
-    summary_dict = get_dataflow_overview(log_dir, scripts)
+    if args.out_dir is None:
+        out_dir = log_dir
+    else:
+        out_dir = args.out_dir
 
-    detailed_dict = parse_logfile(log_dir, scripts, num_days)
+    if args.site_id is None:
+        site_outfile = f"{out_dir}/site_dataflow.json"
+        campus_outfile = f"{out_dir}campus_dataflow.json"
+    else:
+        site_outfile = f"{out_dir}/{args.site_id}_site_dataflow.json"
+        campus_outfile = f"{out_dir}/{args.site_id}_campus_dataflow.json"
+
+    site_scripts = ["rsync_to_nas", "convert_and_restructure", "rsync_to_campus"]
+    site_summary_dict = get_dataflow_overview(log_dir, site_scripts)
+    site_detailed_dict = parse_logfile(log_dir, site_scripts, num_days)
+
+    campus_scripts = ["convert_on_campus", "distribute_borealis_data"]
+    campus_summary_dict = get_dataflow_overview(log_dir, campus_scripts)
+    campus_detailed_dict = parse_logfile(log_dir, campus_scripts, num_days)
 
     today = datetime.now().strftime("%Y-%m-%d %H:%M")
     print(f"\n{today}")
     print(f"Parsing logs in {log_dir}")
 
-    overall_dict = {}
-    for script in scripts:
-        overall_dict[script] = {}
-        overall_dict[script]['summary'] = summary_dict[script]
-        overall_dict[script]['stats'] = detailed_dict[script]
-        overall_dict[script]['stats']['days_parsed'] = f"{num_days} days"
+    site_overall_dict = {}
+    for script in site_scripts:
+        site_overall_dict[script] = {}
+        site_overall_dict[script]['summary'] = site_summary_dict[script]
+        site_overall_dict[script]['stats'] = site_detailed_dict[script]
+        site_overall_dict[script]['stats']['days_parsed'] = f"{num_days} days"
+
+    campus_overall_dict = {}
+    for script in campus_scripts:
+        campus_overall_dict[script] = {}
+        campus_overall_dict[script]['summary'] = campus_summary_dict[script]
+        campus_overall_dict[script]['stats'] = campus_detailed_dict[script]
+        campus_overall_dict[script]['stats']['days_parsed'] = f"{num_days} days"
 
     # Print output in readable format
     if verbose:
-        for i in overall_dict:
-            print(i)
-            for j in overall_dict[i]:
-                print('\t', j)
-                for k in overall_dict[i][j]:
-                    val = overall_dict[i][j][k]
-                    if isinstance(val, list) and len(val) > 0:
-                        print('\t\t', k, ':', val[0])
-                        for index, item in enumerate(val):
-                            if index == 0:
-                                pass
-                            else:
-                                print('\t\t  ', ' '*len(k), item)
-                    else:
-                        print('\t\t', k, ':', overall_dict[i][j][k])
+        print_dataflow_dict(site_overall_dict)
+        print_dataflow_dict(campus_overall_dict)
 
-    # Write parsed dictionary to json file
-    with open(out_file, 'w') as fp:
-        json.dump(overall_dict, fp, indent=4)
+    # Write parse dictionary to json file
+    with open(site_outfile, 'w') as fp:
+        json.dump(site_overall_dict, fp, indent=4)
+
+    with open(campus_outfile, 'w') as fp:
+        json.dump(campus_overall_dict, fp, indent=4)
 
     print("Finished parsing logs")
