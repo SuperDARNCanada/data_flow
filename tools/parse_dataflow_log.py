@@ -112,7 +112,7 @@ def get_dataflow_overview(log_directory, scripts):
                 date_string = ' '.join(date_string)
                 dt_format = "%Y%m%d %H:%M:%S"
                 dt = datetime.strptime(date_string, dt_format)
-                date_string = dt.strftime("%Y-%d-%m %H:%M:%S")
+                date_string = dt.strftime("%Y-%m-%d %H:%M:%S")
                 summary_data[script]['last_executed'] = date_string
 
             # Get git repo info
