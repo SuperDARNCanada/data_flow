@@ -96,7 +96,7 @@ is required for the sending of inotify flags between computers.
     `ssh-keygen -t ecdsa -b 521`
     - Copy the public key to the destination computer: `ssh-copy-id user@host`
     - Computers that must be linked: Borealis -> Site-Linux, Site-Linux -> SuperDARN-CSSDP
-    - For telemetry purposes, each data flow computer must also be linked to Chapman
+    - For telemetry purposes, each data flow computer must also be linked to Chapman, so copy the ssh keys to Chapman as well
 4. Install the inotify daemon for the respective computer (for example, install borealis.daemon 
 with borealis_dataflow.service on the Borealis computer). As super user, do the following:
     - Copy the correct `.service` file from `inotify_daemons/services/` to 

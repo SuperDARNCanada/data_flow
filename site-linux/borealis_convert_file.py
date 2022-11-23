@@ -3,7 +3,7 @@
 """
 Usage:
 
-borealis_converter.py [-h] [--dmap] borealis_site_file
+borealis_converter.py [-h] [--dmap] [--low_memory] borealis_site_file
 
 Pass in the filename you wish to convert (should end in '.hdf5.site'
 ('.bz2' optional)). The script will decompress if a bzipped hdf5 site
@@ -52,6 +52,8 @@ def usage_msg():
     2. if --dmap is specified, convert the records to a dmap dictionary and then write to file 
        as the given filename, with extensions '.[borealis_filetype].hdf5.site' replaced with 
        [dmap_filetype].dmap. The script will also bzip the resulting dmap file. """
+       3. if --low_memory is specified, the restructure method will use a memory
+    saving, slower, BorealisRestructure module.
 
     return usage_message
 
