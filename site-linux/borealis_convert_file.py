@@ -83,8 +83,8 @@ def create_dmap_filename(filename_to_convert, dmap_filetype):
 
     if ordinal not in range(97, 123):
         # we are not in a-z
-        errmsg = 'Cannot convert slice ID {} to channel identifier '\
-                 'because it is outside range 0-25 (a-z).'.format(slice_id)
+        errmsg = f'Cannot convert slice ID {slice_id} to channel identifier '\
+                 'because it is outside range 0-25 (a-z).'
         if dmap_filetype == 'iqdat':
             raise BorealisConvert2IqdatError(errmsg)
         elif dmap_filetype == 'rawacf':
@@ -220,8 +220,8 @@ def main():
     # .bz2, if at end of filename, was removed in the decompression.
     borealis_filetype = borealis_site_file.split('.')[-3] # XXX.hdf5.site
     if borealis_filetype not in ['bfiq', 'rawacf', 'antennas_iq']:
-        print('Cannot convert file {} from Borealis filetype '
-            '{}'.format(borealis_site_file, borealis_filetype))
+        print(f"Cannot convert file {borealis_site_file} from Borealis filetype "
+                f"{borealis_filetype}")
         sys.exit(1)
 
     slice_id = int(borealis_site_file.split('.')[-4]) # X.rawacf.hdf5.site
@@ -232,9 +232,9 @@ def main():
                                                          array_filename,
                                                          low_memory)
 
-    print('Wrote array to: {}'.format(written_array_filename))
+    print(f"Wrote array to: {written_array_filename}")
     array_time = datetime.datetime.utcnow()
-    print("Conversion time: {:.2f} seconds".format((array_time-start_time).total_seconds()))
+    print(f"Conversion time: {(array_time-start_time).total_seconds():.2f} seconds")
     dmap_filetypes = {'rawacf': 'rawacf', 'bfiq': 'iqdat'}
 
     if dmap and borealis_filetype in dmap_filetypes.keys():
@@ -246,12 +246,12 @@ def main():
             written_dmap_filename =  borealis_array_to_dmap_files(written_array_filename,
                                     borealis_filetype, slice_id,
                                     dmap_filename)
-            print('Wrote dmap to: {}'.format(written_dmap_filename))
+            print(f'Wrote dmap to: {written_dmap_filename}')
             dmap_time = datetime.datetime.utcnow()
-            print("Conversion time: {:.2f} seconds".format((dmap_time-array_time).total_seconds())) 
+            print(f"Conversion time: {(dmap_time-array_time).total_seconds():.2f} seconds") 
         except (BorealisConvert2RawacfError, BorealisConvert2IqdatError, Exception) as e:
-            print("Unable to convert {} to DMAP file.".format(written_array_filename))
-            print("Due to error: {}".format(e))
+            print(f"Unable to convert {written_array_filename} to DMAP file.")
+            print(f"Due to error: {e}")
             sys.exit(1)
 
 

@@ -54,10 +54,10 @@ readonly DEST="${DATA_DIR}/${RADARID}_data"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Create log file. New file created daily
-readonly LOGGING_DIR="${HOME}/logs/convert_on_campus/$(date +%Y)/$(date +%m)"
+readonly LOGGING_DIR="${HOME}/logs/convert_on_campus/$(date +%Y/%m)"
 mkdir --parents $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/${RADARID}.$(date +%Y%m%d).convert_on_campus.log"
-readonly  SUMMARY_DIR="${HOME}/logs/convert_on_campus/summary/$(date +%Y)/$(date +%m)"
+readonly  SUMMARY_DIR="${HOME}/logs/convert_on_campus/summary/$(date +%Y/%m)"
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).convert_on_campus_summary.log"
 

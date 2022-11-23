@@ -68,8 +68,8 @@ def create_dmap_filename(filename_to_convert, dmap_filetype, output_data_dir):
 
     if ordinal not in range(97, 123):
         # we are not in a-z
-        errmsg = 'Cannot convert slice ID {} to channel identifier '\
-                 'because it is outside range 0-25 (a-z).'.format(slice_id)
+        errmsg = f"Cannot convert slice ID {slice_id} to channel identifier " \
+                 "because it is outside range 0-25 (a-z)."
         if dmap_filetype == 'iqdat':
             raise BorealisConvert2IqdatError(errmsg)
         elif dmap_filetype == 'rawacf':
@@ -156,11 +156,11 @@ def array_to_dmap(borealis_array_file, output_data_dir, scaling_factor=1):
                                     borealis_filetype, slice_id, 
                                     dmap_filename, scaling_factor)
 
-        print('Wrote dmap to : {}'.format(written_dmap_filename))
+        print(f'Wrote dmap to : {written_dmap_filename}')
 
     else:
-        print('Cannot convert file {} from Borealis filetype '
-            '{}'.format(borealis_array_file, borealis_filetype))
+        print(f'Cannot convert file {borealis_array_file} from Borealis filetype '
+                f'{borealis_filetype}')
         sys.exit(1)
 
 
@@ -181,7 +181,7 @@ def main():
                   scaling_factor)
 
     end_time = datetime.datetime.utcnow()
-    print("Conversion time: {:.2f} seconds".format((end_time-start_time).total_seconds())) 
+    print(f"Conversion time: {(end_time-start_time).total_seconds():.2f} seconds") 
 
 
 if __name__ == "__main__":

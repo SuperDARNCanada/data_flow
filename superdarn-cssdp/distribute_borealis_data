@@ -55,10 +55,10 @@ readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADARID}"
 readonly DATA_GROUP="sddata"
 
 # Create log file. New file created daily
-readonly LOGGING_DIR="${HOME}/logs/distribute_borealis_data/$(date +%Y)/$(date +%m)"
+readonly LOGGING_DIR="${HOME}/logs/distribute_borealis_data/$(date +%Y/%m)"
 mkdir --parents $LOGGING_DIR
 readonly LOGFILE="${LOGGING_DIR}/${RADARID}.$(date +%Y%m%d).distribute_borealis_data.log"
-readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y)/$(date +%m)"
+readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y/%m)"
 mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).distribute_borealis_data_summary.log"
 

@@ -124,3 +124,6 @@ Chapman for uploading to the Engineering dashboard. SSH password-free connection
 between each computer and Chapman for this to work correctly. 
 8. To modify the data flow easily, a `config.sh` file is provided. This file specifies:
     - If the data flow can use the NAS at a site
+    - What Borealis filetypes are to be converted and restructured
+    - Which sites have bandwidth / memory limitations
+    - Where logs should be synched for telemetry
