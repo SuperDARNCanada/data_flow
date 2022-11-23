@@ -448,15 +448,16 @@ def print_dataflow_dict(dataflow_dict):
             print('\t', j)
             for k in dataflow_dict[i][j]:
                 val = dataflow_dict[i][j][k]
-                if isinstance(val, list) and len(val) > 0:
+                if not isinstance(val, list) or len(val) < 0:
+                    print('\t\t', k, ':', dataflow_dict[i][j][k])
+                else:
                     print('\t\t', k, ':', val[0])
                     for index, item in enumerate(val):
                         if index == 0:
                             pass
                         else:
                             print('\t\t  ', ' ' * len(k), item)
-                else:
-                    print('\t\t', k, ':', dataflow_dict[i][j][k])
+
 
 
 if __name__ == '__main__':

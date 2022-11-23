@@ -51,9 +51,10 @@ def usage_msg():
        with the last extension (should be '.site') removed.
     2. if --dmap is specified, convert the records to a dmap dictionary and then write to file 
        as the given filename, with extensions '.[borealis_filetype].hdf5.site' replaced with 
-       [dmap_filetype].dmap. The script will also bzip the resulting dmap file. """
-       3. if --low_memory is specified, the restructure method will use a memory
-    saving, slower, BorealisRestructure module.
+       [dmap_filetype].dmap. The script will also bzip the resulting dmap file. 
+    3. if --low_memory is specified, the restructure method will use a memory
+       saving, slower, BorealisRestructure module.
+    """
 
     return usage_message
 
