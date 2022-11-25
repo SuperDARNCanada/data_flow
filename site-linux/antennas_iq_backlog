@@ -3,14 +3,14 @@
 # Author: Theodore Kolkman
 #
 # A script that uses pydarnio to restructure antennas_iq files. Used for restructuring large 
-# amounts of backed-up antennas_iq files
+# amounts of backed-up antennas_iq files. Converted files remain in the same directory after 
+# completion, if files fail conversion they are moved to a separate directory.
 
 # Modified from convert_and_restructure script
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
 # 	- RADARNAME and RADARID set as environment variables in $HOME/.bashrc
-#	- ssh link established between Site-Linux and TELEMETRY computers
 
 ###################################################################################################
 
@@ -23,7 +23,7 @@ source "${HOME}/pydarnio-env/bin/activate"
 
 # Define directories
 readonly DATA_DIR="/borealis_nfs/borealis_data"
-readonly SOURCE="${DATA_DIR}/antennas_iq_array" # this is the source
+readonly SOURCE="${DATA_DIR}/antennas_iq_array" # Files converted remain in this directory
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Create log file. New file created daily
@@ -55,23 +55,25 @@ printf "pyDARNio repo: $(git -C ${HOME}/pyDARNio status | grep "On branch"), las
         
 printf "Conversion directory: $DATA_DIR\n\n" | tee --append $SUMMARY_FILE
 
+num_files=$(echo $ANTENNAS_IQ_CONVERT_FILES | wc -w)
+count=1
+
 # Find files to be converted
 ANTENNAS_IQ_CONVERT_FILES=$(find "${SOURCE}" -name "*antennas_iq.hdf5.site" -type f)
 
 if [[ -n $ANTENNAS_IQ_CONVERT_FILES ]]; then
+    printf "Number of files converting: ${num_files}\n\n"
 	printf "Converting the following antennas_iq files:\n"
 	printf '%s\n' "${ANTENNAS_IQ_CONVERT_FILES[@]}"
 else
 	printf "No antennas_iq files found to be converted.\n" | tee --append $SUMMARY_FILE
 fi
 
-printf "Number of files converting: $(echo $ANTENNAS_IQ_CONVERT_FILES | wc -w)\n\n"
-count=1
-
 # Convert antennas_iq files to array format
 for f in $ANTENNAS_IQ_CONVERT_FILES; do
     if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADARID} " ]]; then
-        printf "\nConverting file # ${count}: ${f}\n"
+        date --utc "+%Y%m%d %H:%M:%S UTC"
+        printf "\nConverting file # ${count} of ${num_files}: ${f}\n" | tee --append $SUMMARY_FILE
         printf "python3 remove_record.py $(basename ${f})\n"
         output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
         if [[ -n "$output" ]]; then
