@@ -25,7 +25,7 @@ readonly LOG_DIR="${HOME}/logs/inotify_daemons"
 mkdir --parents $LOG_DIR
 readonly LOGFILE="${LOG_DIR}/${script_name}.log"
 
-readonly FILTER_TIME=15  # Minumum time between script executions in seconds
+readonly FILTER_TIME=120  # Minumum time between script executions in seconds
 
 # Location of inotify watch directory for flags on site linux. Should match up with site-linux
 # inotify's WATCH_DIR

@@ -109,11 +109,11 @@ fi
 if [[ $# -eq 0 ]]; then
 	# Default to omitting nothing and grabbing files not written to in last 5 minutes
 	files=$(find ${SOURCE} "${search[@]}" -cmin +5) 
-	printf "No input file specified, filtering all recent files instead\n"
+	printf "No input file specified, filtering all recent files instead\n\n"
 else
 	omit_pattern="$(echo $1 | cut --fields 1-3 --delimiter ".")"
 	files=$(find ${SOURCE} "${search[@]}" | grep --invert-match --fixed-strings $omit_pattern)
-	printf "Filtering out files with pattern ${omit_pattern}"
+	printf "Filtering out files with pattern ${omit_pattern}\n\n"
 fi
 
 if [[ -n $files ]]; then
@@ -126,12 +126,12 @@ fi
 # Transfer files
 for file in $files
 do
+	printf "\nTransferring: $file\n"
 	if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
 		# rsync file to NAS
-		printf "\nTransferring: $file\n"
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $DEST
 
-		# check if transfer was okay using the md5sum program, then remove the file if it matches
+		# Check if transfer was okay using the md5sum program
 		verify_transfer $file "${DEST}/$(basename $file)"
 		return_value=$?
 	else
@@ -143,6 +143,7 @@ do
 	fi
 
 	if [[ $return_value -eq 0 ]]; then
+		# Remove the file if transfer is successful
 		printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
 		printf "Deleting file...\n"
 		rm --verbose $file
