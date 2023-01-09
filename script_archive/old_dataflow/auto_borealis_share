@@ -1,0 +1,256 @@
+#!/bin/tcsh
+# Filename: auto_borealis_share
+# Last Modification:  Feb 28th 2020
+# Author: Kevin Krieger
+# Depends on: hdf5 zypper install
+#
+# Modified to place borealis data onto cedar.computecanada.ca
+# Modified to check borealis files
+# Modified to check old files as well, and email if there are old files checked
+# Modified to write different log file for each radar
+# Modified to stop placing rawacf files in out_dir for APL
+# Modified to place rawacf files in vtsd's outgoing
+# directories.
+#
+# Check the daily radar data
+# This script should take .bz2 files 
+# one at a time - test them for integrity
+# and place them in the correct places if they test well.
+
+# If they file does not test well, then it should be skipped
+# and an email should be sent explaining what happened.
+
+# Modified from Dieter Andre's check_radar script
+# Should be called by crontab entry with the radar code
+# of the radar to check. Output should be redirected
+# to a log file like so:
+# [crontab times] /path/to/script >> /path/to/logfile 2>&1
+# The "2>&1" at the end redirects stderr to stdout so
+# That the logfile contains any error messages as well.
+
+# Depends upon h5stat being installed (zypper in hdf5)
+
+# argv[1] : radar code [sas, pgr, rkn, inv, cly]
+
+set RADAR_ID=${argv[1]}
+set YESTERDAY=`date -d '1 day ago' +%Y%m%d`
+set CURRENT_DAY=`date -d 'today' +%Y%m%d`
+set DATETIME=`date +%Y%m%d.%H%M`
+cd /sddata/${RADAR_ID}_data
+set LOGGINGDIR=/home/mrcopy/borealischeck
+set LOGFILE=${LOGGINGDIR}/${DATETIME}.check_radar.${RADAR_ID}.errors
+set emailflag=0
+set nobz2filesflag=1
+set norawfilesflag=1
+set nohdf5filesflag=1
+set nobfiqfilesflag=1
+set oldfileflag=0
+set emailaddress="kevin.krieger@usask.ca"
+set TODAY=`date`
+set BASDIR=/home/bas/outgoing
+set VTDIR=/home/vtsd/outgoing
+set NSSCDIR=/home/nssc/outgoing
+set NAS_STAGING_DIR=/data/borealis_site_data/
+set MIRROR_STAGING_DIR=/data/holding/globus
+set numbfiqfiles=0
+set numrawacffiles=0
+set numhdf5files=0
+set numrawacffiles_sameslice=0 
+set numhdf5files_sameslice=0 
+set slices=() 
+set bfiqfilestring=""
+set hdf5filestring=""
+set rawacffilestring=""
+echo "\n${TODAY}"
+
+
+# nonomatch is set to prevent the 'foreach' loop from killing
+# the script with the error "No match"
+set nonomatch
+
+# Iterate over each of the previous day's bz2 files
+foreach bz2file (*.bz2)
+	# Count the number of bz2 files and break if there are none
+	set num_bz2files=`ls -1 *.bz2 | wc -l`
+	if ( ${num_bz2files} == 0 ) then
+		echo "No bz2 files" >> ${LOGFILE}
+		break
+	endif
+	echo ${bz2file}
+	if ( ${bz2file} !~ ${YESTERDAY}*bz2 && ${bz2file} !~ ${CURRENT_DAY}*bz2 && ${bz2file} !~ *bz2 ) then
+		echo "${bz2file} is an old file. Checking..." >> ${LOGFILE}
+		set oldfileflag=1
+	endif
+	
+	bzip2 -t ${bz2file}
+	set bzipreturnvalue=$? 
+	set nobz2filesflag=0
+	if ( $bzipreturnvalue == 2 ) then
+		# Error upon testing the bz2 file,
+		# make a note of it for a report email
+		echo "${bz2file} PROBLEM" >> ${LOGFILE}
+		set emailflag=1
+	else
+		switch (${bz2file})
+			case *rawacf.bz2:
+				# Update the count, and the string of files
+				set slice_number=`echo ${bz2file} | awk -F'.' '{print $5}'`
+				echo $slice_number
+				if ("$slices" =~ "*$slice_number*") then
+					echo "Slice $slice_number has more than one file" >> ${LOGFILE}
+					set numrawacffiles_sameslice=`expr $numrawacffiles_sameslice + 1`
+				else
+					set slices=($slices $slice_number)
+				endif
+				set numrawacffiles=`expr $numrawacffiles + 1`
+				set rawacffilestring="${rawacffilestring}\n${bz2file}"
+				echo "rawacf file: ${bz2file}"
+				chmod 664 ${bz2file}
+
+				# Place file in vtsd outgoing, change permission and group
+				cp -pv ${bz2file} ${VTDIR}/${RADAR_ID}/
+				chmod -v 664 ${VTDIR}/${RADAR_ID}/${bz2file}
+				chgrp -v sddata ${VTDIR}/${RADAR_ID}/${bz2file}
+				
+				# Place file in BAS outgoing
+				cp -pv ${bz2file} ${BASDIR}/${RADAR_ID}/
+				chmod -v 664 ${BASDIR}/${RADAR_ID}/${bz2file}
+				chgrp -v sddata ${BASDIR}/${RADAR_ID}/${bz2file}
+				
+				# Place file in NSSC outgoing - Uncommment this when NSSC is ready
+				#cp -pv ${bz2file} ${NSSCDIR}/${RADAR_ID}/
+				#chmod -v 664 ${NSSCDIR}/${RADAR_ID}/${bz2file}
+				#chgrp -v sddata ${NSSCDIR}/${RADAR_ID}/${bz2file}
+				
+				# And copy to superdarn-cssdp for placing on the mirror
+				rsync -av ${bz2file} ${MIRROR_STAGING_DIR} 
+				set rsyncreturnvalue=$?
+				if ( $rsyncreturnvalue !~ 0 ) then
+					# Try again in a bit, then fail
+					sleep 30
+					rsync -av ${bz2file} ${MIRROR_STAGING_DIR}
+					set rsyncreturnvalue=$?
+					if ( $rsyncreturnvalue !~ 0 ) then
+						echo "${bz2file} rsync error" >> ${LOGFILE}
+						set emailflag=1
+					endif
+				endif
+				
+                                set year=`echo ${bz2file} | cut -c 1-4`
+                                set month=`echo ${bz2file} | cut -c 5-6`
+
+				set norawfilesflag=0
+				# Finally move the file to cd_data directory
+				mkdir -p ${NAS_STAGING_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/ 
+				mv -v ${bz2file} ${NAS_STAGING_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/ >> ${LOGFILE}
+				breaksw
+			#case *snd.bz2:
+			#	mv -v ${bz2file} /sddata/${RADAR_ID}_snd/ 
+			#	breaksw
+			case *errlog.bz2:
+				mv -v ${bz2file} /sddata/${RADAR_ID}_errlog/ 
+				set noErrlogFlag=0
+				breaksw
+			default:
+				echo "Unknown file: ${bz2file}" >> ${LOGFILE}
+		endsw
+	endif
+end
+
+
+set slices=()
+
+# TODO: store hdf5 on cedar as per usual?
+# Iterate over each of the previous day's hdf5 files
+foreach hdf5file (*.hdf5)
+	# Count the number of hdf5 files and break if there are none
+	set num_hdf5files=`ls -1 *.hdf5 | wc -l`
+	if ( ${num_hdf5files} == 0 ) then
+		echo "No hdf5 files" >> ${LOGFILE}
+		break
+	endif
+	if ( ${hdf5file} !~ ${YESTERDAY}*hdf5 && ${hdf5file} !~ ${CURRENT_DAY}*hdf5 && ${hdf5file} !~ *hdf5 ) then
+		echo "${hdf5file} is an old file. Checking..." >> ${LOGFILE}
+		set oldfileflag=1
+	endif
+	h5stat ${hdf5file} >& /dev/null
+	set h5statreturnvalue=$?
+	if ( $h5statreturnvalue > 0 ) then
+		echo "${hdf5file} PROBLEM" >> ${LOGFILE}
+		set emailflag=1
+	else
+		switch (${hdf5file})
+			case *rawacf.hdf5:
+				set slice_number=`echo ${hdf5file} | awk -F'.' '{print $5}'`
+				if ("$slices" =~ "*$slice_number*") then
+					echo "Slice $slice_number has more than one hdf5 file" >> ${LOGFILE}
+					set numhdf5files_sameslice=`expr $numhdf5files_sameslice + 1`
+				else
+					set slices=($slices $slice_number)
+				endif
+				set numhdf5files=`expr $numhdf5files + 1`
+				set hdf5filestring="${hdf5filestring}\n${hdf5file}"
+				echo "rawacf hdf5 file: ${hdf5file}"
+			
+				# And copy to superdarn-cssdp for placing on the mirror
+				set year=`echo ${hdf5file} | cut -c 1-4`
+				set month=`echo ${hdf5file} | cut -c 5-6`
+				chmod -v 644 ${hdf5file}
+				
+				#TODO: we could move this to outside the loop to do one major syncing of files?
+				rsync -av --chown=mschmidt:rpp-kam136 --rsync-path="mkdir -m 4775 -p ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ && rsync" ${hdf5file} ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ 
+				set rsyncreturnvalue=$?
+				if ( $rsyncreturnvalue !~ 0 ) then
+					# Try again after a sleep, then fail
+					sleep 30
+					rsync -av --chown=mschmidt:rpp-kam136 --rsync-path="mkdir -m 4775 -p ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ && rsync" ${hdf5file} ${MIRROR_STAGING_DIR}/hdf5/${year}/${month}/ 
+					set rsyncreturnvalue=$?
+					if ( $rsyncreturnvalue !~ 0 ) then
+						echo "${hdf5file} rsync error" >> ${LOGFILE}
+						set emailflag=1
+					endif
+				endif
+
+
+				# Finally move the file to the NAS directory
+				if ( $rsyncreturnvalue !~ 0 ) then
+					echo "Not moving ${hdf5file} due to rsync errors" >> ${LOGFILE}
+				else
+					mkdir -p ${NAS_STAGING_DIR}/${RADAR_ID}_rawacf/${year}/${month}/ 
+					mv -v ${hdf5file} ${NAS_STAGING_DIR}/${RADAR_ID}_rawacf/${year}/${month}/ 
+				endif
+				set nohdf5filesflag=0	 
+				breaksw
+			default:
+				echo "Unknown file: ${hdf5file}"
+		endsw
+	endif
+end
+
+
+
+# If there were no rawacf dmap or hdf5 files, then that usually means 
+# there was an issue with data flow to sdcopy and I want to know about it.
+if ( ${norawfilesflag} > 0 && ${nohdf5filesflag} > 0 ) then
+	echo "Rawacf or Hdf5 error: Probably no files were handled!" >> ${LOGFILE}
+	#	set emailflag=1
+endif
+if ( ${numrawacffiles_sameslice} > 1 ) then
+	echo "More than one raw file with the same slice checked" >> ${LOGFILE}
+	echo ${rawacffilestring} >> ${LOGFILE}
+	set emailflag=1
+endif
+if ( ${numhdf5files_sameslice} > 1 ) then 
+	echo "More than one raw hdf5 file with the same slice checked" >> ${LOGFILE}
+	echo ${hdf5filestring} >> ${LOGFILE}
+	set emailflag=1
+endif
+if ( ${oldfileflag} > 0 ) then
+	echo "Old files were checked" >> ${LOGFILE}
+	set emailflag=1
+endif
+
+# If there were any issues, send away an email
+if ( ${emailflag} > 0 ) then
+	cat ${LOGFILE} | mutt -s "${RADAR_ID} borealis data check errors ${CURRENT_DAY}" ${emailaddress} 
+endif

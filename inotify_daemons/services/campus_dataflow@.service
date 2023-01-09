@@ -1,0 +1,10 @@
+[Unit]
+Description=Campus %i data flow inotify daemon
+
+[Service]
+User=mrcopy
+ExecStart=/home/mrcopy/data_flow/inotify_daemons/campus.daemon %i
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

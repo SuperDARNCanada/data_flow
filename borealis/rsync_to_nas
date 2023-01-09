@@ -1,0 +1,163 @@
+#!/bin/bash
+# Copyright 2019 SuperDARN Canada, University of Saskatchewan
+# Author: Kevin Krieger
+#
+# Last Edited: October 2022 by Theo Kolkman
+# Refactored for inotify usage
+#
+# A singleton script to move Borealis files from the Borealis computer to the site NAS. Files are
+# copied first and removed once copy is confirmed to be successful. This script is to be run on the
+# site Borealis computer.
+#
+# To move files to the Site-Linux computer instead: 
+#	1. Remove the RADARID of the site from NAS_SITES in config.sh
+#	2. Ensure SITE_LINUX is set correctly within $HOME/.profile
+#	3. Ensure the directory specified in the DEST variable exists on the Site-Linux computer
+#
+# Dependencies:
+#	- jq (installed via zypper)
+# 	- BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
+#	- ssh link established between Borealis and TELEMETRY computers
+#
+# This script should be run via an inotify daemon triggering whenever 2-hour Borealis site files 
+# finish writing
+#
+# Inotify watches the directory Borealis writes to, and triggers the rsync_to_nas script only when
+# a 2-hour site file is created. Since these files are only created once, and once they're created
+# the previous 2-hour block is finished writing, the rsync_to_nas script will execute immediately 
+# after Borealis finishes writing the previous 2-hour file. To distinguish between the previous 
+# (finished writing) and current (currently writing) 2-hour file, the `find` command must be used 
+# as specified in the script below.
+#
+# Param 1: Borealis file name that script was triggered on. This will be used to filter out the 
+#		   files currently being written to, using the timestamp in the name. File name must be of 
+#		   format YYYYMMDD.HHMM.SS.[rest of filename]. If no input is given, then script defaults 
+#		   to omitting only files written to in the last 5 minutes.
+
+###################################################################################################
+
+source "${HOME}/.profile"	# Get BOREALISPATH and SITE_LINUX
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
+source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in function library
+
+###################################################################################################
+
+readonly RADARID=$(hostname | cut --characters 1-3)
+
+# Borealis directory files are transferring from
+# Use jq to read the Borealis data directory from the Borealis config file
+readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq --raw-output '.data_directory')"
+
+# Directory the files will be transferred to
+if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+	readonly DEST="/borealis_nfs/borealis_data/daily/" # On NAS
+else
+	readonly DEST="/data/borealis_data/daily" # On Site Linux
+fi
+
+# Create log file. New file created daily
+readonly LOGGING_DIR="${HOME}/logs/rsync_to_nas/$(date +%Y/%m)"
+mkdir --parents $LOGGING_DIR
+readonly LOGFILE="${LOGGING_DIR}/$(date +%Y%m%d).rsync_to_nas.log"
+readonly SUMMARY_DIR="${HOME}/logs/rsync_to_nas/summary/$(date +%Y/%m)"
+mkdir --parents $SUMMARY_DIR
+readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_nas_summary.log"
+
+# Telemetry directory for this script and site
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/rsync_to_nas"
+
+###################################################################################################
+
+# Ensure that only a single instance of this script runs.
+if pidof -o %PPID -x -- "$(basename -- $0)" > /dev/null; then
+	printf "Error: Script $0 is already running. Exiting...\n"
+	exit 1
+fi
+
+exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
+
+printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
+
+# Date in UTC format for logging
+printf "Executing $0 on $(hostname) for ${RADARID}\n" | tee --append $SUMMARY_FILE
+date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
+
+# Get status info on data_flow and pyDARNio repos
+printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
+		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
+		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+
+printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
+
+# Get all files that aren't currently being written do. First, find all .site files in source 
+# directory. Then, filter out all files that have same timestamp in the filename as the file that 
+# triggered the script via inotify. This will effectively prevent the script from transferring 
+# files currently being written by Borealis
+
+if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+	printf "Transferring to NAS: $DEST\n\n" | tee --append $SUMMARY_FILE
+	search=(\( -name "*rawacf.hdf5.*" -o -name "*bfiq.hdf5.*" -o -name "*antennas_iq.hdf5.*" \))
+else
+	printf "Transferring to Site-Linux: $DEST\n\n" | tee --append $SUMMARY_FILE
+	search=(\( -name "*rawacf.hdf5.*" \)) 	# If transferring to site computer, only send rawacf
+fi
+
+# Using the filename that this script triggered on, a pattern can be determined to omit the current
+# .site file being written in Borealis. omit_pattern trims the input filename, for example 
+# "20221018.1200.00.sas.1.rawacf.hdf5.site", down to "20221018.1200.00." 
+if [[ $# -eq 0 ]]; then
+	# Default to omitting nothing and grabbing files not written to in last 5 minutes
+	files=$(find ${SOURCE} "${search[@]}" -cmin +5) 
+	printf "No input file specified, filtering all recent files instead\n\n"
+else
+	omit_pattern="$(echo $1 | cut --fields 1-3 --delimiter ".")"
+	files=$(find ${SOURCE} "${search[@]}" | grep --invert-match --fixed-strings $omit_pattern)
+	printf "Filtering out files with pattern ${omit_pattern}\n\n"
+fi
+
+if [[ -n $files ]]; then
+	printf "Placing following files in ${DEST}:\n"
+	printf '%s\n' "${files[@]}"
+else
+	printf "No files to be transferred.\n" | tee --append $SUMMARY_FILE
+fi
+
+# Transfer files
+for file in $files
+do
+	printf "\nTransferring: $file\n"
+	if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+		# rsync file to NAS
+		rsync -av --append-verify --timeout=180 --rsh=ssh $file $DEST
+
+		# Check if transfer was okay using the md5sum program
+		verify_transfer $file "${DEST}/$(basename $file)"
+		return_value=$?
+	else
+		# rsync file to site computer
+		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SITE_LINUX:$DEST
+
+		verify_transfer $file "${DEST}/$(basename $file)" $SITE_LINUX
+		return_value=$?
+	fi
+
+	if [[ $return_value -eq 0 ]]; then
+		# Remove the file if transfer is successful
+		printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "Deleting file...\n"
+		rm --verbose $file
+	else
+		# If file not transferred successfully, don't delete and try again next time
+		printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "File not deleted.\n"
+	fi
+done
+
+printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+
+# Sync summary log file with campus
+printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+rsync --archive --rsh="$TELEMETRY_RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
+
+exit

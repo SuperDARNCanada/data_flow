@@ -1,0 +1,195 @@
+#!/bin/bash
+# Copyright 2022 SuperDARN Canada, University of Saskatchewan
+# Author: Theodore Kolkman
+#
+# This script distributes borealis rawacf dmap (bz2) and array (HDF5) data to the following 
+# organizations/locations:
+#   Backs up dmap and array data to campus NAS
+#   Stages dmap and array data for the mirror
+#   Stages dmap data for sending to British Antarctic Survey (BAS), Virginia Tech (VT) and National 
+#       Space Science Center (NSSC)
+# Checks all files for integrity and place them in the correct location if all tests are passed. If 
+# any tests fail, the file isn't transferred and a log file explaining what happened is sent to the 
+# Engineering dashboard
+#
+# Based on auto_borealis_share written by Kevin Krieger
+#
+# Dependencies:
+#   - hdf5 (zypper in hdf5)
+#	- ssh link established between SuperDARN-CSSDP and TELEMETRY computers
+#
+# Usage: ./distribute_borealis_data RADARID
+# Parameter RADARID: [sas, pgr, rkn, inv, cly]
+#
+# This script should be run via an inotify daemon triggerring when the previous data flow script
+# finishes. To ensure only one instance runs for each site, use flock within the inotify daemon code
+
+###################################################################################################
+
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
+source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in functions
+
+###################################################################################################
+
+readonly RADARID=$1
+
+if [[ $# -ne 1 ]]; then
+    printf "Usage: ./convert_on_campus RADARID\n"
+    exit 1
+fi
+
+if [[ ! " ${VALID_RADARIDS[*]} " =~ " ${RADARID} " ]]; then
+    printf "\"$RADARID\" is not a valid radar ID\n"
+    exit 1
+fi
+
+# Define directories
+readonly SOURCE="/sddata/${RADARID}_data"
+readonly NAS_DIR="/data/borealis_site_data"
+readonly MIRROR_STAGING_DIR="/data/holding/globus"
+readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADARID}"
+readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADARID}"
+# readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADARID}"
+
+# Data group for outgoing files
+readonly DATA_GROUP="sddata"
+
+# Create log file. New file created daily
+readonly LOGGING_DIR="${HOME}/logs/distribute_borealis_data/$(date +%Y/%m)"
+mkdir --parents $LOGGING_DIR
+readonly LOGFILE="${LOGGING_DIR}/${RADARID}.$(date +%Y%m%d).distribute_borealis_data.log"
+readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y/%m)"
+mkdir --parents $SUMMARY_DIR
+readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).distribute_borealis_data_summary.log"
+
+# Telemetry directory for this script and site
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/distribute_borealis_data"
+
+###################################################################################################
+
+exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
+
+printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
+
+printf "Executing $(basename "$0") on $(hostname) for ${RADARID}\n" | tee --append $SUMMARY_FILE
+date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
+
+# Get status info on data_flow and pyDARNio repos
+printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
+		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
+		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+
+printf "Distributing from: $SOURCE\n" | tee --append $SUMMARY_FILE
+printf "Distributing to: \n\
+        \tNAS: $NAS_DIR\n\
+        \tMirror: $MIRROR_STAGING_DIR\n\
+        \tInstitutions: $BAS_STAGING_DIR\t$VT_STAGING_DIR\n\n" | tee --append $SUMMARY_FILE
+
+dmap_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.bz2")
+array_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.hdf5")
+
+if [[ -n $dmap_files ]]; then
+    printf "Distributing the following dmap files:\n" 
+    printf '%s\n' "${dmap_files[@]}"
+else
+    printf "No dmap files found to be distributed.\n" | tee --append $SUMMARY_FILE
+fi
+
+# Iterate over all dmap files to be transferred
+for file in $dmap_files; do
+    printf "\n"
+    bzip2 --test $file
+    if [[ $? -eq 2 ]]; then
+        printf "DMAP file failed bzip2 test: ${file}\n" | tee --append $SUMMARY_FILE
+    else
+        printf "Distributing ${file}\n"
+        chmod --verbose 664 $file   # Change file permissions to -rw-rw-r--
+
+        file_name=$(basename $file)
+
+        # TODO: Review changing of groups and permissions differring across destinations
+
+        # Flag will be > 0 if any transfers fail since verify_transfer. Returns 1 for failed transfer
+        transfer_flag=0
+
+        # Place file in vtsd outgoing
+        cp --preserve --verbose $file $VT_STAGING_DIR
+        chgrp --verbose $DATA_GROUP "${VT_STAGING_DIR}/${file_name}"   
+        verify_transfer $file "${VT_STAGING_DIR}/${file_name}" 
+        return_value=$?
+        transfer_flag=$(($transfer_flag + $return_value))
+
+        # Place file in BAS outgoing
+        cp --preserve --verbose $file $BAS_STAGING_DIR
+        chgrp --verbose $DATA_GROUP "${BAS_STAGING_DIR}/${file_name}"
+        verify_transfer $file "${BAS_STAGING_DIR}/${file_name}"
+        return_value=$?
+        transfer_flag=$(($transfer_flag + $return_value))
+
+        # Place file in NSSC outgoing - Uncommment this when NSSC is ready
+        # cp --preserve --verbose $file $NSSC_STAGING_DIR
+        # chgrp --verbose $DATA_GROUP "${NSSC_STAGING_DIR}/${file_name}"
+        # verify_transfer $file "${NSSC_STAGING_DIR}/${file_name}"
+        # return_value=$?
+        # transfer_flag=$(($transfer_flag + $return_value))
+
+        # Copy for staging to the mirror
+        cp --preserve --verbose $file $MIRROR_STAGING_DIR
+        verify_transfer $file "${MIRROR_STAGING_DIR}/${file_name}"
+        return_value=$?
+        transfer_flag=$(($transfer_flag + $return_value))
+
+        # Check that all files were copied successfully. If any transfers failed, leave file in 
+        # directory so tranfer can be attempted the next time the script runs
+        if [[ "${transfer_flag}" -eq 0 ]]; then
+            printf "File distribution successful: ${file}\n" | tee --append $SUMMARY_FILE
+
+            # Move file to campus NAS for long term storage
+            year=$(echo ${file_name} | cut --characters 1-4)
+            month=$(echo ${file_name} | cut --characters 5-6)
+            nas_site_dir="${NAS_DIR}/${RADARID}_rawacf_dmap/${year}/${month}/"
+            mkdir --parents $nas_site_dir
+            mv --verbose $file $nas_site_dir
+        else
+            printf "File distribution failed: ${file}\n" | tee --append $SUMMARY_FILE
+        fi
+    fi
+done
+
+
+# Iterate over all array files and back them up to NAS
+if [[ -n $array_files ]]; then
+    printf "\nDistributing the following array files:\n" 
+    printf '%s\n' "${array_files[@]}"
+else
+    printf "\nNo array files found to be distributed.\n" | tee --append $SUMMARY_FILE
+fi
+
+for file in $array_files; do
+    printf "\n"
+    h5stat $file >& /dev/null
+    if [[ $? -ne 0 ]]; then
+        printf "Array file failed h5stat test: ${file}\n" | tee --append $SUMMARY_FILE
+    else
+        printf "Distributing ${file}\n"
+        chmod --verbose 644 "${file}"   # Change permissions to -rw-r--r--
+
+        file_name=$(basename $file)
+
+        year=$(echo ${file_name} | cut --characters 1-4)
+        month=$(echo ${file_name} | cut --characters 5-6)
+        nas_site_dir="${NAS_DIR}/${RADARID}_rawacf/${year}/${month}/"
+        mkdir --parents $nas_site_dir
+        mv --verbose $file $nas_site_dir
+        printf "File distribution successful: ${file}\n" | tee --append $SUMMARY_FILE
+    fi
+done
+
+printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
+
+# Sync summary log file with campus
+printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
+rsync --archive --rsh="$TELEMETRY_RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
+
+exit

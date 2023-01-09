@@ -1,0 +1,10 @@
+[Unit]
+Description=Borealis data flow inotify daemon
+
+[Service]
+User=radar
+ExecStart=/home/radar/data_flow/inotify_daemons/borealis.daemon
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

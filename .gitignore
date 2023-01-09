@@ -102,3 +102,11 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Dataflow stuff
+tmp.md5 
+.*flag*
+.*_lock
+.inotify_flags
+.inotify_watchdir
+*.dat
