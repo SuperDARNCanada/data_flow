@@ -17,6 +17,8 @@
 
 ###################################################################################################
 
+source "${HOME}/.profile"  # Daemons don't automatically load environment variables
+
 readonly WATCH_DIR="/data/borealis_data"
 
 script_name=$(echo $(basename $0) | cut --fields 1 --delimiter '.')

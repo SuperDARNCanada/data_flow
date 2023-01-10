@@ -7,10 +7,13 @@
 #
 # Dependencies:
 #	- inotifywait (installed by zypper in inotify-tools)
+#   - SDCOPY set as environment variables in ${HOME}/.profile
 #
 # Triggers from flag sent by Borealis computer inotify daemon when rsync_to_nas finishes
 
 ###################################################################################################
+
+source "${HOME}/.profile"  # Daemons don't automatically load environment variables
 
 readonly WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
 mkdir --parents $WATCH_DIR
