@@ -36,7 +36,6 @@
 
 ###################################################################################################
 
-source "${HOME}/.profile"	# Get BOREALISPATH and SITE_LINUX
 source "${HOME}/data_flow/config.sh"  # Load common data flow variables
 source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in function library
 

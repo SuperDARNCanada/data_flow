@@ -12,8 +12,6 @@
 
 ###################################################################################################
 
-source "${HOME}/.bashrc" # source the RADARID and SDCOPY
-
 readonly WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
 mkdir --parents $WATCH_DIR
 
