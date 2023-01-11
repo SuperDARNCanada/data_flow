@@ -16,7 +16,7 @@
 #
 # Dependencies:
 #	- jq (installed via zypper)
-# 	- BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
+# 	- RADARID, BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
 #	- ssh link established between Borealis and TELEMETRY computers
 #
 # This script should be run via an inotify daemon triggering whenever 2-hour Borealis site files 
@@ -40,8 +40,6 @@ source "${HOME}/data_flow/config.sh"  # Load common data flow variables
 source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in function library
 
 ###################################################################################################
-
-readonly RADARID=$(hostname | cut --characters 1-3)
 
 # Borealis directory files are transferring from
 # Use jq to read the Borealis data directory from the Borealis config file
