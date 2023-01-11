@@ -21,6 +21,7 @@
 
 ###################################################################################################
 
+source "${HOME}/.profile"	# Load in environment variables
 source "${HOME}/data_flow/config.sh"  # Load common data flow variables
 source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
 
@@ -114,7 +115,7 @@ fi
 
 
 # Find all hdf5 files to transfer
-files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
+files=$(find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n')
 
 if [[ -n $files ]]; then
 	printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"

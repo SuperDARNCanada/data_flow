@@ -13,7 +13,7 @@
 
 ###################################################################################################
 
-source "${HOME}/.profile"  # Daemons don't automatically load environment variables
+source "${HOME}/.profile"	# Load in environment variables
 
 readonly WATCH_DIR="${HOME}/data_flow/.inotify_watchdir"
 mkdir --parents $WATCH_DIR
