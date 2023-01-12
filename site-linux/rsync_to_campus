@@ -2,7 +2,7 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Dieter Andre
 #
-# Last Edited: October 2022 by Theo Kolkman
+# Major revision: October 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
 # A singleton script to transfer rawacf dmap and hdf5 files from site NAS to superdarn-cssdp on 
@@ -12,7 +12,7 @@
 #	1. Remove RADARID for the specified site from NAS_SITES in config.sh
 #
 # Dependencies:
-# 	- RADARID and SDCOPY set as environment variables in ${HOME}/.bashrc
+# 	- RADARID and SDCOPY set as environment variables in ${HOME}/.profile
 #	- ssh link established between Site-Linux and SDCOPY computers
 #	- ssh link established between Site-Linux and TELEMETRY computers
 #
@@ -21,7 +21,7 @@
 
 ###################################################################################################
 
-source "${HOME}/.bashrc" # source the RADARID, SDCOPY and other things
+source "${HOME}/.profile"	# Load in environment variables
 source "${HOME}/data_flow/config.sh"  # Load common data flow variables
 source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
 
@@ -115,7 +115,7 @@ fi
 
 
 # Find all hdf5 files to transfer
-files=`find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n'`
+files=$(find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n')
 
 if [[ -n $files ]]; then
 	printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"

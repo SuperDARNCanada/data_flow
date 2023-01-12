@@ -6,6 +6,7 @@
 #
 # Dependencies:
 #	- inotifywait (installed by zypper in inotify-tools)
+#   - SITE_LINUX set as environment variable in $HOME/.profile
 #
 # Triggers rsync_to_nas when 2-hour set of Borealis files finish writing
 #
@@ -16,7 +17,7 @@
 
 ###################################################################################################
 
-source "${HOME}/.profile"	# Get SITE_LINUX
+source "${HOME}/.profile"	# Load in environment variables
 
 readonly WATCH_DIR="/data/borealis_data"
 

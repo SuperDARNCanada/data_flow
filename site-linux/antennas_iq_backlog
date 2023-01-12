@@ -10,11 +10,11 @@
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
-# 	- RADARNAME and RADARID set as environment variables in $HOME/.bashrc
+# 	- RADARNAME and RADARID set as environment variables in $HOME/.profile
 
 ###################################################################################################
 
-source "${HOME}/.bashrc"    # source the RADARID, SDCOPY and other things
+source "${HOME}/.profile"	# Load in environment variables
 source "${HOME}/data_flow/config.sh"  # Load common data flow variables
 source "${HOME}/data_flow/library/data_flow_functions.sh" # Load in function library
 source "${HOME}/pydarnio-env/bin/activate"

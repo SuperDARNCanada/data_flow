@@ -2,7 +2,7 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Marci Detwiller
 #
-# Last Edited: October 2022 by Theo Kolkman
+# Major revision: October 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
 # A script that uses pydarnio to convert Borealis files to SuperDARN DMap files as well as 
@@ -14,7 +14,7 @@
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
-# 	- RADARNAME and RADARID set as environment variables in $HOME/.bashrc
+# 	- RADARID set as environment variables in $HOME/.profile
 #	- ssh link established between Site-Linux and TELEMETRY computers
 #
 # This script should be run via an inotify daemon that triggers when the previous data flow script
@@ -22,7 +22,7 @@
 
 ###################################################################################################
 
-source "${HOME}/.bashrc"    # source the RADARID, SDCOPY and other things
+source "${HOME}/.profile"	# Load in environment variables
 source "${HOME}/data_flow/config.sh"  # Load common data flow variables
 source "${HOME}/data_flow/library/data_flow_functions.sh" # Load in function library
 source "${HOME}/pydarnio-env/bin/activate"
