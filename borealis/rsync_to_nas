@@ -10,13 +10,13 @@
 # site Borealis computer.
 #
 # To move files to the Site-Linux computer instead: 
-#	1. Remove the RADARID of the site from NAS_SITES in config.sh
+#	1. Remove the RADAR_ID of the site from NAS_SITES in config.sh
 #	2. Ensure SITE_LINUX is set correctly within $HOME/.profile
 #	3. Ensure the directory specified in the DEST variable exists on the Site-Linux computer
 #
 # Dependencies:
 #	- jq (installed via zypper)
-# 	- RADARID, BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
+# 	- RADAR_ID, BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
 #	- ssh link established between Borealis and TELEMETRY computers
 #
 # This script should be run via an inotify daemon triggering whenever 2-hour Borealis site files 
@@ -47,7 +47,7 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in function li
 readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq --raw-output '.data_directory')"
 
 # Directory the files will be transferred to
-if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	readonly DEST="/borealis_nfs/borealis_data/daily/" # On NAS
 else
 	readonly DEST="/data/borealis_data/daily" # On Site Linux
@@ -62,7 +62,7 @@ mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_nas_summary.log"
 
 # Telemetry directory for this script and site
-readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/rsync_to_nas"
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADAR_ID}/rsync_to_nas"
 
 ###################################################################################################
 
@@ -77,7 +77,7 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
 # Date in UTC format for logging
-printf "Executing $0 on $(hostname) for ${RADARID}\n" | tee --append $SUMMARY_FILE
+printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Get status info on data_flow and pyDARNio repos
@@ -93,7 +93,7 @@ printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 # triggered the script via inotify. This will effectively prevent the script from transferring 
 # files currently being written by Borealis
 
-if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	printf "Transferring to NAS: $DEST\n\n" | tee --append $SUMMARY_FILE
 	search=(\( -name "*rawacf.hdf5.*" -o -name "*bfiq.hdf5.*" -o -name "*antennas_iq.hdf5.*" \))
 else
@@ -125,7 +125,7 @@ fi
 for file in $files
 do
 	printf "\nTransferring: $file\n"
-	if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+	if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		# rsync file to NAS
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $DEST
 

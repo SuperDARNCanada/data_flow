@@ -16,8 +16,8 @@
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
 #	- ssh link established between SuperDARN-CSSDP and TELEMETRY computers
 #
-# Usage: ./convert_on_campus RADARID
-# Parameter RADARID: [sas, pgr, rkn, inv, cly]
+# Usage: ./convert_on_campus RADAR_ID
+# Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
 #
 # This script should be run via an inotify daemon triggerring when the previous data flow script 
 # finishes execution. To ensure only one instance runs for each site, use flock within the inotify
@@ -31,15 +31,15 @@ source "${HOME}/pydarnio-env/bin/activate"
 
 ###################################################################################################
 
-RADARID=$1
+RADAR_ID=$1
 
 if [[ $# -ne 1 ]]; then
-    printf "Usage: ./convert_on_campus RADARID\n"
+    printf "Usage: ./convert_on_campus RADAR_ID\n"
     exit 1
 fi
 
-if [[ ! " ${VALID_RADARIDS[*]} " =~ " ${RADARID} " ]]; then
-    printf "\"$RADARID\" is not a valid radar ID\n"
+if [[ ! " ${VALID_RADAR_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
+    printf "\"$RADAR_ID\" is not a valid radar ID\n"
     exit 1
 fi
 
@@ -49,20 +49,20 @@ fi
 
 # Define directories
 readonly DATA_DIR="/sddata"
-readonly SOURCE="${DATA_DIR}/${RADARID}_holding_dir"
-readonly DEST="${DATA_DIR}/${RADARID}_data"
+readonly SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir"
+readonly DEST="${DATA_DIR}/${RADAR_ID}_data"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/convert_on_campus/$(date +%Y/%m)"
 mkdir --parents $LOGGING_DIR
-readonly LOGFILE="${LOGGING_DIR}/${RADARID}.$(date +%Y%m%d).convert_on_campus.log"
+readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).convert_on_campus.log"
 readonly  SUMMARY_DIR="${HOME}/logs/convert_on_campus/summary/$(date +%Y/%m)"
 mkdir --parents $SUMMARY_DIR
-readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).convert_on_campus_summary.log"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).convert_on_campus_summary.log"
 
 # Telemetry directory for this script and site
-readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/convert_on_campus"
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADAR_ID}/convert_on_campus"
 
 ###################################################################################################
 
@@ -70,10 +70,10 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
-printf "Executing $0 on $(hostname) for ${RADARID}\n" | tee --append $SUMMARY_FILE
+printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
-if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 
     # Get status info on data_flow and pyDARNio repos
     printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
@@ -118,7 +118,7 @@ if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
         fi
     done
 else
-    printf "\nNot converting files for $RADARID.\n" | tee --append $SUMMARY_FILE
+    printf "\nNot converting files for $RADAR_ID.\n" | tee --append $SUMMARY_FILE
 fi
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE

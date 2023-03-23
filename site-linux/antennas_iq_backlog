@@ -10,7 +10,7 @@
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
-# 	- RADARNAME and RADARID set as environment variables in $HOME/.profile
+# 	- RADARNAME and RADAR_ID set as environment variables in $HOME/.profile
 
 ###################################################################################################
 
@@ -71,7 +71,7 @@ fi
 
 # Convert antennas_iq files to array format
 for f in $ANTENNAS_IQ_CONVERT_FILES; do
-    if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADARID} " ]]; then
+    if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         date --utc "+%Y%m%d %H:%M:%S UTC"
         printf "\nConverting file # ${count} of ${num_files}: ${f}\n" | tee --append $SUMMARY_FILE
         printf "python3 remove_record.py $(basename ${f})\n"
@@ -81,7 +81,7 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         fi
 
         # Use BorealisRestructure if site has low memory
-        if [[ " ${LOW_MEMORY_SITES[*]} " =~ " ${RADARID} " ]]; then 
+        if [[ " ${LOW_MEMORY_SITES[*]} " =~ " ${RADAR_ID} " ]]; then 
             printf "python3 borealis_convert_file.py --low_memory $(basename ${f})\n"
             python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --low_memory $f
         else 
