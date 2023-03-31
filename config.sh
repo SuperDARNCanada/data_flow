@@ -6,8 +6,8 @@
 
 ###################################################################################################
 
-# Valid site RADARID values
-readonly VALID_RADARIDS=("sas" "pgr" "inv" "cly" "rkn")
+# Valid site RADAR_ID values
+readonly VALID_RADAR_IDS=("sas" "pgr" "inv" "cly" "rkn")
 
 ###################################################################################################
 

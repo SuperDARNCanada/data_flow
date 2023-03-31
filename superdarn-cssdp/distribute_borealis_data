@@ -18,8 +18,8 @@
 #   - hdf5 (zypper in hdf5)
 #	- ssh link established between SuperDARN-CSSDP and TELEMETRY computers
 #
-# Usage: ./distribute_borealis_data RADARID
-# Parameter RADARID: [sas, pgr, rkn, inv, cly]
+# Usage: ./distribute_borealis_data RADAR_ID
+# Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
 #
 # This script should be run via an inotify daemon triggerring when the previous data flow script
 # finishes. To ensure only one instance runs for each site, use flock within the inotify daemon code
@@ -31,25 +31,25 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in functions
 
 ###################################################################################################
 
-readonly RADARID=$1
+readonly RADAR_ID=$1
 
 if [[ $# -ne 1 ]]; then
-    printf "Usage: ./convert_on_campus RADARID\n"
+    printf "Usage: ./convert_on_campus RADAR_ID\n"
     exit 1
 fi
 
-if [[ ! " ${VALID_RADARIDS[*]} " =~ " ${RADARID} " ]]; then
-    printf "\"$RADARID\" is not a valid radar ID\n"
+if [[ ! " ${VALID_RADAR_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
+    printf "\"$RADAR_ID\" is not a valid radar ID\n"
     exit 1
 fi
 
 # Define directories
-readonly SOURCE="/sddata/${RADARID}_data"
+readonly SOURCE="/sddata/${RADAR_ID}_data"
 readonly NAS_DIR="/data/borealis_site_data"
 readonly MIRROR_STAGING_DIR="/data/holding/globus"
-readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADARID}"
-readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADARID}"
-# readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADARID}"
+readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADAR_ID}"
+readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADAR_ID}"
+# readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADAR_ID}"
 
 # Data group for outgoing files
 readonly DATA_GROUP="sddata"
@@ -57,13 +57,13 @@ readonly DATA_GROUP="sddata"
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/distribute_borealis_data/$(date +%Y/%m)"
 mkdir --parents $LOGGING_DIR
-readonly LOGFILE="${LOGGING_DIR}/${RADARID}.$(date +%Y%m%d).distribute_borealis_data.log"
+readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).distribute_borealis_data.log"
 readonly  SUMMARY_DIR="${HOME}/logs/distribute_borealis_data/summary/$(date +%Y/%m)"
 mkdir --parents $SUMMARY_DIR
-readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADARID}.$(date -u +%Y%m%d).distribute_borealis_data_summary.log"
+readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).distribute_borealis_data_summary.log"
 
 # Telemetry directory for this script and site
-readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/distribute_borealis_data"
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADAR_ID}/distribute_borealis_data"
 
 ###################################################################################################
 
@@ -71,7 +71,7 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
-printf "Executing $(basename "$0") on $(hostname) for ${RADARID}\n" | tee --append $SUMMARY_FILE
+printf "Executing $(basename "$0") on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Get status info on data_flow and pyDARNio repos
@@ -148,7 +148,7 @@ for file in $dmap_files; do
             # Move file to campus NAS for long term storage
             year=$(echo ${file_name} | cut --characters 1-4)
             month=$(echo ${file_name} | cut --characters 5-6)
-            nas_site_dir="${NAS_DIR}/${RADARID}_rawacf_dmap/${year}/${month}/"
+            nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/"
             mkdir --parents $nas_site_dir
             mv --verbose $file $nas_site_dir
         else
@@ -179,7 +179,7 @@ for file in $array_files; do
 
         year=$(echo ${file_name} | cut --characters 1-4)
         month=$(echo ${file_name} | cut --characters 5-6)
-        nas_site_dir="${NAS_DIR}/${RADARID}_rawacf/${year}/${month}/"
+        nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf/${year}/${month}/"
         mkdir --parents $nas_site_dir
         mv --verbose $file $nas_site_dir
         printf "File distribution successful: ${file}\n" | tee --append $SUMMARY_FILE

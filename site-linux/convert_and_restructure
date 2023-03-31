@@ -10,11 +10,11 @@
 # the source site files before it begins. This script is to be run on the Site-Linux computer.
 #
 # To modify this script to operate on files stored on the Site-Linux computer instead of the NAS:
-#	1. Remove RADARID for the specified site from NAS_SITES in config.sh
+#	1. Remove RADAR_ID for the specified site from NAS_SITES in config.sh
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
-# 	- RADARID set as environment variables in $HOME/.profile
+# 	- RADAR_ID set as environment variables in $HOME/.profile
 #	- ssh link established between Site-Linux and TELEMETRY computers
 #
 # This script should be run via an inotify daemon that triggers when the previous data flow script
@@ -30,7 +30,7 @@ source "${HOME}/pydarnio-env/bin/activate"
 ###################################################################################################
 
 # Define directories
-if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	readonly DATA_DIR="/borealis_nfs/borealis_data" # On NAS
 else
 	readonly DATA_DIR="/data/borealis_data" # On Site Linux
@@ -52,7 +52,7 @@ mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).convert_and_restructure_summary.log"
 
 # Telemetry directory for this script and site
-readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/convert_and_restructure"
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADAR_ID}/convert_and_restructure"
 
 ###################################################################################################
 
@@ -66,7 +66,7 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
-printf "Executing $0 on $(hostname) for ${RADARID}\n" | tee --append $SUMMARY_FILE
+printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Get status info on data_flow and pyDARNio repos
@@ -103,7 +103,7 @@ fi
 
 # Convert rawacf files to array and dmap format
 for f in $RAWACF_CONVERT_FILES; do
-    if [[ " ${RAWACF_SITES[*]} " =~ " ${RADARID} " ]]; then
+    if [[ " ${RAWACF_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         printf "\nConverting ${f}\n"
         printf "python3 remove_record.py $(basename ${f})\n"
         output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
@@ -112,7 +112,7 @@ for f in $RAWACF_CONVERT_FILES; do
         fi
 
         # Don't produce dmap files if only array files are transferred to campus
-        if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
+        if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
             printf "python3 borealis_convert_file.py $(basename ${f})\n"
             python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" $f
         else
@@ -124,7 +124,7 @@ for f in $RAWACF_CONVERT_FILES; do
         if [[ $ret -eq 0 ]]; then
             # move the resulting files if all was successful then remove the source site file.
 
-            if [[ ! " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
+            if [[ ! " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
                 dmap_file_start="${f%.rawacf.hdf5.site}"
 
                 # remove last character(s) (slice_id)
@@ -162,7 +162,7 @@ fi
 
 # Convert bfiq files to array format
 for f in $BFIQ_CONVERT_FILES; do
-    if [[ " ${BFIQ_SITES[*]} " =~ " ${RADARID} " ]]; then
+    if [[ " ${BFIQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         printf "\nConverting ${f}\n"
         printf "python3 remove_record.py $(basename ${f})\n"
         output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
@@ -199,7 +199,7 @@ fi
 
 # Convert antennas_iq files to array format
 for f in $ANTENNAS_IQ_CONVERT_FILES; do
-    if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADARID} " ]]; then
+    if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         printf "\nConverting ${f}\n"
         printf "python3 remove_record.py $(basename ${f})\n"
         output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
@@ -208,7 +208,7 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         fi
 
         # Use BorealisRestructure if site has low memory
-        if [[ " ${LOW_MEMORY_SITES[*]} " =~ " ${RADARID} " ]]; then 
+        if [[ " ${LOW_MEMORY_SITES[*]} " =~ " ${RADAR_ID} " ]]; then 
             printf "python3 borealis_convert_file.py --low_memory $(basename ${f})\n"
             python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --low_memory $f
         else 

@@ -7,7 +7,7 @@
 #
 # Dependencies:
 #	- inotifywait (installed by zypper in inotify-tools)
-#   - SDCOPY set as environment variables in ${HOME}/.profile
+#   - RADAR_ID and SDCOPY set as environment variables in ${HOME}/.profile
 #
 # Triggers from flag sent by Borealis computer inotify daemon when rsync_to_nas finishes
 
@@ -30,7 +30,7 @@ readonly REMOTE_FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
 # Flag sent out to trigger superdarn-cssdp dataflow
 readonly FLAG_SRC="${HOME}/data_flow/.inotify_flags"
 mkdir --parents $FLAG_SRC
-readonly FLAG_OUT="${FLAG_SRC}/.site-linux_flag_${RADARID}"
+readonly FLAG_OUT="${FLAG_SRC}/.site-linux_flag_${RADAR_ID}"
 
 ###################################################################################################
 

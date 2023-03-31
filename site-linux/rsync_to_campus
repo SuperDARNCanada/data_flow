@@ -9,10 +9,10 @@
 # campus. Files are copied first and removed once copy is confirmed to be successful. 
 #
 # To modify this script to transfer files from a local Site-Linux directory instead of the NAS:
-#	1. Remove RADARID for the specified site from NAS_SITES in config.sh
+#	1. Remove RADAR_ID for the specified site from NAS_SITES in config.sh
 #
 # Dependencies:
-# 	- RADARID and SDCOPY set as environment variables in ${HOME}/.profile
+# 	- RADAR_ID and SDCOPY set as environment variables in ${HOME}/.profile
 #	- ssh link established between Site-Linux and SDCOPY computers
 #	- ssh link established between Site-Linux and TELEMETRY computers
 #
@@ -28,7 +28,7 @@ source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functi
 ###################################################################################################
 
 # Location rawacf files are transferring from
-if [[ " ${NAS_SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	readonly DATA_DIR="/borealis_nfs/borealis_data" # On NAS
 else
 	readonly DATA_DIR="/data/borealis_data" # On Site Linux
@@ -37,10 +37,10 @@ readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
-if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
-	readonly DEST="/sddata/${RADARID}_holding_dir"
+if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+	readonly DEST="/sddata/${RADAR_ID}_holding_dir"
 else
-	readonly DEST="/sddata/${RADARID}_data/"
+	readonly DEST="/sddata/${RADAR_ID}_data/"
 fi
 
 # Create log file. New file created daily
@@ -52,7 +52,7 @@ mkdir --parents $SUMMARY_DIR
 readonly SUMMARY_FILE="${SUMMARY_DIR}/$(date -u +%Y%m%d).rsync_to_campus_summary.log"
 
 # Telemetry directory for this script and site
-readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADARID}/rsync_to_campus"
+readonly TELEMETRY_SCRIPT_DIR="${TELEMETRY_DIR}/${RADAR_ID}/rsync_to_campus"
 
 ###################################################################################################
 
@@ -67,7 +67,7 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
 # Date in UTC format for logging
-printf "Executing $0 on $(hostname) for ${RADARID}\n" | tee --append $SUMMARY_FILE
+printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Get status info on data_flow and pyDARNio repos
@@ -80,7 +80,7 @@ printf "Transferring from: $DATA_DIR\n" | tee --append $SUMMARY_FILE
 printf "Transferring to: $SDCOPY:$DEST\n\n" | tee --append $SUMMARY_FILE
 
 # Check if this site is transferring dmaps to campus
-if [[ ! " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADARID} " ]]; then
+if [[ ! " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	# Find all dmap files to transfer
 	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 
