@@ -44,7 +44,7 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in function li
 
 # Borealis directory files are transferring from
 # Use jq to read the Borealis data directory from the Borealis config file
-readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq --raw-output '.data_directory')"
+readonly SOURCE="$(cat ${BOREALISPATH}/config/${RADAR_ID}/${RADAR_ID}_config.ini | jq --raw-output '.data_directory')"
 
 # Directory the files will be transferred to
 if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
@@ -83,9 +83,11 @@ date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 # Get status info on data_flow and pyDARNio repos
 printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
-printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
-		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
+if [[ -z "$SOURCE" ]]; then
+        printf "Error: Source directory not defined. Exiting...\n"
+        exit 1
+fi
 printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 
 # Get all files that aren't currently being written do. First, find all .site files in source 
