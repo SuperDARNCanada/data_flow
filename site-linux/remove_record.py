@@ -53,7 +53,7 @@ def find_borealis_sequence_errors(filename):
         records = sorted(list(f.keys()))
         for record_name in records:
             data = f[record_name]
-            if data['sqn_timestamps'].shape[0] != data['num_sequences']:
+            if data['sqn_timestamps'].shape[0] != data.attrs['num_sequences']:
                 del f[record_name]
                 print(f'Deleted: {record_name}')
 
