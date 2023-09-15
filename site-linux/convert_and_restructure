@@ -134,10 +134,20 @@ for f in $RAWACF_CONVERT_FILES; do
                 ordinal_id="$(($slice_id + 97))"
                 file_character=$(chr $ordinal_id)
                 dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
+
+                # First ensure the permissions are read/write/execute for the group
+                printf "chmod 775 ${dmap_file}\n"
+                chmod 775 ${dmap_file}
+
                 mv --verbose $dmap_file $RAWACF_DMAP_DEST
             fi
 
             array_file="${f%.site}"
+
+            # First ensure the permissions are read/write/execute for the group
+            printf "chmod 775 ${array_file}\n"
+            chmod 775 ${array_file}
+
             mv --verbose $array_file $RAWACF_ARRAY_DEST
             rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
@@ -175,6 +185,11 @@ for f in $BFIQ_CONVERT_FILES; do
         if [[ $ret -eq 0 ]]; then
             # Only converting array file
             array_file="${f%.site}"
+
+            # First ensure the permissions are read/write/execute for the group
+            printf "chmod 775 ${array_file}\n"
+            chmod 775 ${array_file}
+
             mv --verbose $array_file $BFIQ_ARRAY_DEST
             rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
@@ -220,6 +235,11 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         if [ $ret -eq 0 ]; then
             # then remove source site file.
             array_file="${f%.site}"
+
+            # First ensure the permissions are read/write/execute for the group
+            printf "chmod 775 ${array_file}\n"
+            chmod 775 ${array_file}
+            
             mv --verbose $array_file $ANTENNAS_IQ_ARRAY_DEST
             rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
