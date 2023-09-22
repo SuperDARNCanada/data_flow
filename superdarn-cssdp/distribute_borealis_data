@@ -50,6 +50,7 @@ readonly MIRROR_STAGING_DIR="/data/holding/globus"
 readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADAR_ID}"
 readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADAR_ID}"
 # readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADAR_ID}"
+readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
 
 # Data group for outgoing files
 readonly DATA_GROUP="sddata"
@@ -99,61 +100,82 @@ fi
 # Iterate over all dmap files to be transferred
 for file in $dmap_files; do
     printf "\n"
+    # Test that file can be unzipped
     bzip2 --test $file
     if [[ $? -eq 2 ]]; then
         printf "DMAP file failed bzip2 test: ${file}\n" | tee --append $SUMMARY_FILE
+        mv --verbose $file $PROBLEM_FILES_DEST
+        continue    # Skip to next file in $dmap_files
+    fi
+
+    # Test that file can be read by pyDARNio
+    unbzipped_file="${file%.bz2}"
+    printf "bunzip2 ${file}\n"
+    bunzip2 $file    # Unzips in place, file has .bz2 suffix stripped
+    printf "python3 test_dmap_integrity.py $(basename ${unbzipped_file})\n"
+    python3 "${HOME}/data_flow/superdarn-cssdp/test_dmap_integrity.py" $unbzipped_file
+    dmap_ret=$?
+    if [[ $dmap_ret -eq 0 ]]; then  # The dmap file is good
+        # Rezip the dmap file
+        printf "bzip2 ${unbzipped_file}\n"
+        bzip2 $unbzipped_file   # Zips in place, file has .bz2 suffix added
     else
-        printf "Distributing ${file}\n"
-        chmod --verbose 664 $file   # Change file permissions to -rw-rw-r--
+        printf "Conversion failed - result was corrupted: ${f}\n" | tee --append $SUMMARY_FILE
+        rm --verbose $unbzipped_file
+        mv --verbose $file $PROBLEM_FILES_DEST
+        continue    # Skip to next file in $dmap_files
+    fi
 
-        file_name=$(basename $file)
+    printf "Distributing ${file}\n"
+    chmod --verbose 664 $file   # Change file permissions to -rw-rw-r--
 
-        # TODO: Review changing of groups and permissions differring across destinations
+    file_name=$(basename $file)
 
-        # Flag will be > 0 if any transfers fail since verify_transfer. Returns 1 for failed transfer
-        transfer_flag=0
+    # TODO: Review changing of groups and permissions differring across destinations
 
-        # Place file in vtsd outgoing
-        cp --preserve --verbose $file $VT_STAGING_DIR
-        chgrp --verbose $DATA_GROUP "${VT_STAGING_DIR}/${file_name}"   
-        verify_transfer $file "${VT_STAGING_DIR}/${file_name}" 
-        return_value=$?
-        transfer_flag=$(($transfer_flag + $return_value))
+    # Flag will be > 0 if any transfers fail since verify_transfer. Returns 1 for failed transfer
+    transfer_flag=0
 
-        # Place file in BAS outgoing
-        cp --preserve --verbose $file $BAS_STAGING_DIR
-        chgrp --verbose $DATA_GROUP "${BAS_STAGING_DIR}/${file_name}"
-        verify_transfer $file "${BAS_STAGING_DIR}/${file_name}"
-        return_value=$?
-        transfer_flag=$(($transfer_flag + $return_value))
+    # Place file in vtsd outgoing
+    cp --preserve --verbose $file $VT_STAGING_DIR
+    chgrp --verbose $DATA_GROUP "${VT_STAGING_DIR}/${file_name}"   
+    verify_transfer $file "${VT_STAGING_DIR}/${file_name}" 
+    return_value=$?
+    transfer_flag=$(($transfer_flag + $return_value))
 
-        # Place file in NSSC outgoing - Uncommment this when NSSC is ready
-        # cp --preserve --verbose $file $NSSC_STAGING_DIR
-        # chgrp --verbose $DATA_GROUP "${NSSC_STAGING_DIR}/${file_name}"
-        # verify_transfer $file "${NSSC_STAGING_DIR}/${file_name}"
-        # return_value=$?
-        # transfer_flag=$(($transfer_flag + $return_value))
+    # Place file in BAS outgoing
+    cp --preserve --verbose $file $BAS_STAGING_DIR
+    chgrp --verbose $DATA_GROUP "${BAS_STAGING_DIR}/${file_name}"
+    verify_transfer $file "${BAS_STAGING_DIR}/${file_name}"
+    return_value=$?
+    transfer_flag=$(($transfer_flag + $return_value))
 
-        # Copy for staging to the mirror
-        cp --preserve --verbose $file $MIRROR_STAGING_DIR
-        verify_transfer $file "${MIRROR_STAGING_DIR}/${file_name}"
-        return_value=$?
-        transfer_flag=$(($transfer_flag + $return_value))
+    # Place file in NSSC outgoing - Uncommment this when NSSC is ready
+    # cp --preserve --verbose $file $NSSC_STAGING_DIR
+    # chgrp --verbose $DATA_GROUP "${NSSC_STAGING_DIR}/${file_name}"
+    # verify_transfer $file "${NSSC_STAGING_DIR}/${file_name}"
+    # return_value=$?
+    # transfer_flag=$(($transfer_flag + $return_value))
 
-        # Check that all files were copied successfully. If any transfers failed, leave file in 
-        # directory so tranfer can be attempted the next time the script runs
-        if [[ "${transfer_flag}" -eq 0 ]]; then
-            printf "File distribution successful: ${file}\n" | tee --append $SUMMARY_FILE
+    # Copy for staging to the mirror
+    cp --preserve --verbose $file $MIRROR_STAGING_DIR
+    verify_transfer $file "${MIRROR_STAGING_DIR}/${file_name}"
+    return_value=$?
+    transfer_flag=$(($transfer_flag + $return_value))
 
-            # Move file to campus NAS for long term storage
-            year=$(echo ${file_name} | cut --characters 1-4)
-            month=$(echo ${file_name} | cut --characters 5-6)
-            nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/"
-            mkdir --parents $nas_site_dir
-            mv --verbose $file $nas_site_dir
-        else
-            printf "File distribution failed: ${file}\n" | tee --append $SUMMARY_FILE
-        fi
+    # Check that all files were copied successfully. If any transfers failed, leave file in 
+    # directory so tranfer can be attempted the next time the script runs
+    if [[ "${transfer_flag}" -eq 0 ]]; then
+        printf "File distribution successful: ${file}\n" | tee --append $SUMMARY_FILE
+
+        # Move file to campus NAS for long term storage
+        year=$(echo ${file_name} | cut --characters 1-4)
+        month=$(echo ${file_name} | cut --characters 5-6)
+        nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/"
+        mkdir --parents $nas_site_dir
+        mv --verbose $file $nas_site_dir
+    else
+        printf "File distribution failed: ${file}\n" | tee --append $SUMMARY_FILE
     fi
 done
 

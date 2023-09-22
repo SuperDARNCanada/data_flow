@@ -109,27 +109,9 @@ if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
             ordinal_id="$(($slice_id + 97))"
             file_character=$(chr $ordinal_id)
             dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
-
-            # Unzip the file and check its integrity
-            unbzipped_file="${dmap_file%.bz2}"
-            printf "bunzip2 ${dmap_file}\n"
-            bunzip2 ${dmap_file}    # Unzips in place, file has .bz2 suffix stripped
-            printf "python3 test_dmap_integrity.py $(basename ${unbzipped_file})\n"
-            python3 "${HOME}/data_flow/superdarn-cssdp/test_dmap_integrity.py" ${unbzipped_file}
-            dmap_ret=$?
-            if [[ $dmap_ret -eq 0 ]]; then
-                # The dmap file is good
-                # Rezip the dmap file
-                printf "bzip2 ${unbzipped_file}\n"
-                bzip2 ${unbzipped_file}   # Zips in place, file has .bz2 suffix added
-                mv --verbose $dmap_file $DEST
-                mv --verbose $f $DEST
-                printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
-            else
-                printf "File converted but result was corrupted: ${f}\n" | tee --append $SUMMARY_FILE
-                rm --verbose ${unbzipped_file}
-                mv --verbose $f $PROBLEM_FILES_DEST
-            fi
+            mv --verbose $dmap_file $DEST
+            mv --verbose $f $DEST
+            printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
             printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
             mv --verbose $f $PROBLEM_FILES_DEST
