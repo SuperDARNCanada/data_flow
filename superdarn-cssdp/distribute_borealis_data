@@ -50,7 +50,7 @@ readonly MIRROR_STAGING_DIR="/data/holding/globus"
 readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADAR_ID}"
 readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADAR_ID}"
 # readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADAR_ID}"
-readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
+readonly PROBLEM_FILES_DEST="/sddata/conversion_failure"
 
 # Data group for outgoing files
 readonly DATA_GROUP="sddata"
@@ -193,6 +193,7 @@ for file in $array_files; do
     h5stat $file >& /dev/null
     if [[ $? -ne 0 ]]; then
         printf "Array file failed h5stat test: ${file}\n" | tee --append $SUMMARY_FILE
+        mv --verbose $file $PROBLEM_FILES_DEST
     else
         printf "Distributing ${file}\n"
         chmod --verbose 644 "${file}"   # Change permissions to -rw-r--r--
