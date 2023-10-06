@@ -17,7 +17,7 @@ readonly NAS_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 ###################################################################################################
 
-# Files each site converts. If a site isn't specified they are not converting/restructuring that 
+# Files each site produces. If a site isn't specified they are not converting/restructuring that 
 # type of file
 readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
 readonly BFIQ_SITES=("pgr")

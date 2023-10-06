@@ -8,13 +8,13 @@
 # A script that uses pydarnio to convert Borealis rawacf files to SuperDARN DMap files. Uses the
 # borealis_array_to_dmap.py script to convert already-restructured array files to dmap. 
 # 
-# This script is executed for all sites, but only performs conversions for sites specified in the
-# SITES array. Only sites that have bandwidth limits and don't transfer dmap files to campus should
-# be specified in this array.
+# This script is executed on sdc-serv.usask.ca for all sites, but only performs conversions for
+# sites specified in the SITES array. Only sites that have bandwidth limits and don't transfer dmap
+# files to campus should be specified in this array.
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
-#	- ssh link established between SuperDARN-CSSDP and TELEMETRY computers
+#	- ssh link established between sdc-serv and TELEMETRY computers
 #
 # Usage: ./convert_on_campus RADAR_ID
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
@@ -48,7 +48,7 @@ fi
 # script executes immediately
 
 # Define directories
-readonly DATA_DIR="/sddata"
+readonly DATA_DIR="/sddata"     # Located on superdarn-data NAS
 readonly SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir"
 readonly DEST="${DATA_DIR}/${RADAR_ID}_data"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
@@ -96,7 +96,7 @@ if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     do
         printf "\nConverting ${f}\n"
         printf "python3 borealis_array_to_dmap.py $(basename ${f})\n"
-        python3 "${HOME}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py" $f
+        python3 "${HOME}/data_flow/campus/borealis_array_to_dmap.py" $f
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # Move the resulting files if all was successful then remove the source site file.
@@ -123,7 +123,7 @@ fi
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
-# Sync summary log file with campus
+# Sync summary log file with telemetry
 printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
 rsync --archive --rsh="$TELEMETRY_RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 

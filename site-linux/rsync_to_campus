@@ -5,7 +5,7 @@
 # Major revision: October 2022 by Theo Kolkman
 # Refactored for inotify usage
 #
-# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to superdarn-cssdp on 
+# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to sdc-serv on 
 # campus. Files are copied first and removed once copy is confirmed to be successful. 
 #
 # To modify this script to transfer files from a local Site-Linux directory instead of the NAS:

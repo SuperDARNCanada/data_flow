@@ -23,11 +23,11 @@ readonly LOG_DIR="${HOME}/logs/inotify_daemons"
 mkdir --parents $LOG_DIR
 readonly LOGFILE="${LOG_DIR}/${script_name}.log"
 
-# Location of inotify watch directory for flags on superdarn-cssdp. Should match up with 
-# superdarn-cssdp inotify's WATCH_DIR
-readonly REMOTE_FLAG_DEST="/home/mrcopy/data_flow/.inotify_watchdir"
+# Location of inotify watch directory for flags on sdc-serv. Should match up with 
+# sdc-serv inotify's WATCH_DIR
+readonly REMOTE_FLAG_DEST="/home/dataman/data_flow/.inotify_watchdir"
 
-# Flag sent out to trigger superdarn-cssdp dataflow
+# Flag sent out to trigger campus dataflow
 readonly FLAG_SRC="${HOME}/data_flow/.inotify_flags"
 mkdir --parents $FLAG_SRC
 readonly FLAG_OUT="${FLAG_SRC}/.site-linux_flag_${RADAR_ID}"
@@ -52,7 +52,7 @@ do
         # Reset flag by removing .borealis_flag, so inotify can be triggered again
         rm --verbose --force "${DIRECTORY}${FILE}"
 
-        # Send "flag" file to notify mrcopy to start next script
+        # Send "flag" file to notify sdc-serv on campus to start next script
         touch $FLAG_OUT
         rsync --archive --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${REMOTE_FLAG_DEST}"
         printf "Sent ${FLAG_OUT} to  ${SDCOPY}:${REMOTE_FLAG_DEST}\n"
