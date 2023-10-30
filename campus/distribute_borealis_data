@@ -90,7 +90,6 @@ printf "Distributing to: \n\
         \tInstitutions: $BAS_STAGING_DIR\t$VT_STAGING_DIR\n\n" | tee --append $SUMMARY_FILE
 
 dmap_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.bz2")
-array_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.hdf5")
 
 if [[ -n $dmap_files ]]; then
     printf "Distributing the following dmap files:\n" 
@@ -113,15 +112,15 @@ for file in $dmap_files; do
     # Test that file can be read by pyDARNio
     unbzipped_file="${file%.bz2}"
     printf "bunzip2 ${file}\n"
-    bunzip2 -v $file    # Unzips in place, file has .bz2 suffix stripped
+    bunzip2 --verbose --keep $file    # Unzips to new file, old file is unchanged
     printf "python3 test_dmap_integrity.py $(basename ${unbzipped_file})\n"
     python3 "${HOME}/data_flow/campus/test_dmap_integrity.py" $unbzipped_file
     dmap_ret=$?
-    # Rezip the dmap file
+    # Get rid of unzipped file
     printf "bzip2 ${unbzipped_file}\n"
-    bzip2 $unbzipped_file   # Zips in place, file has .bz2 suffix added.
+    rm --verbose $unbzipped_file   # Remove unzipped file, zipped file is still there.
     if [[ $dmap_ret -ne 0 ]]; then  # The dmap file is not good
-        printf "DMAP integrity test failed: ${f}\n" | tee --append $SUMMARY_FILE
+        printf "DMAP integrity test failed: ${file}\n" | tee --append $SUMMARY_FILE
         printf "Not distributing ${file}\n"
         mv --verbose $file $PROBLEM_FILES_DEST
         continue    # Skip to next file in $dmap_files
@@ -137,9 +136,6 @@ for file in $dmap_files; do
     # Flag will be > 0 if any transfers fail since verify_transfer returns 1 for failed transfer
     transfer_flag=0
 
-    # TODO: Temporarily staging VT and BAS data on both sdc-serv and superdarn-cssdp.
-    CSSDP_SSH="mrcopy@128.233.224.39"
-
     # Place file in vtsd outgoing
     chgrp --verbose $DATA_GROUP $file
 
@@ -148,12 +144,6 @@ for file in $dmap_files; do
     return_value=$?
     transfer_flag=$(($transfer_flag + $return_value))
 
-    rsync --archive --verbose $file "${CSSDP_SSH}:$VT_STAGING_DIR"
-    verify_transfer $file "${VT_STAGING_DIR}/${file_name}" $CSSDP_SSH
-    return_value=$?
-    transfer_flag=$(($transfer_flag + $return_value))
-
-
     # Place file in BAS outgoing
     chgrp --verbose $DATA_GROUP $file
 
@@ -161,12 +151,6 @@ for file in $dmap_files; do
     verify_transfer $file "${BAS_STAGING_DIR}/${file_name}"
     return_value=$?
     transfer_flag=$(($transfer_flag + $return_value))
-
-    rsync --archive --verbose $file "${CSSDP_SSH}:$BAS_STAGING_DIR"
-    verify_transfer $file "${BAS_STAGING_DIR}/${file_name}"
-    return_value=$?
-    transfer_flag=$(($transfer_flag + $return_value))
-
 
     # Place file in NSSC outgoing - Uncommment this when NSSC is ready
     # cp --preserve --verbose $file $NSSC_STAGING_DIR
@@ -197,6 +181,7 @@ for file in $dmap_files; do
     fi
 done
 
+array_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.hdf5")
 
 # Iterate over all array files and back them up to NAS
 if [[ -n $array_files ]]; then

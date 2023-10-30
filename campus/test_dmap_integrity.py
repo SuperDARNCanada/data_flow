@@ -24,11 +24,11 @@ if __name__ == '__main__':
     parser.add_argument('infile', help='Path to DMAP rawacf file', type=str)
     args = parser.parse_args()
 
-    try:
-        dmap_stream = open(args.infile, 'rb').read()
-        reader = SDarnRead(dmap_stream, True)
-        records = reader.read_rawacf()
-    except:
-        sys.exit(1)    # If the file could not be interpreted correctly, return 1
-    else:
-        sys.exit(0)     # If the file was correctly read, return 0
+    # try:
+    dmap_stream = open(args.infile, 'rb').read()
+    reader = SDarnRead(dmap_stream, True)
+    records = reader.read_rawacf()
+    # except:
+        # sys.exit(1)    # If the file could not be interpreted correctly, return 1
+    # else:
+        # sys.exit(0)     # If the file was correctly read, return 0

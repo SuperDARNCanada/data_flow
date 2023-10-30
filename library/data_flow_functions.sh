@@ -27,6 +27,86 @@ ord() {
 }
 
 ###################################################################################################
+# Get rawacf dmap filename from corresponding array filename. 
+#
+# Example: `get_dmap_name 20231004.1400.00.pgr.1.rawacf.hdf5` will print 
+#          20231004.1400.00.pgr.b.rawacf.bz2 to standard output.
+#
+# Argument 1: array filename
+# Returns:    0 on successful name translation
+###################################################################################################
+get_dmap_name() {
+	# Check function was called correctly
+	if [[ $# -ne 1 ]]; then
+		printf "get_dmap_name(): Invalid number of arguments\n" 
+		return 1
+	fi
+
+	array_filename=$1
+	# Check that the filename given is a valid dmap file name
+	if [[ ! "$array_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[0-9]+.rawacf.hdf5$   ]]; then
+		printf "get_dmap_name(): Invalid filename - $array_filename isn't a valid array file name\n"
+		return 1
+	fi
+
+	# Move the resulting files if all was successful then remove the source site file.
+	file_start="${array_filename%.rawacf.hdf5}"
+
+	# Remove last character(s) (slice_id)
+	slice_id=$(echo $file_start | rev | cut --delimiter='.' --fields=1 | rev)
+	file_start_wo_slice_id="${file_start%${slice_id}}"
+
+	ordinal_id="$(($slice_id + 97))"
+	file_character=$(chr $ordinal_id)
+
+	dmap_file="${file_start_wo_slice_id}${file_character}.rawacf.bz2"
+	printf "${dmap_file}"
+
+	return 0
+}
+
+
+###################################################################################################
+# Get rawacf array filename from corresponding dmap filename. 
+#
+# Example: `get_array_name 20231004.1400.00.pgr.b.rawacf.bz2` will print 
+#          20231004.1400.00.pgr.1.rawacf.hdf5 to standard output.
+#
+# Argument 1: dmap filename
+# Returns:    0 on successful name translation
+###################################################################################################
+get_array_name() {
+	# Check function was called correctly
+	if [[ $# -ne 1 ]]; then
+		printf "get_array_name(): Invalid number of arguments\n" 
+		return 1
+	fi
+
+	dmap_filename=$1
+	# Check that the filename given is a valid dmap file name
+	if [[ ! "$dmap_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[[:lower:]]+.rawacf.bz2$   ]]; then
+		printf "get_array_name(): Invalid filename - $dmap_filename isn't a valid dmap file name\n"
+		return 1
+	fi
+
+	file_start="${dmap_filename%.rawacf.bz2}"
+
+	# Remove last character (the file character)
+	file_character=$(echo $file_start | rev | cut --delimiter='.' --fields=1 | rev)
+	file_start_wo_character="${file_start%${file_character}}"
+
+	# Convert file character to slice ID
+	ordinal_id="$(ord $file_character)"
+	slice_id=$(($ordinal_id - 97))
+
+	# Put it all together
+	array_file="${file_start_wo_character}${slice_id}.rawacf.hdf5"
+	printf "${array_file}"
+
+	return 0
+}
+
+###################################################################################################
 # Verify transfer of a file using md5sum
 # 
 # Calculates the md5sum of the sent file, and compares it to the md5sum of the source file. If the 

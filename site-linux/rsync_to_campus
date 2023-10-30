@@ -37,7 +37,7 @@ readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
-if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	readonly DEST="/sddata/${RADAR_ID}_holding_dir"
 else
 	readonly DEST="/sddata/${RADAR_ID}_data/"
@@ -80,7 +80,7 @@ printf "Transferring from: $DATA_DIR\n" | tee --append $SUMMARY_FILE
 printf "Transferring to: $SDCOPY:$DEST\n\n" | tee --append $SUMMARY_FILE
 
 # Check if this site is transferring dmaps to campus
-if [[ ! " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ ! " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	# Find all dmap files to transfer
 	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 
