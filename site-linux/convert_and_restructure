@@ -1,9 +1,6 @@
 #!/bin/bash
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
-# Author: Marci Detwiller
-#
-# Major revision: October 2022 by Theo Kolkman
-# Refactored for inotify usage
+# Author: Marci Detwiller, Theodore Kolkman
 #
 # A script that uses pydarnio to convert Borealis files to SuperDARN DMap files as well as 
 # restructures the hdf5 files to be multidimensional arrays for better file readability. Backs up 

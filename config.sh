@@ -7,7 +7,7 @@
 ###################################################################################################
 
 # Valid site RADAR_ID values
-readonly VALID_RADAR_IDS=("sas" "pgr" "inv" "cly" "rkn")
+readonly VALID_IDS=("sas" "pgr" "inv" "cly" "rkn")
 
 ###################################################################################################
 
@@ -20,7 +20,7 @@ readonly NAS_SITES=("sas" "pgr" "inv" "cly" "rkn")
 # Files each site produces. If a site isn't specified they are not converting/restructuring that 
 # type of file
 readonly RAWACF_SITES=("sas" "pgr" "inv" "cly" "rkn")
-readonly BFIQ_SITES=("pgr")
+readonly BFIQ_SITES=()
 readonly ANTENNAS_IQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 # Special case sites. If a site is specified here, the data flow will be slightly altered to 

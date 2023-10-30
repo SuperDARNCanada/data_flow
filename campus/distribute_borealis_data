@@ -10,9 +10,15 @@
 #   Stages dmap and array data for the mirror
 #   Stages dmap data for sending to British Antarctic Survey (BAS), Virginia Tech (VT) and National 
 #       Space Science Center (NSSC)
-# Checks all files for integrity and place them in the correct location if all tests are passed. If 
-# any tests fail, the file isn't transferred and a log file explaining what happened is sent to the 
-# Engineering dashboard
+#
+# This script performs the following checks before distributing files:
+#   - dmap files are unzipped
+#   - dmap files are read into pyDARNio via the test_dmap_integrity script. If the file can be 
+#     successfully read into pyDARNio, then there is high confidence in the files integrity.
+#   - hdf5 array files are tested using h5stat
+# If a file fails any of these tests, they are moved to a separate directory for future examination.
+# If any dmap files fail a test, the corresponsing array file is also moved to the separate
+# directory.
 #
 # Dependencies:
 #   - hdf5 (zypper in hdf5)
@@ -40,7 +46,7 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
-if [[ ! " ${VALID_RADAR_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ ! " ${VALID_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
     printf "\"$RADAR_ID\" is not a valid radar ID\n"
     exit 1
 fi

@@ -1,9 +1,6 @@
 #!/bin/bash
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
-# Author: Dieter Andre
-#
-# Major revision: October 2022 by Theo Kolkman
-# Refactored for inotify usage
+# Author: Dieter Andre, Theodore Kolkman
 #
 # A singleton script to transfer rawacf dmap and hdf5 files from site NAS to sdc-serv on 
 # campus. Files are copied first and removed once copy is confirmed to be successful. 

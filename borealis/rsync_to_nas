@@ -1,9 +1,6 @@
 #!/bin/bash
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
-# Author: Kevin Krieger
-#
-# Last Edited: October 2022 by Theo Kolkman
-# Refactored for inotify usage
+# Author: Kevin Krieger, Theodore Kolkman
 #
 # A singleton script to move Borealis files from the Borealis computer to the site NAS. Files are
 # copied first and removed once copy is confirmed to be successful. This script is to be run on the
