@@ -98,31 +98,37 @@ else
     printf "No dmap files found to be distributed.\n" | tee --append $SUMMARY_FILE
 fi
 
-# Iterate over all dmap files to be transferred
+# Iterate over all dmap files to be transferred. If any dmap files fail conversion checks, both the 
+# dmap and corresponding array file are moved to a separate directory for further inspection.
 for file in $dmap_files; do
+    array_file=$(get_array_name $file)  # HDF5 Array file corresponding to the current dmap file
+
     printf "\n"
     # Test that file can be unzipped
     bzip2 --test $file
     if [[ $? -eq 2 ]]; then
         printf "DMAP file failed bzip2 test: ${file}\n" | tee --append $SUMMARY_FILE
         mv --verbose $file $PROBLEM_FILES_DEST
-        continue    # Skip to next file in $dmap_files
+        mv --verbose $array_file $PROBLEM_FILES_DEST
+        continue    # Skip to next dmap file
     fi
 
     # Test that file can be read by pyDARNio
     unbzipped_file="${file%.bz2}"
-    printf "bunzip2 ${file}\n"
+    printf "bunzip2 --verbose --keep ${file}\n"
     bunzip2 --verbose --keep $file    # Unzips to new file, old file is unchanged
+
     printf "python3 test_dmap_integrity.py $(basename ${unbzipped_file})\n"
     python3 "${HOME}/data_flow/campus/test_dmap_integrity.py" $unbzipped_file
     dmap_ret=$?
-    # Get rid of unzipped file
-    printf "bzip2 ${unbzipped_file}\n"
+
     rm --verbose $unbzipped_file   # Remove unzipped file, zipped file is still there.
+
     if [[ $dmap_ret -ne 0 ]]; then  # The dmap file is not good
         printf "DMAP integrity test failed: ${file}\n" | tee --append $SUMMARY_FILE
         printf "Not distributing ${file}\n"
         mv --verbose $file $PROBLEM_FILES_DEST
+        mv --verbose $array_file $PROBLEM_FILES_DEST
         continue    # Skip to next file in $dmap_files
     fi
 
@@ -178,6 +184,7 @@ for file in $dmap_files; do
         mv --verbose $file $nas_site_dir
     else
         printf "File distribution failed: ${file}\n" | tee --append $SUMMARY_FILE
+        # Leave failed transfer files in directory
     fi
 done
 

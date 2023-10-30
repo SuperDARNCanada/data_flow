@@ -42,7 +42,8 @@ get_dmap_name() {
 		return 1
 	fi
 
-	array_filename=$1
+	array_filename=$(basename $1)
+	array_directory=$(dirname $1)
 	# Check that the filename given is a valid dmap file name
 	if [[ ! "$array_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[0-9]+.rawacf.hdf5$   ]]; then
 		printf "get_dmap_name(): Invalid filename - $array_filename isn't a valid array file name\n"
@@ -60,7 +61,7 @@ get_dmap_name() {
 	file_character=$(chr $ordinal_id)
 
 	dmap_file="${file_start_wo_slice_id}${file_character}.rawacf.bz2"
-	printf "${dmap_file}"
+	printf "${array_directory}/${dmap_file}"
 
 	return 0
 }
@@ -82,7 +83,8 @@ get_array_name() {
 		return 1
 	fi
 
-	dmap_filename=$1
+	dmap_filename=$(basename $1)
+	dmap_directory=$(dirname $1)
 	# Check that the filename given is a valid dmap file name
 	if [[ ! "$dmap_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[[:lower:]]+.rawacf.bz2$   ]]; then
 		printf "get_array_name(): Invalid filename - $dmap_filename isn't a valid dmap file name\n"
@@ -101,7 +103,7 @@ get_array_name() {
 
 	# Put it all together
 	array_file="${file_start_wo_character}${slice_id}.rawacf.hdf5"
-	printf "${array_file}"
+	printf "${dmap_directory}/${array_file}"
 
 	return 0
 }
