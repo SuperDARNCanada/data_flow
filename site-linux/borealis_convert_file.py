@@ -191,7 +191,7 @@ def borealis_site_to_array_file(filename, borealis_filetype, array_filename, low
     if low_memory:
         # Specify zlib so compression is the same as BorealisWrite
         borealis_writer = BorealisRestructure(filename, array_filename, borealis_filetype, 
-                                              outfile_structure='array', hdf5_compression='zlib')
+                                              outfile_structure='array', hdf5_compression='gzip')
         return borealis_writer.outfile_name
 
     else: 
@@ -199,7 +199,7 @@ def borealis_site_to_array_file(filename, borealis_filetype, array_filename, low
                                     borealis_file_structure='site')
         arrays = borealis_reader.arrays # restructures the input records to arrays
         borealis_writer = BorealisWrite(array_filename, arrays, borealis_filetype,
-                                        borealis_file_structure='array')
+                                        borealis_file_structure='array', hdf5_compression='gzip')
         return borealis_writer.filename # overwrite to as generated
 
 

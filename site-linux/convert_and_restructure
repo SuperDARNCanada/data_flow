@@ -120,13 +120,20 @@ for f in $RAWACF_CONVERT_FILES; do
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # move the resulting files if all was successful then remove the source site file.
-
             if [[ ! " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
                 dmap_file=$(get_dmap_name $f)
+
+                # Ensure the permissions are read/write/execute for the group
+                chmod --verbose 775 $dmap_file
+
                 mv --verbose $dmap_file $RAWACF_DMAP_DEST
             fi
 
             array_file="${f%.site}"
+
+            # Ensure the permissions are read/write/execute for the group
+            chmod --verbose 775 $array_file
+
             mv --verbose $array_file $RAWACF_ARRAY_DEST
             rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
@@ -164,6 +171,10 @@ for f in $BFIQ_CONVERT_FILES; do
         if [[ $ret -eq 0 ]]; then
             # Only converting array file
             array_file="${f%.site}"
+
+            # First ensure the permissions are read/write/execute for the group
+            chmod --verbose 775 $array_file
+
             mv --verbose $array_file $BFIQ_ARRAY_DEST
             rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
@@ -207,8 +218,12 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         ret=$?
 
         if [ $ret -eq 0 ]; then
-            # then remove source site file.
+            # If restructure successful, remove source site file.
             array_file="${f%.site}"
+
+            # Ensure the permissions are read/write/execute for the group
+            chmod --verbose 775 $array_file
+            
             mv --verbose $array_file $ANTENNAS_IQ_ARRAY_DEST
             rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
