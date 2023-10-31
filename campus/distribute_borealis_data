@@ -42,7 +42,7 @@ source "${HOME}/pydarnio-env/bin/activate"  # Load in pyDARNio
 readonly RADAR_ID=$1
 
 if [[ $# -ne 1 ]]; then
-    printf "Usage: ./convert_on_campus RADAR_ID\n"
+    printf "Usage: ./distribute_borealis_data RADAR_ID\n"
     exit 1
 fi
 
@@ -128,7 +128,7 @@ for file in $dmap_files; do
     python3 "${HOME}/data_flow/campus/test_dmap_integrity.py" $unbzipped_file
     dmap_ret=$?
 
-    rm --verbose $unbzipped_file   # Remove unzipped file, zipped file is still there.
+    rm $unbzipped_file   # Remove unzipped file, zipped file is still there.
 
     if [[ $dmap_ret -ne 0 ]]; then  # The dmap file is not good
         printf "DMAP integrity test failed: ${file}\n" | tee --append $SUMMARY_FILE
