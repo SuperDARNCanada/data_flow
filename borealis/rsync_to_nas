@@ -124,8 +124,7 @@ fi
 for file in $files
 do
   # Ensure that the file has all group permissions enabled (read/write/execute)
-  printf "\nChanging permissions to 755 for $file\n"
-  chmod 775 $file
+  chmod --verbose 775 $file
 
 	printf "\nTransferring: $file\n"
 	if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then

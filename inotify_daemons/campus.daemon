@@ -61,9 +61,9 @@ do
         rm --verbose --force "${DIRECTORY}${FILE}"
 
         # Send out "flag" to trigger next script with inotify (TODO)
+        printf "Sending ${FLAG_OUT} to ${REMOTE_FLAG_DEST}\n"
         touch $FLAG_OUT
         rsync --archive --rsh=ssh $FLAG_OUT $REMOTE_FLAG_DEST
-        printf "Sent ${FLAG_OUT} to  ${REMOTE_FLAG_DEST}\n"
 
 
         printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"

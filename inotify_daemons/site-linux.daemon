@@ -53,9 +53,9 @@ do
         rm --verbose --force "${DIRECTORY}${FILE}"
 
         # Send "flag" file to notify sdc-serv on campus to start next script
+        printf "Sending ${FLAG_OUT} to ${SDCOPY}:${REMOTE_FLAG_DEST}\n"
         touch $FLAG_OUT
         rsync --archive --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${REMOTE_FLAG_DEST}"
-        printf "Sent ${FLAG_OUT} to  ${SDCOPY}:${REMOTE_FLAG_DEST}\n"
 
         printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"
     fi

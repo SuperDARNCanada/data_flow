@@ -107,9 +107,10 @@ fi
 # Iterate over all dmap files to be transferred. If any dmap files fail conversion checks, both the 
 # dmap and corresponding array file are moved to a separate directory for further inspection.
 for file in $dmap_files; do
+    chmod --verbose 664 $file   # Change file permissions to -rw-rw-r--
     array_file=$(get_array_name $file)  # HDF5 Array file corresponding to the current dmap file
-
     printf "\n"
+    
     # Test that file can be unzipped
     bzip2 --test $file
     if [[ $? -eq 2 ]]; then
@@ -139,7 +140,6 @@ for file in $dmap_files; do
     fi
 
     printf "Distributing ${file}\n"
-    chmod --verbose 664 $file   # Change file permissions to -rw-rw-r--
 
     file_name=$(basename $file)
 

@@ -2,8 +2,8 @@
 Description=Campus %i data flow inotify daemon
 
 [Service]
-User=mrcopy
-ExecStart=/home/mrcopy/data_flow/inotify_daemons/campus.daemon %i
+User=dataman
+ExecStart=/home/dataman/data_flow/inotify_daemons/campus.daemon %i
 Restart=always
 
 [Install]
