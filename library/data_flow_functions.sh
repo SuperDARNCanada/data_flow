@@ -50,7 +50,6 @@ get_dmap_name() {
 		return 1
 	fi
 
-	# Move the resulting files if all was successful then remove the source site file.
 	file_start="${array_filename%.rawacf.hdf5}"
 
 	# Remove last character(s) (slice_id)
@@ -85,13 +84,16 @@ get_array_name() {
 
 	dmap_filename=$(basename $1)
 	dmap_directory=$(dirname $1)
+	
 	# Check that the filename given is a valid dmap file name
-	if [[ ! "$dmap_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[[:lower:]]+.rawacf.bz2$   ]]; then
+	if [[ "$dmap_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[[:lower:]]+.rawacf.bz2$ ]]; then
+		file_start="${dmap_filename%.rawacf.bz2}"
+	elif [[ "$dmap_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[[:lower:]]+.rawacf$ ]]; then
+		file_start="${dmap_filename%.rawacf}"
+	else
 		printf "get_array_name(): Invalid filename - $dmap_filename isn't a valid dmap file name\n"
 		return 1
 	fi
-
-	file_start="${dmap_filename%.rawacf.bz2}"
 
 	# Remove last character (the file character)
 	file_character=$(echo $file_start | rev | cut --delimiter='.' --fields=1 | rev)

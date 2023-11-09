@@ -40,7 +40,6 @@ def usage_msg():
 def remove_records_parser():
     parser = argparse.ArgumentParser(usage=usage_msg())
     parser.add_argument("borealis_site_file", help="Path to the array file that needs correction.")
-    # parser.add_argument("--record_name", default='', help="Group name in the hdf5 file to remove (Borealis record name).")
     return parser
 
 
@@ -61,7 +60,4 @@ def find_borealis_sequence_errors(filename):
 if __name__ == '__main__':
     parser = remove_records_parser()
     args = parser.parse_args()
-    # if args.record_name:
-    #     remove_record(args.borealis_site_file, args.record_name)
-    # else:
     find_borealis_sequence_errors(args.borealis_site_file)

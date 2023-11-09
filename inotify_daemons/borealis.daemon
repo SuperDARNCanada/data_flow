@@ -63,7 +63,7 @@ do
         if [[ $(($endtime + $FILTER_TIME)) -lt $cur_time ]]; then
             printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0\n"
 
-            # Pass current filename so script knows what to omit
+            # Pass current filename as parameter so script knows what file to omit
             printf "Executing rsync_to_nas $FILE\n"
             $HOME/data_flow/borealis/rsync_to_nas $FILE
 

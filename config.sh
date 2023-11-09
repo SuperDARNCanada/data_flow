@@ -4,6 +4,8 @@
 #
 # Configuration file for data flow repository
 
+source "${HOME}/.profile"   # Get $SDC_SERV_IP for telemetry uses
+
 ###################################################################################################
 
 # Valid site RADAR_ID values
@@ -32,7 +34,7 @@ readonly CONVERT_ON_CAMPUS_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 # Define variables needed for telemetry
 readonly TELEMETRY_DIR="/home/logman/data_flow_logs"
-readonly TELEMETRY="logman@sdc-serv.usask.ca"
+readonly TELEMETRY="logman@${SDC_SERV_IP}"
 readonly TELEMETRY_RSH="ssh"
 
 ###################################################################################################

@@ -2,7 +2,7 @@
 # Copyright 2022 SuperDARN Canada, University of Saskatchewan
 # Author: Theodore Kolkman
 #
-# Inotify script to be run on sdc-serv.usask.ca. Executes convert_on_campus and 
+# Inotify script to be run on sdc-serv. Executes convert_on_campus and 
 # distribute_borealis_data, one after the other
 #
 # Dependencies:

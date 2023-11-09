@@ -2,9 +2,11 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Marci Detwiller, Theodore Kolkman
 #
-# A script that uses pydarnio to convert Borealis files to SuperDARN DMap files as well as 
-# restructures the hdf5 files to be multidimensional arrays for better file readability. Backs up 
-# the source site files before it begins. This script is to be run on the Site-Linux computer.
+# A script that uses pydarnio to convert Borealis files to SuperDARN DMap files as well as
+# restructures the hdf5 files to be multidimensional arrays for better file readability. If
+# $RADAR_ID is specified in CONVERT_ON_CAMPUS_SITES in config.sh, then only restructuring is done
+# (no DMap conversion). Backs up the source site files before it begins. This script is to be run on
+# the Site-Linux computer.
 #
 # To modify this script to operate on files stored on the Site-Linux computer instead of the NAS:
 #	1. Remove RADAR_ID for the specified site from NAS_SITES in config.sh

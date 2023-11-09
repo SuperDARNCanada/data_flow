@@ -148,17 +148,15 @@ for file in $dmap_files; do
     # Flag will be > 0 if any transfers fail since verify_transfer returns 1 for failed transfer
     transfer_flag=0
 
-    # Place file in vtsd outgoing
     chgrp --verbose $DATA_GROUP $file
 
+    # Place file in vtsd outgoing
     cp --preserve --verbose $file $VT_STAGING_DIR
     verify_transfer $file "${VT_STAGING_DIR}/${file_name}" 
     return_value=$?
     transfer_flag=$(($transfer_flag + $return_value))
 
     # Place file in BAS outgoing
-    chgrp --verbose $DATA_GROUP $file
-
     cp --preserve --verbose $file $BAS_STAGING_DIR
     verify_transfer $file "${BAS_STAGING_DIR}/${file_name}"
     return_value=$?
@@ -166,7 +164,6 @@ for file in $dmap_files; do
 
     # Place file in NSSC outgoing - Uncommment this when NSSC is ready
     # cp --preserve --verbose $file $NSSC_STAGING_DIR
-    # chgrp --verbose $DATA_GROUP "${NSSC_STAGING_DIR}/${file_name}"
     # verify_transfer $file "${NSSC_STAGING_DIR}/${file_name}"
     # return_value=$?
     # transfer_flag=$(($transfer_flag + $return_value))
