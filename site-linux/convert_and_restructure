@@ -102,10 +102,15 @@ fi
 for f in $RAWACF_CONVERT_FILES; do
     if [[ " ${RAWACF_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         printf "\nConverting ${f}\n"
+        
         printf "python3 remove_record.py $(basename ${f})\n"
         output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
-        if [[ -n "$output" ]]; then
-            printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
+        if [[ $? -ne 0 ]]; then 
+            printf "remove_record.py failed: ${f}\n" | tee --append $SUMMARY_FILE
+            mv --verbose $f $PROBLEM_FILES_DEST
+            continue
+        elif [[ -n "$output" ]]; then
+            printf "Removed records from ${f}:\n${output}\n" | tee --append $SUMMARY_FILE
         fi
 
         # Don't produce dmap files if only array files are transferred to campus
@@ -163,7 +168,7 @@ for f in $BFIQ_CONVERT_FILES; do
         printf "python3 remove_record.py $(basename ${f})\n"
         output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
         if [[ -n "$output" ]]; then
-            printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
+            printf "Removed records from ${f}:\n${output}\n" | tee --append $SUMMARY_FILE
         fi
         printf "python3 borealis_convert_file.py $(basename ${f})\n"
         python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" $f
@@ -204,10 +209,10 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
         printf "python3 remove_record.py $(basename ${f})\n"
         output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
         if [[ -n "$output" ]]; then
-            printf "Removed records from ${f}:\n${remove_records_output}\n" | tee --append $SUMMARY_FILE
+            printf "Removed records from ${f}:\n${output}\n" | tee --append $SUMMARY_FILE
         fi
 
-        # Use BorealisRestructure if site has low memory
+        # Use BorealisRestructure if site computer has low memory
         if [[ " ${LOW_MEMORY_SITES[*]} " =~ " ${RADAR_ID} " ]]; then 
             printf "python3 borealis_convert_file.py --low_memory $(basename ${f})\n"
             python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --low_memory $f
