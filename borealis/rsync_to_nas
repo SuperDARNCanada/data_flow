@@ -1,15 +1,12 @@
 #!/bin/bash
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
-# Author: Kevin Krieger
-#
-# Last Edited: October 2022 by Theo Kolkman
-# Refactored for inotify usage
+# Author: Kevin Krieger, Theodore Kolkman
 #
 # A singleton script to move Borealis files from the Borealis computer to the site NAS. Files are
 # copied first and removed once copy is confirmed to be successful. This script is to be run on the
-# site Borealis computer.
+# site computer running Borealis.
 #
-# To move files to the Site-Linux computer instead: 
+# To move files to the Site-Linux computer instead of the NAS: 
 #	1. Remove the RADAR_ID of the site from NAS_SITES in config.sh
 #	2. Ensure SITE_LINUX is set correctly within $HOME/.profile
 #	3. Ensure the directory specified in the DEST variable exists on the Site-Linux computer
@@ -42,9 +39,9 @@ source "${HOME}/data_flow/library/data_flow_functions.sh"  # Load in function li
 
 ###################################################################################################
 
-# Borealis directory files are transferring from
+# Borealis directory files are to be transferred from
 # Use jq to read the Borealis data directory from the Borealis config file
-readonly SOURCE="$(cat ${BOREALISPATH}/config.ini | jq --raw-output '.data_directory')"
+readonly SOURCE="$(cat ${BOREALISPATH}/config/${RADAR_ID}/${RADAR_ID}_config.ini | jq --raw-output '.data_directory')"
 
 # Directory the files will be transferred to
 if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
@@ -83,9 +80,11 @@ date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 # Get status info on data_flow and pyDARNio repos
 printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
-printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
-		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
+if [[ -z "$SOURCE" ]]; then
+        printf "Error: Source directory not defined. Exiting...\n"
+        exit 1
+fi
 printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 
 # Get all files that aren't currently being written do. First, find all .site files in source 
@@ -108,10 +107,13 @@ if [[ $# -eq 0 ]]; then
 	# Default to omitting nothing and grabbing files not written to in last 5 minutes
 	files=$(find ${SOURCE} "${search[@]}" -cmin +5) 
 	printf "No input file specified, filtering all recent files instead\n\n"
-else
+elif [[ $# -eq 1 ]]; then
 	omit_pattern="$(echo $1 | cut --fields 1-3 --delimiter ".")"
 	files=$(find ${SOURCE} "${search[@]}" | grep --invert-match --fixed-strings $omit_pattern)
 	printf "Filtering out files with pattern ${omit_pattern}\n\n"
+else
+	printf "./rsync_to_nas incorrect usage: Too many arguments\n"
+	exit 1
 fi
 
 if [[ -n $files ]]; then
@@ -124,6 +126,9 @@ fi
 # Transfer files
 for file in $files
 do
+	# Ensure that the file has all group permissions enabled (read/write/execute)
+	chmod --verbose 775 $file
+
 	printf "\nTransferring: $file\n"
 	if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		# rsync file to NAS

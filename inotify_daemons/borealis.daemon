@@ -63,14 +63,14 @@ do
         if [[ $(($endtime + $FILTER_TIME)) -lt $cur_time ]]; then
             printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0\n"
 
-            # Pass current filename so script knows what to omit
+            # Pass current filename as parameter so script knows what file to omit
             printf "Executing rsync_to_nas $FILE\n"
             $HOME/data_flow/borealis/rsync_to_nas $FILE
 
             # Send "flag" file to notify site-linux computer to start next script
+            printf "Sending $(basename ${FLAG_OUT}) to ${SITE_LINUX}:${REMOTE_FLAG_DEST}\n"
             touch $FLAG_OUT
             rsync --archive --rsh=ssh "${FLAG_OUT}" "${SITE_LINUX}:${REMOTE_FLAG_DEST}"
-            printf "Sent ${FLAG_OUT} to  ${SITE_LINUX}:${REMOTE_FLAG_DEST}\n"
 
             printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"
             endtime=$(date "+%s")

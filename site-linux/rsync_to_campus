@@ -1,11 +1,8 @@
 #!/bin/bash
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
-# Author: Dieter Andre
+# Author: Dieter Andre, Theodore Kolkman
 #
-# Major revision: October 2022 by Theo Kolkman
-# Refactored for inotify usage
-#
-# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to superdarn-cssdp on 
+# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to sdc-serv on 
 # campus. Files are copied first and removed once copy is confirmed to be successful. 
 #
 # To modify this script to transfer files from a local Site-Linux directory instead of the NAS:
@@ -37,7 +34,7 @@ readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
-if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	readonly DEST="/sddata/${RADAR_ID}_holding_dir"
 else
 	readonly DEST="/sddata/${RADAR_ID}_data/"
@@ -80,7 +77,7 @@ printf "Transferring from: $DATA_DIR\n" | tee --append $SUMMARY_FILE
 printf "Transferring to: $SDCOPY:$DEST\n\n" | tee --append $SUMMARY_FILE
 
 # Check if this site is transferring dmaps to campus
-if [[ ! " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ ! " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	# Find all dmap files to transfer
 	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 

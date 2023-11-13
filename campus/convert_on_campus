@@ -1,20 +1,17 @@
 #!/bin/bash
 # Copyright 2021 SuperDARN Canada, University of Saskatchewan
-# Author: Marci Detwiller
-#
-# Last Edited: October 2022 by Theo Kolkman
-# Refactored for inotify usage
+# Author: Marci Detwiller, Theodore Kolkman
 #
 # A script that uses pydarnio to convert Borealis rawacf files to SuperDARN DMap files. Uses the
 # borealis_array_to_dmap.py script to convert already-restructured array files to dmap. 
 # 
-# This script is executed for all sites, but only performs conversions for sites specified in the
-# SITES array. Only sites that have bandwidth limits and don't transfer dmap files to campus should
-# be specified in this array.
+# This script is executed on sdc-serv.usask.ca for all sites, but only performs conversions for
+# sites specified in the CONVERT_ON_CAMPUS_SITES array. Only sites that don't transfer dmap
+# files to campus should be specified in this array.
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
-#	- ssh link established between SuperDARN-CSSDP and TELEMETRY computers
+#	- ssh link established between sdc-serv and TELEMETRY computers
 #
 # Usage: ./convert_on_campus RADAR_ID
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
@@ -38,17 +35,17 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
-if [[ ! " ${VALID_RADAR_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ ! " ${VALID_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
     printf "\"$RADAR_ID\" is not a valid radar ID\n"
     exit 1
 fi
 
-# Sites that have to convert dmap files on campus are specified in LOW_BANDWIDTH_SITES within the
+# Sites that have to convert dmap files on campus are specified in CONVERT_ON_CAMPUS_SITES within the
 # config file. If a site isn't specified there, then this script is skipped and the next data flow 
 # script executes immediately
 
 # Define directories
-readonly DATA_DIR="/sddata"
+readonly DATA_DIR="/sddata"     # Located on superdarn-data NAS
 readonly SOURCE="${DATA_DIR}/${RADAR_ID}_holding_dir"
 readonly DEST="${DATA_DIR}/${RADAR_ID}_data"
 readonly PROBLEM_FILES_DEST="${DATA_DIR}/conversion_failure"
@@ -73,7 +70,7 @@ printf "########################################################################
 printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
-if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 
     # Get status info on data_flow and pyDARNio repos
     printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
@@ -96,19 +93,12 @@ if [[ " ${LOW_BANDWIDTH_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     do
         printf "\nConverting ${f}\n"
         printf "python3 borealis_array_to_dmap.py $(basename ${f})\n"
-        python3 "${HOME}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py" $f
+        python3 "${HOME}/data_flow/campus/borealis_array_to_dmap.py" $f # Creates a new dmap file
         ret=$?
         if [[ $ret -eq 0 ]]; then
-            # Move the resulting files if all was successful then remove the source site file.
-            dmap_file_start="${f%.rawacf.hdf5}"
+            # Move the resulting files if all was successful
+            dmap_file=$(get_dmap_name $f)
 
-            # Remove last character(s) (slice_id)
-            slice_id="${dmap_file_start##*.}"
-            dmap_file_wo_slice_id="${dmap_file_start%${slice_id}}"
-
-            ordinal_id="$(($slice_id + 97))"
-            file_character=$(chr $ordinal_id)
-            dmap_file="${dmap_file_wo_slice_id}${file_character}.rawacf.bz2"
             mv --verbose $dmap_file $DEST
             mv --verbose $f $DEST
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
@@ -123,7 +113,7 @@ fi
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
-# Sync summary log file with campus
+# Sync summary log file with telemetry
 printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
 rsync --archive --rsh="$TELEMETRY_RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
