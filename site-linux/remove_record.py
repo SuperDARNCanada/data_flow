@@ -41,8 +41,9 @@ def usage_msg():
 def remove_records_parser():
     parser = argparse.ArgumentParser(usage=usage_msg())
     parser.add_argument("borealis_site_file", help="Path to the array file that needs correction.")
-    parser.add_argument("--remove_recs_with_missing",
-                        help="Flag to remove records that are missing fields.", default=False, action="store_true")
+    parser.add_argument("--remove-bad-recs",
+                        help="Flag to remove records that are missing fields, have extra fields, or have fields of the "
+                             "wrong type.", default=False, action="store_true")
     return parser
 
 
@@ -80,6 +81,6 @@ def find_borealis_record_errors(filename):
 if __name__ == '__main__':
     parser = remove_records_parser()
     args = parser.parse_args()
-    if args.remove_recs_with_missing:
+    if args.remove_bad_recs:
         find_borealis_record_errors(args.borealis_site_file)
     find_borealis_sequence_errors(args.borealis_site_file)
