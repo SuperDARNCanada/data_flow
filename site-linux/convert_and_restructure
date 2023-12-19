@@ -107,8 +107,13 @@ for f in $RAWACF_CONVERT_FILES; do
         
         printf "python3 remove_record.py $(basename ${f})\n"
         output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
-        if [[ $? -ne 0 ]]; then 
-            printf "remove_record.py failed: ${f}\n" | tee --append $SUMMARY_FILE
+        if [[ $? -ne 0 ]]; then
+            error="remove_record.py failed: ${f}\n"
+            printf ${error} | tee --append $SUMMARY_FILE
+
+            message="$(date +'%Y%m%d %H:%M:%S')   convert_and_restructure ${RADAR_ID} - ${error}"
+            alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
+
             mv --verbose $f $PROBLEM_FILES_DEST
             continue
         elif [[ -n "$output" ]]; then
@@ -145,7 +150,12 @@ for f in $RAWACF_CONVERT_FILES; do
             rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
-            printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
+            error="File failed to convert from rawacf from site to array and/or dmap: ${f}\n"
+            printf "${error}" | tee --append $SUMMARY_FILE
+
+            message="$(date +'%Y%m%d %H:%M:%S')   ${RADAR_ID} - ${error}"
+            alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
+
             mv --verbose $f $PROBLEM_FILES_DEST
         fi
     else
@@ -186,7 +196,12 @@ for f in $BFIQ_CONVERT_FILES; do
             rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
-            printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
+            error="File failed to convert from bfiq from site to array: ${f}\n"
+            printf "${error}" | tee --append $SUMMARY_FILE
+
+            message="$(date +'%Y%m%d %H:%M:%S')   ${RADAR_ID} - ${error}"
+            alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
+
             mv --verbose $f $PROBLEM_FILES_DEST
         fi
     else
@@ -235,7 +250,12 @@ for f in $ANTENNAS_IQ_CONVERT_FILES; do
             rm --verbose $f
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
-            printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
+            error="File failed to convert from antennas_iq from site to array: ${f}\n"
+            printf "${error}" | tee --append $SUMMARY_FILE
+
+            message="$(date +'%Y%m%d %H:%M:%S')   ${RADAR_ID} - ${error}"
+            alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
+
             mv --verbose $f $PROBLEM_FILES_DEST
         fi
     else

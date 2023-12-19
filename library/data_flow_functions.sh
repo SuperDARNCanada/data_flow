@@ -1,5 +1,5 @@
 # Copyright 2022 SuperDARN Canada, University of Saskatchewan
-# Author: Theodore Kolkman
+# Author: Theodore Kolkman, Draven Galeschuk
 #
 # This file contains functions used by various data flow scripts
 # Functions have been moved here from within other scripts to clean up code
@@ -141,4 +141,34 @@ verify_transfer () {
 	# Check md5sum of destination file is same as source
 	md5sum --check --status $HOME/tmp.md5
 	return $?
+}
+
+###################################################################################################
+# Sends an alert to a slack channel - generally the #data-flow-alerts channel
+#
+# Takes in a message to send to slack and a slack webhook and attempts to send that message to
+# the associated slack channel through the Borealis Alerts incoming webhooks app. The message
+# should contain useful information such as: timestamp on computer, file/files affected,
+# error message or description of problem, device error occurred on.
+#
+# Argument 1: message to send
+# Argument 2: slack webhook. likely loaded into the script calling this function from .profile
+###################################################################################################
+alert_slack() {
+  message=$1
+  webhook=$2
+  LOGFILE="${HOME}/logs/slack_dataflow_notif.log"
+
+  NOW=$(date +'%Y%m%d %H:%M:%S')
+  if [[ -z ${message} ]]; then
+    echo "${NOW} dataflow slack message error: Empty message attempted to be sent." | tee -a "${LOGFILE}"
+  elif [[ -z ${webhook} ]]; then
+    echo "${NOW} dataflow webhook error: No webhook was found. Attempted message was ${message}" | tee -a "${LOGFILE}"
+  fi
+
+  curl --silent --header "Content-type: application/json" --data "{'text':'${message}'}" "${webhook}"
+  result=$?
+  if [[ ${result} -ne 0 ]]; then
+    echo "${NOW} attempt to curl to webhook ${webhook} failed with error: ${result} (see https://curl.se/libcurl/c/libcurl-errors.html)" | tee -a "${LOGFILE}"
+  fi
 }

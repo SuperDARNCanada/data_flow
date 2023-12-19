@@ -103,7 +103,12 @@ if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
             mv --verbose $f $DEST
             printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
         else
-            printf "File failed to convert: ${f}\n" | tee --append $SUMMARY_FILE
+            error="File failed to convert to dmap: ${f}\n"
+            printf "${error}" | tee --append $SUMMARY_FILE
+
+            message="$(date +'%Y%m%d %H:%M:%S')   convert_on_campus ${RADAR_ID} - ${error}"
+            alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
+
             mv --verbose $f $PROBLEM_FILES_DEST
         fi
     done
