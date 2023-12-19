@@ -157,18 +157,18 @@ verify_transfer () {
 alert_slack() {
   message=$1
   webhook=$2
-  LOGFILE="${HOME}/logs/slack_dataflow_notif.log"
+  LOGFILE_SLACKALERT="${HOME}/logs/slack_dataflow_notif.log"
 
   NOW=$(date +'%Y%m%d %H:%M:%S')
   if [[ -z ${message} ]]; then
-    echo "${NOW} dataflow slack message error: Empty message attempted to be sent." | tee -a "${LOGFILE}"
+    echo "${NOW} dataflow slack message error: Empty message attempted to be sent." | tee -a "${LOGFILE_SLACKALERT}"
   elif [[ -z ${webhook} ]]; then
-    echo "${NOW} dataflow webhook error: No webhook was found. Attempted message was ${message}" | tee -a "${LOGFILE}"
+    echo "${NOW} dataflow webhook error: No webhook was found. Attempted message was ${message}" | tee -a "${LOGFILE_SLACKALERT}"
   fi
 
   curl --silent --header "Content-type: application/json" --data "{'text':'${message}'}" "${webhook}"
   result=$?
   if [[ ${result} -ne 0 ]]; then
-    echo "${NOW} attempt to curl to webhook ${webhook} failed with error: ${result} (see https://curl.se/libcurl/c/libcurl-errors.html)" | tee -a "${LOGFILE}"
+    echo "${NOW} attempt to curl to webhook ${webhook} failed with error: ${result} (see https://curl.se/libcurl/c/libcurl-errors.html)" | tee -a "${LOGFILE_SLACKALERT}"
   fi
 }
