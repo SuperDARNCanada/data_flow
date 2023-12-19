@@ -144,7 +144,7 @@ verify_transfer () {
 }
 
 ###################################################################################################
-# Sends an alert to a slack channel - generally data-flow-alerts
+# Sends an alert to a slack channel - generally the #data-flow-alerts channel
 #
 # Takes in a message to send to slack and a slack webhook and attempts to send that message to
 # the associated slack channel through the Borealis Alerts incoming webhooks app. The message
@@ -161,7 +161,7 @@ alert_slack() {
 
   NOW=$(date +'%Y%m%d %H:%M:%S')
   if [[ -z ${message} ]]; then
-    echo "${NOW} dataflow slack message error: Emtpy message attempted to be sent." | tee -a "${LOGFILE}"
+    echo "${NOW} dataflow slack message error: Empty message attempted to be sent." | tee -a "${LOGFILE}"
   elif [[ -z ${webhook} ]]; then
     echo "${NOW} dataflow webhook error: No webhook was found. Attempted message was ${message}" | tee -a "${LOGFILE}"
   fi
