@@ -1,35 +1,36 @@
 #!/bin/bash
-# Copyright 2019 SuperDARN Canada, University of Saskatchewan
-# Author: Kevin Krieger, Theodore Kolkman
+# Copyright 2019 SuperDARN Canada, University of Saskatchewan Author: Kevin Krieger, Theodore
+# Kolkman
 #
 # A singleton script to move Borealis files from the Borealis computer to the site NAS. Files are
 # copied first and removed once copy is confirmed to be successful. This script is to be run on the
 # site computer running Borealis.
 #
 # To move files to the Site-Linux computer instead of the NAS: 
-#	1. Remove the RADAR_ID of the site from NAS_SITES in config.sh
-#	2. Ensure SITE_LINUX is set correctly within $HOME/.profile
-#	3. Ensure the directory specified in the DEST variable exists on the Site-Linux computer
+#   1. Remove the RADAR_ID of the site from NAS_SITES in config.sh
+#   2. Ensure SITE_LINUX is set correctly within $HOME/.profile
+#   3. Ensure the directory specified in the DEST variable exists on the Site-Linux computer
 #
 # Dependencies:
-#	- jq (installed via zypper)
-# 	- RADAR_ID, BOREALISPATH and SITE_LINUX set as environment variables in $HOME/.profile
-#	- ssh link established between Borealis and TELEMETRY computers
+#   - jq (installed via zypper)
+#   - RADAR_ID, BOREALISPATH, SITE_LINUX, and SLACK_DATAFLOW_WEBHOOK set as environment variables in
+#     $HOME/.profile
+#   - ssh link established between Borealis and TELEMETRY computers
 #
-# This script should be run via an inotify daemon triggering whenever 2-hour Borealis site files 
+# This script should be run via an inotify daemon triggering whenever 2-hour Borealis site files
 # finish writing
 #
-# Inotify watches the directory Borealis writes to, and triggers the rsync_to_nas script only when
-# a 2-hour site file is created. Since these files are only created once, and once they're created
-# the previous 2-hour block is finished writing, the rsync_to_nas script will execute immediately 
-# after Borealis finishes writing the previous 2-hour file. To distinguish between the previous 
-# (finished writing) and current (currently writing) 2-hour file, the `find` command must be used 
-# as specified in the script below.
+# Inotify watches the directory Borealis writes to, and triggers the rsync_to_nas script only when a
+# 2-hour site file is created. Since these files are only created once, and once they're created the
+# previous 2-hour block is finished writing, the rsync_to_nas script will execute immediately after
+# Borealis finishes writing the previous 2-hour file. To distinguish between the previous (finished
+# writing) and current (currently writing) 2-hour file, the `find` command must be used as specified
+# in the script below.
 #
-# Param 1: Borealis file name that script was triggered on. This will be used to filter out the 
-#		   files currently being written to, using the timestamp in the name. File name must be of 
-#		   format YYYYMMDD.HHMM.SS.[rest of filename]. If no input is given, then script defaults 
-#		   to omitting only files written to in the last 5 minutes.
+# Param 1: Borealis file name that script was triggered on. This will be used to filter out the
+#          files currently being written to, using the timestamp in the name. File name must be of
+#          format YYYYMMDD.HHMM.SS.[rest of filename]. If no input is given, then script defaults to
+#          omitting only files written to in the last 5 minutes.
 
 ###################################################################################################
 
@@ -129,6 +130,8 @@ fi
 # Transfer files
 for file in $files
 do
+	printf "\nSynching: $file\n"
+	
 	# Ensure that the file has all group permissions enabled (read/write/execute)
 	chmod --verbose 775 $file
 
@@ -138,12 +141,16 @@ do
 	# the destination to the failed file directory.
 	check_timestamp $file
 	if [[ $? -eq 2 ]]; then 	# check_timestamp failed
-		printf "check_timestamp failed: ${file}\n" | tee --append $SUMMARY_FILE
-		SPECIFIC_DEST="$FAIL_DEST"
-	fi
-	
+		error="check_timestamp failed: ${file}\n"
+		printf "${error}" | tee --append $SUMMARY_FILE
 
-	printf "\nTransferring: $file\n"
+		message="$(date +'%Y%m%d %H:%M:%S')   ${RADAR_ID} - ${error}"
+		alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"	# Send alert to Slack
+
+		SPECIFIC_DEST="$FAIL_DEST"	# Change destination
+	fi
+
+	printf "Destination: $SPECIFIC_DEST\n"
 	if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		# rsync file to NAS
 		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SPECIFIC_DEST
