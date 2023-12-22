@@ -45,10 +45,13 @@ readonly SOURCE="$(cat ${BOREALISPATH}/config/${RADAR_ID}/${RADAR_ID}_config.ini
 
 # Directory the files will be transferred to
 if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
-	readonly DEST="/borealis_nfs/borealis_data/daily/" # On NAS
+	readonly DEST="/borealis_nfs/borealis_data" # On NAS
 else
-	readonly DEST="/data/borealis_data/daily" # On Site Linux
+	readonly DEST="/data/borealis_data" # On Site Linux
 fi
+
+readonly SUCCESS_DEST="${DEST}/daily/" # All good Borealis files go here
+readonly FAIL_DEST="${DEST}/conversion_failure/" # Any files that fail checks go here
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/rsync_to_nas/$(date +%Y/%m)"
@@ -129,19 +132,30 @@ do
 	# Ensure that the file has all group permissions enabled (read/write/execute)
 	chmod --verbose 775 $file
 
+	SPECIFIC_DEST="$SUCCESS_DEST"
+
+	# Check that the timestamps and file modification times are consistent. If they aren't, change
+	# the destination to the failed file directory.
+	check_timestamp $file
+	if [[ $? -eq 2 ]]; then 	# check_timestamp failed
+		printf "check_timestamp failed: ${file}\n" | tee --append $SUMMARY_FILE
+		SPECIFIC_DEST="$FAIL_DEST"
+	fi
+	
+
 	printf "\nTransferring: $file\n"
 	if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 		# rsync file to NAS
-		rsync -av --append-verify --timeout=180 --rsh=ssh $file $DEST
+		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SPECIFIC_DEST
 
 		# Check if transfer was okay using the md5sum program
-		verify_transfer $file "${DEST}/$(basename $file)"
+		verify_transfer $file "${SPECIFIC_DEST}/$(basename $file)"
 		return_value=$?
 	else
 		# rsync file to site computer
-		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SITE_LINUX:$DEST
+		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SITE_LINUX:$SPECIFIC_DEST
 
-		verify_transfer $file "${DEST}/$(basename $file)" $SITE_LINUX
+		verify_transfer $file "${SPECIFIC_DEST}/$(basename $file)" $SITE_LINUX
 		return_value=$?
 	fi
 
