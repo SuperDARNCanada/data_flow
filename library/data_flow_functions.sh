@@ -4,7 +4,7 @@
 # This file contains functions used by various data flow scripts
 # Functions have been moved here from within other scripts to clean up code
 #
-# To use this library:  `source $HOME/data_flow/library/data_flow_functions.sh``
+# To use this library:  `source $HOME/data_flow/library/data_flow_functions.sh`
 
 
 ###################################################################################################
