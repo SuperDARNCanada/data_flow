@@ -4,7 +4,7 @@
 # This file contains functions used by various data flow scripts
 # Functions have been moved here from within other scripts to clean up code
 #
-# To use this library:  source $HOME/data_flow/lib/data_flow_functions.sh
+# To use this library:  `source $HOME/data_flow/library/data_flow_functions.sh`
 
 
 ###################################################################################################
@@ -44,7 +44,7 @@ get_dmap_name() {
 
 	array_filename=$(basename $1)
 	array_directory=$(dirname $1)
-	# Check that the filename given is a valid dmap file name
+	# Check that the filename given is a valid rawacf file name
 	if [[ ! "$array_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[0-9]+.rawacf.hdf5$   ]]; then
 		printf "get_dmap_name(): Invalid filename - $array_filename isn't a valid array file name\n"
 		return 1
@@ -171,4 +171,56 @@ alert_slack() {
   if [[ ${result} -ne 0 ]]; then
     echo "${NOW} attempt to curl to webhook ${webhook} failed with error: ${result} (see https://curl.se/libcurl/c/libcurl-errors.html)" | tee -a "${LOGFILE_SLACKALERT}"
   fi
+}
+
+###################################################################################################
+# Verify that the timestamp and last modification time of a Borealis file are consistent
+#
+# Compares the timestamp in a Borealis file's name (i.e. 20220617.2200.00) to the last modification
+# time of the file (found with the 'stat' command). If the difference in these times is greater
+# than a specified threshold, the function returns an error code.
+#
+# Argument 1: Path to a Borealis .site file to check.
+#
+# Returns 0: Success: difference between timestamp and modification time are consistent.
+#         1: Error: Function used incorrectly
+#         2: Failure: difference between timestamp and modification time is greater than the 
+#         specified threshold
+###################################################################################################
+check_timestamp() {
+	# Check function was called correctly
+	if [[ $# -ne 1 ]]; then
+		printf "check_timestamp(): Invalid number of arguments\n" 
+		printf "Usage: check_timestamp filename"
+		return 1
+	fi
+
+	local file=$1						# Borealis file to check
+	local filename=$(basename $file)	# The name of the file (no path)
+	local threshold=86400				# Threshold is 1 day (86400 seconds)
+
+	# Check that the filename given is a valid file name
+	if [[ ! "$filename" =~ ^[0-9]{8}\.[0-9]{4}\.[0-9]{2}\.[[:lower:]]{3}\.[0-9]+\..+\.hdf5.site$   ]]; then
+		printf "check_timestamp(): Invalid filename - $filename isn't a valid .site file name\n"
+		return 1
+	fi
+
+	# Get timestamp time in seconds since epoch from the filename timestamp. 
+	# Must replace '.' with ' ' to get a string that can be interpreted by `date` command
+	local timestamp_string=$(echo $filename | cut --fields 1-2 --delimiter '.')
+	local timestamp_time=$(date --utc --date "${timestamp_string//./ }" +%s)		
+
+	# Get file modification time in seconds since epoch	
+	local modification_time=$(stat --format=%Y "$file")
+
+	# Get time difference
+	local time_diff=$(($modification_time - $timestamp_time))
+	local absolute_diff="${time_diff#-}" # Remove '-' sign to ensure difference is positive
+	if [[ $absolute_diff -gt $threshold ]]; then
+		# File timestamp and modification time is inconsistent - return error code 2
+		return 2
+	fi
+
+	# If end of function is reached, the file timestamp and modification times are consistent.
+	return 0
 }
