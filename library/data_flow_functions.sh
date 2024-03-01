@@ -115,33 +115,39 @@ get_array_name() {
 # 
 # Calculates the md5sum of the sent file, and compares it to the md5sum of the source file. If the 
 # destination file is on a different computer, specify the ssh address of the destination computer 
-# (Ex. radar@10.65.0.32)
+# (Ex. transfer@192.168.1.204)
 # 
-# Example: Transferring between local directories (i.e. Borealis to NAS)
-# 	verify_transfer /data/borealis_data/[FILE] /borealis_nfs/borealis_data/backup/[FILE]
-# Example: Transferring to a different computer (i.e. NAS to SuperDARN-CSSDP)
-# 	verify_transfer /borealis_nfs/borealis_data/rawacf_array/[FILE] /sddata/inotify_data_flow/sas_data/[FILE] mrcopy@128.233.224.39
+# Example: Transferring between local directories (i.e. as in rsync_to_nas)
+#       verify_transfer /data/borealis_data/[FILE] /borealis_nfs/borealis_data/backup/[FILE]
+# Example: Transferring to a different computer (i.e. as in rsync_to_campus)
+#       verify_transfer /borealis_nfs/borealis_data/rawacf_array/[FILE] /sddata/sas_holding_dir/[FILE] dataman@sdc-serv.usask.ca
 #
 # Argument 1: Source file
 # Argument 2: Destination file (if on remote computer, specify in argument 3)
 # Argument 3: ssh address of destination computer (leave empty if local)
 ###################################################################################################
 verify_transfer () {
-	local source_file=$1
-	local dest_file=$2
-	local dest_ssh=${3-""}	# Default to empty string
-	if [[ -n $dest_ssh ]]; then
-		ssh $dest_ssh "md5sum --binary $dest_file" > $HOME/tmp.md5
-	else
-		md5sum --binary $dest_file > $HOME/tmp.md5
-	fi
+        local source_file=$1
+        local dest_file=$2
+        local dest_ssh=${3-""}  # Default to empty string
 
-	# Convert md5sum to look at source file
-	sed -i "s~$dest_file~$source_file~g" $HOME/tmp.md5
-	# Check md5sum of destination file is same as source
-	md5sum --check --status $HOME/tmp.md5
-	return $?
+        TMP_FILE="/tmp/transfer_$(basename ${source_file}).md5" # Unique tmp file for this transfer
+
+        if [[ -n $dest_ssh ]]; then
+                ssh $dest_ssh "md5sum --binary $dest_file" > $TMP_FILE
+        else
+                md5sum --binary $dest_file > $TMP_FILE
+        fi
+
+        # Convert md5sum to look at source file
+        sed -i "s~$dest_file~$source_file~g" $TMP_FILE
+        # Check md5sum of destination file is same as source
+        md5sum --check --status $TMP_FILE
+	retval=$?
+ 	rm $TMP_FILE
+        return $retval
 }
+
 
 ###################################################################################################
 # Sends an alert to a slack channel - generally the #data-flow-alerts channel
