@@ -127,27 +127,26 @@ get_array_name() {
 # Argument 3: ssh address of destination computer (leave empty if local)
 ###################################################################################################
 verify_transfer () {
-        local source_file=$1
-        local dest_file=$2
-        local dest_ssh=${3-""}  # Default to empty string
+	local source_file=$1
+	local dest_file=$2
+	local dest_ssh=${3-""}  # Default to empty string
 
-        TMP_FILE="/tmp/transfer_$(basename ${source_file}).md5" # Unique tmp file for this transfer
+	TMP_FILE="/tmp/transfer_$(basename ${source_file}).md5" # Unique tmp file for this transfer
 
-        if [[ -n $dest_ssh ]]; then
-                ssh $dest_ssh "md5sum --binary $dest_file" > $TMP_FILE
-        else
-                md5sum --binary $dest_file > $TMP_FILE
-        fi
+	if [[ -n $dest_ssh ]]; then
+		ssh $dest_ssh "md5sum --binary $dest_file" > $TMP_FILE
+	else
+		md5sum --binary $dest_file > $TMP_FILE
+	fi
 
-        # Convert md5sum to look at source file
-        sed -i "s~$dest_file~$source_file~g" $TMP_FILE
-        # Check md5sum of destination file is same as source
-        md5sum --check --status $TMP_FILE
+	# Convert md5sum to look at source file
+	sed -i "s~$dest_file~$source_file~g" $TMP_FILE
+	# Check md5sum of destination file is same as source
+	md5sum --check --status $TMP_FILE
 	retval=$?
  	rm $TMP_FILE
-        return $retval
+	return $retval
 }
-
 
 ###################################################################################################
 # Sends an alert to a slack channel - generally the #data-flow-alerts channel
