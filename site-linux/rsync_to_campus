@@ -144,8 +144,6 @@ for file in $files; do
 	fi
 done
 
-printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
-
 # Find all antennas iq plots to transfer
 files=$(find "${IQPLOT_SOURCE}" -type f -regex ".*\.\(png\|jpg\)")
 if [[ -n ${files} ]]; then
@@ -164,6 +162,8 @@ if [[ -n ${files} ]]; then
         fi
     done
 fi
+
+printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
 # Sync summary log file with campus
 printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
