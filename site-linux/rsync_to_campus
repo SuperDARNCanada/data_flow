@@ -41,7 +41,7 @@ else
 	readonly DEST="/sddata/${RADAR_ID}_data/"
 fi
 
-readonly PLOTDEST="/home/logman/antennas_iq_plots/${RADAR_ID}_iq_plots/"
+readonly PLOTDEST="/home/dataman/antennas_iq_plots/${RADAR_ID}_iq_plots/"
 readonly TEMPDEST="${HOME}/logs/.rsync_partial"
 
 # Create log file. New file created daily
@@ -153,7 +153,7 @@ if [[ -n ${files} ]]; then
         image=$(basename $file)
         path=$(dirname $file)
         cd $path
-        rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${image} $TELEMETRY:$PLOTDEST
+        rsync -av --partial --partial-dir=${TEMPDEST} --timeout=180 --rsh=ssh ${image} $SDCOPY:$PLOTDEST
 
         ret=$?
         if [ ${ret} -eq 0 ]; then

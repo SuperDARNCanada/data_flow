@@ -34,7 +34,7 @@ if [[ ! " ${VALID_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
 fi
 
 # Define directories
-readonly IQ_PLOTS="/home/logman/antennas_iq_plots/${RADAR_ID}_iq_plots/"
+readonly IQ_PLOTS="${HOME}/antennas_iq_plots/${RADAR_ID}_iq_plots/"
 readonly ARCHIVE="${IQ_PLOTS}/archive/"
 
 # Create log file
