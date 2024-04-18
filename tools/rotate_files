@@ -1,0 +1,45 @@
+#!/bin/bash
+# Copyright 2024 SuperDARN Canada, University of Saskatchewan
+# Author: Theodore Kolkman
+#
+# rotate_files
+#
+# This script compares files in the SOURCE and BACKUP directories, and moves all duplicate files to
+# the DEST directory. The files are compared using a md5 checksum.
+#
+# This script can be used to safely remove files that have been backed up to a remote directory. All
+# files that are moved to the DEST directory are ensured to have a backup in the BACKUP directory,
+# so the DEST directory files can be safely deleted.
+
+###################################################################################################
+
+source "${HOME}/.profile"	# Load in environment variables
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
+source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functions
+
+###################################################################################################
+
+# Modify these directories as needed
+readonly SOURCE="/borealis_nfs/borealis_data/antennas_iq_array/"
+readonly DEST="/borealis_nfs/borealis_data/to_delete_antennas_iq/"
+readonly BACKUP="/cold_storage/sdc-nas2/sas/"
+readonly BACKUP_IP="sdc-serv.usask.ca"
+
+
+printf "Executing $0 on $(hostname) for ${RADAR_ID}\n"
+date --utc "+%Y%m%d %H:%M:%S UTC"
+
+# Find all files 
+files=$(find ${SOURCE} -name '*antennas_iq*' -printf '%p\n')
+
+
+for file in $files; do
+    printf "Checking $file\n"
+    # Check if file is in both spots using `verify_transfer`
+    verify_transfer $file "${BACKUP}/$(basename $file)" $BACKUP_IP
+	return_value=$?
+	if [[ $return_value -eq 0 ]]; then
+		printf "File backed up: ${file}\n"
+		mv --verbose $file $DEST
+    fi
+done
