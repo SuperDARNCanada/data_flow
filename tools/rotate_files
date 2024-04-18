@@ -23,7 +23,7 @@ source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functi
 readonly SOURCE="/borealis_nfs/borealis_data/antennas_iq_array/"
 readonly DEST="/borealis_nfs/borealis_data/to_delete_antennas_iq/"
 readonly BACKUP="/cold_storage/sdc-nas2/sas/"
-readonly BACKUP_IP="sdc-serv.usask.ca"
+readonly BACKUP_IP="dataman@sdc-serv.usask.ca"
 
 
 printf "Executing $0 on $(hostname) for ${RADAR_ID}\n"
