@@ -2,10 +2,14 @@
 # Copyright 2024 SuperDARN Canada, University of Saskatchewan
 # Author: Remington Rohel, Draven Galeschuk
 #
-# A script that the most recently generated rawacfs and creates antennas
-# iq plots for each channel.
+# A script that the most recently generated rawacfs and creates antennas iq plots for each
+# channel. It looks for files from the 2 hours prior from when the script was started.
+# Plots are saved to a local directory, where they can then be rsynced back to campus.
 #
-# Dependencies????????
+# Dependencies:
+#     - convert (a default linux utility)
+#     - mogrify (a default linux utility)
+#     - pydarnio
 #
 # This script gets the latest antennas_iq files from data_dir (defined below) and plots the
 # data within.
