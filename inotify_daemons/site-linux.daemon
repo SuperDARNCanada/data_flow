@@ -46,10 +46,8 @@ do
 
         printf "Executing convert_and_restructure...\n"
         $HOME/data_flow/site-linux/convert_and_restructure
-        if [[ -f "${HOME}/borealis-data-utils/plot_antennas_iq" ]]; then
-            printf "Generating antennas iq plots...\n"
-            $HOME/borealis-data-utils/plot_antennas_iq
-        fi
+        printf "Generating antennas iq plots...\n"
+        $HOME/data_flow/site-linux/plot_antennas_iq
         printf "Executing rsync_to_campus...\n"
         $HOME/data_flow/site-linux/rsync_to_campus
 
