@@ -1,0 +1,56 @@
+#!/bin/bash
+# Copyright 2024 SuperDARN Canada, University of Saskatchewan
+# Author: Theodore Kolkman
+#
+# A script that reconstructs a single antennas_iq file. This file can be run in parallel using
+# GNU parallel as follows:
+#
+#   TODO
+#
+# Dependencies:
+#	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
+# 
+# Usage: ./restructure_antennas_iq FILE
+# Parameter FILE: Antennas_iq file to be restructured
+
+###################################################################################################
+
+source "${HOME}/pydarnio-env/bin/activate"
+
+###################################################################################################
+
+readonly FILE=$1
+
+if [[ $# -ne 1 ]]; then
+    printf "Usage: ./restructure_antennas_iq FILE\n"
+    exit 1
+fi
+
+if [[ ! -f "$FILE" ]]; then
+    printf "Error: File doesn't exist. Exiting...\n"
+    exit 1
+fi
+
+# Define conversion failure directory
+readonly SOURCE=$(dirname $FILE)
+readonly PROBLEM_FILES_DEST="${SOURCE}/conversion_failure"
+mkdir --parents $PROBLEM_FILES_DEST
+
+###################################################################################################
+
+printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Converting: ${FILE}\n"
+
+python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --low_memory $FILE
+ret=$?
+if [ $ret -eq 0 ]; then
+    # then remove source site file.
+    # The array file will remain in the source directory
+    rm --verbose $f
+    printf "Successfully converted: ${f}\n"
+else
+    printf "File failed to convert: ${f}\n"
+    mv --verbose $f $PROBLEM_FILES_DEST
+fi
+
+
+exit

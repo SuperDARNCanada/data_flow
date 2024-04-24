@@ -29,7 +29,7 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
-if [[ -d "$SOURCE" ]]; then
+if [[ ! -d "$SOURCE" ]]; then
     printf "Error: Source directory doesn't exist. Exiting...\n"
     exit 1
 fi
