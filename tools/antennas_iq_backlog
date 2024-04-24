@@ -1,0 +1,90 @@
+#!/bin/bash
+# Copyright 2024 SuperDARN Canada, University of Saskatchewan
+# Author: Theodore Kolkman
+#
+# A script that uses pydarnio to restructure antennas_iq files. Used for restructuring large amounts
+# of backed-up antennas_iq files. Converted files remain in the same directory after completion, if
+# files fail conversion they are moved to a separate directory within the specified SOURCE
+# directory. 
+#
+# Dependencies:
+#	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
+# 
+# Usage: ./antennas_iq_backlog SOURCE
+# Parameter SOURCE: Directory containing antennas_iq files to be converted.
+
+###################################################################################################
+
+source "${HOME}/.profile"	# Load in environment variables
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
+source "${HOME}/data_flow/library/data_flow_functions.sh" # Load in function library
+source "${HOME}/pydarnio-env/bin/activate"
+
+###################################################################################################
+
+readonly SOURCE=$1
+
+if [[ $# -ne 1 ]]; then
+    printf "Usage: ./antennas_iq_backlog SOURCE\n"
+    exit 1
+fi
+
+if [[ -d "$SOURCE" ]]; then
+    printf "Error: Source directory doesn't exist. Exiting...\n"
+    exit 1
+fi
+
+# Define conversion failure directory
+readonly PROBLEM_FILES_DEST="${SOURCE}/conversion_failure"
+mkdir --parents $PROBLEM_FILES_DEST
+
+###################################################################################################
+
+printf "Executing $0 on $(hostname)\n"
+date --utc "+%Y%m%d %H:%M:%S UTC"
+        
+printf "Conversion directory: $SOURCE\n\n"
+
+# Find files to be converted
+ANTENNAS_IQ_CONVERT_FILES=$(find "${SOURCE}" -name "*antennas_iq.hdf5.site" -type f)
+
+num_files=$(echo $ANTENNAS_IQ_CONVERT_FILES | wc -w)
+count=1
+
+if [[ -n $ANTENNAS_IQ_CONVERT_FILES ]]; then
+    printf "Number of files converting: ${num_files}\n\n"
+	printf "Converting the following antennas_iq files:\n"
+	printf '%s\n' "${ANTENNAS_IQ_CONVERT_FILES[@]}"
+else
+	printf "No antennas_iq files found to be converted.\n"
+fi
+
+# Convert antennas_iq files to array format
+for f in $ANTENNAS_IQ_CONVERT_FILES; do
+    date --utc "+%Y%m%d %H:%M:%S UTC"
+    printf "\nConverting file # ${count} of ${num_files}: ${f}\n"
+
+    printf "python3 remove_record.py $(basename ${f})\n"
+    output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
+    if [[ -n "$output" ]]; then
+        printf "Removed records from ${f}:\n${remove_records_output}\n"
+    fi
+
+    printf "python3 borealis_convert_file.py --low_memory $(basename ${f})\n"
+    python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --low_memory $f
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        # then remove source site file.
+        # The array file will remain in the source directory (antennas_iq_array)
+        rm --verbose $f
+        printf "Successfully converted: ${f}\n"
+    else
+        printf "File failed to convert: ${f}\n"
+        mv --verbose $f $PROBLEM_FILES_DEST
+    fi
+    count=$(( count + 1 ))
+done
+
+printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n"
+
+exit
