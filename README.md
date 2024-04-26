@@ -29,7 +29,7 @@ site-linux.daemon when rsync_to_nas finishes executing.
 3. site-linux/plot_antennas_iq: reads in the antennas iq files after the previous script has run.
 Creates plots of the iq data for each rx path using the last generated file. Triggered via 
 site-linux.daemon when convert_and_restructure finishes executing.
-4. site-linux/rsync_to_campus: Moves rawacf DMAP, array files, and if plots from the site storage to 
+4. site-linux/rsync_to_campus: Moves rawacf DMAP, array files, and iq plots from the site storage to 
 the university campus server at sdc-serv. Triggered via site-linux.daemon when plot_antennas_iq
 finishes executing. 
 5. campus/convert_on_campus: Converts rawacf array files to DMAP files for sites specified in
