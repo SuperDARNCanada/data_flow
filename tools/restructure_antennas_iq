@@ -45,11 +45,11 @@ ret=$?
 if [ $ret -eq 0 ]; then
     # then remove source site file.
     # The array file will remain in the source directory
-    rm --verbose $f
-    printf "Successfully converted: ${f}\n"
+    rm --verbose $FILE
+    printf "Successfully converted: ${FILE}\n"
 else
-    printf "File failed to convert: ${f}\n"
-    mv --verbose $f $PROBLEM_FILES_DEST
+    printf "File failed to convert: ${FILE}\n"
+    mv --verbose $FILE $PROBLEM_FILES_DEST
 fi
 
 
