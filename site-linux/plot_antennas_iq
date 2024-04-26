@@ -27,8 +27,8 @@ source "${HOME}/pydarnio-env/bin/activate"
 readonly DATA_DIR=/borealis_nfs/borealis_data/antennas_iq_array/
 readonly FAILED_FILE_DEST=/borealis_nfs/borealis_data/conversion_failure/
 readonly PLOT_DEST=${HOME}/logs/daily_plots/
-readonly FULLSIZE_DEST=${HOME}/logs/daily_plots/fullsize/
-readonly FAILED_RESIZE_DEST=${HOME}/logs/daily_plots/failed_resize/
+readonly FULLSIZE_DEST=${PLOT_DEST}/fullsize/
+readonly FAILED_RESIZE_DEST=${PLOT_DEST}/failed_resize/
 
 # Check the existence of the necessary directories.
 mkdir --parents $PLOT_DEST
