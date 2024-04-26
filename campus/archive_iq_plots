@@ -1,0 +1,84 @@
+#!/bin/bash
+# Copyright 2024 SuperDARN Canada, University of Saskatchewan
+# Author: Draven Galeschuk
+#
+# A script that searches the antennas iq plot directory of a  requested radar id and archives any
+# files that are over 1 day old into a thumbnail format to reduce the memory usage of the iq plot
+# directories.
+#
+# This script should be executed on campus for all SuperDARN radar sites. It can be run after all
+# the other dataflow services in the campus daemon.
+#
+# Dependencies:
+#   - convert linux utility
+#
+# Usage: ./archive_iq_plots RADAR_ID
+# Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
+#
+###################################################################################################
+
+source "${HOME}/data_flow/config.sh"  # Load common data flow variables
+
+###################################################################################################
+
+RADAR_ID=$1
+
+if [[ $# -ne 1 ]]; then
+    printf "Usage: ./archive_iq_plots RADAR_ID\n"
+    exit 1
+fi
+
+if [[ ! " ${VALID_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
+    printf "\"$RADAR_ID\" is not a valid radar ID\n"
+    exit 1
+fi
+
+# Define directories
+readonly IQ_PLOTS="${HOME}/antennas_iq_plots/${RADAR_ID}_iq_plots/"
+readonly ARCHIVE="${IQ_PLOTS}/archive/"
+
+# Create log file
+readonly LOGGING_DIR="${HOME}/logs/archive_iq/$(date +%Y/%m)"
+mkdir --parents $LOGGING_DIR
+readonly LOGFILE="${LOGGING_DIR}/${RADAR_ID}.$(date +%Y%m%d).archive_iq.log"
+readonly  SUMMARY_DIR="${HOME}/logs/archive_iq/summary/$(date +%Y/%m)"
+mkdir --parents $SUMMARY_DIR
+readonly SUMMARY_FILE="${SUMMARY_DIR}/${RADAR_ID}.$(date -u +%Y%m%d).archive_iq.log"
+
+# Define convert parameters
+
+RESOLUTION=160
+
+###################################################################################################
+
+exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
+
+printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
+printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
+date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
+
+files=$(find ${IQ_PLOTS} -maxdepth 1 -type f -name "*.jpg")
+now=$(date +"%s")
+
+for file in ${files[@]}; do
+  # strips away everything but the file time and format it to be parsed by date
+  file_date=$(basename ${file} | sed 's/[^0-9][^0-9].*.//' | cut -d '.' -f 1,2 | tr . T)
+
+  # Note: Date conversion is off by a few hours due to `date` refusing to just interpret the input
+  # as UTC and output the interpreted string as UTC. The script should only archive files after they
+  # are older than 24 hours, but it will likely adjust that limit by a few hours based on the loacl
+  # timezone. Sorry.
+  cutoff=$(expr ${now} - 86400)
+  if [[ $(date -d ${file_date} +"%s") < ${cutoff} ]]; then
+    convert -verbose -thumbnail ${RESOLUTION} "${file}" "${ARCHIVE}/thumbnail-$(basename ${file})"
+
+    if [[ $? -eq 0 ]]; then
+      rm --verbose ${file}
+    fi
+  fi
+done
+
+
+
+
+

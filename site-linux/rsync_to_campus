@@ -13,7 +13,7 @@
 #	- ssh link established between Site-Linux and SDCOPY computers
 #	- ssh link established between Site-Linux and TELEMETRY computers
 #
-# This script should be run via an inotify daemon triggerring when the previous data flow script 
+# This script should be run via an inotify daemon triggering when the previous data flow script
 # finishes execution
 
 ###################################################################################################
@@ -24,7 +24,7 @@ source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functi
 
 ###################################################################################################
 
-# Location rawacf files are transferring from
+# Location all files are transferring from
 if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	readonly DATA_DIR="/borealis_nfs/borealis_data" # On NAS
 else
@@ -32,6 +32,7 @@ else
 fi
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
+readonly IQPLOT_SOURCE="${HOME}/logging/daily_plots/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
 if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
@@ -39,6 +40,8 @@ if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 else
 	readonly DEST="/sddata/${RADAR_ID}_data/"
 fi
+
+readonly PLOTDEST="/home/dataman/antennas_iq_plots/${RADAR_ID}_iq_plots/"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/rsync_to_campus/$(date +%Y/%m)"
@@ -123,7 +126,7 @@ fi
 
 # Transfer all files found
 for file in $files; do
-	printf "\nTransferring: ${file}\n"
+	printf "\nTransferring: $(basename $file)\n"
 	rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
 	# Check if transfer was okay using the md5sum program
@@ -138,6 +141,26 @@ for file in $files; do
 		printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
 		printf "File not deleted.\n"
 	fi
+done
+
+# Find all antennas iq plots to transfer
+files=$(find "${IQPLOT_SOURCE}" -type f -regex ".*\.\(png\|jpg\)")
+for file in $files; do
+  printf "\nTransferring: ${file}\n"
+  rsync -av --append-verify --timeout=180 --rsh=ssh ${file} $SDCOPY:$PLOTDEST
+
+  # Check if transfer was okay using the md5sum program
+  verify_transfer $file "${PLOTDEST}/$(basename $file)" $SDCOPY
+  return_value=$?
+  if [[ $return_value -eq 0 ]]; then
+    printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+    printf "Deleting file...\n"
+    rm --verbose ${file}
+  else
+    # If file not transferred successfully, try again next time, don't delete
+    printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+    printf "File not deleted.\n"
+  fi
 done
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE

@@ -12,7 +12,7 @@ stages SuperDARN files for other institutions, and backs up data to the campus' 
 - inotify_daemons - Scripts that use `inotifywait` to monitor the data flow and trigger scripts once
 the preceding script has finished execution. These scripts are to be set up as a `systemd` service.
 Example service files are within the `inotify_daemons/services/` directory.
-- library - Bash functions used by data flow scripts.
+- library - Bash and python functions used by data flow scripts.
 - tools - Various scripts used alongside the data flow. Ex: log parsing scripts
 - script_archive - Old unused data flow scripts.
 
@@ -26,15 +26,21 @@ file starts being written
 specified in `config.sh`), and restructure all site files to array format. Files are converted and
 restructured on the site storage and organized in respective directories. Triggered via
 site-linux.daemon when rsync_to_nas finishes executing.
-3. site-linux/rsync_to_campus: Moves rawacf DMAP and array files from the site storage to the
-university campus server at sdc-serv. Triggered via site-linux.daemon when convert_and_restructure
-finishes executing.
-4. campus/convert_on_campus: Converts rawacf array files to DMAP files for sites specified in
+3. site-linux/plot_antennas_iq: reads in the antennas iq files after the previous script has run.
+Creates plots of the iq data for each rx path using the last generated file. Triggered via 
+site-linux.daemon when convert_and_restructure finishes executing.
+4. site-linux/rsync_to_campus: Moves rawacf DMAP, array files, and iq plots from the site storage to 
+the university campus server at sdc-serv. Triggered via site-linux.daemon when plot_antennas_iq
+finishes executing. 
+5. campus/convert_on_campus: Converts rawacf array files to DMAP files for sites specified in
 `config.sh`. Sites that don't need to convert anything just skip to end of script. Triggered via
-campus.daemon when rsync_to_campus finishes executing.
-5. campus/distribute_borealis_files: Copy DMAP files to respective directories for distribution to
+campus.daemon when rsync_to_campus finishes executing. 
+6. campus/distribute_borealis_files: Copy DMAP files to respective directories for distribution to
 other institutions, the Globus mirror, and Cedar. Backs up DMAP and array files to the campus NAS.
 Triggered via campus.daemon when convert_on_campus finishes executing.
+7. campus/archive_iq_plots: Archives any iq plots on campus that are over 24 hours old by converting
+them to a thumbnail format. Triggered via campus.daemon when distribute_borealis_files finishes 
+executing. 
 
 
 Each script is triggered by an inotify daemon unique to each computer. These daemons run on each of 

@@ -56,6 +56,8 @@ do
         flock --nonblock $LOCK_FILE $HOME/data_flow/campus/convert_on_campus $RADAR_ID
         printf "Executing distribute_borealis_data...\n"
         flock --nonblock $LOCK_FILE $HOME/data_flow/campus/distribute_borealis_data $RADAR_ID
+        printf "Executing archive_iq_plots...\n"
+        flock --nonblock $LOCK_FILE $HOME/data_flow/campus/archive_iq_plots $RADAR_ID
 
         # Reset flag by removing .site-linux_flag_[RADAR_ID], so inotify can be triggered again
         rm --verbose --force "${DIRECTORY}${FILE}"
