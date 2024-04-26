@@ -13,7 +13,7 @@
 #	- ssh link established between Site-Linux and SDCOPY computers
 #	- ssh link established between Site-Linux and TELEMETRY computers
 #
-# This script should be run via an inotify daemon triggerring when the previous data flow script 
+# This script should be run via an inotify daemon triggering when the previous data flow script
 # finishes execution
 
 ###################################################################################################
@@ -126,7 +126,7 @@ fi
 
 # Transfer all files found
 for file in $files; do
-	printf "\nTransferring: ${file}\n"
+	printf "\nTransferring: $(basename $file)\n"
 	rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
 
 	# Check if transfer was okay using the md5sum program
@@ -146,24 +146,19 @@ done
 # Find all antennas iq plots to transfer
 files=$(find "${IQPLOT_SOURCE}" -type f -regex ".*\.\(png\|jpg\)")
 for file in $files; do
-  # Get the file name and its directory, then rsync it.
-  image=$(basename $file)
-  path=$(dirname $file)
-  cd $path
-
-  printf "\nTransferring: ${image}\n"
-  rsync -av --append-verify --timeout=180 --rsh=ssh ${image} $SDCOPY:$PLOTDEST
+  printf "\nTransferring: ${file}\n"
+  rsync -av --append-verify --timeout=180 --rsh=ssh ${file} $SDCOPY:$PLOTDEST
 
   # Check if transfer was okay using the md5sum program
-  verify_transfer $file "${PLOTDEST}/${image}" $SDCOPY
+  verify_transfer $file "${PLOTDEST}/$(basename $file)" $SDCOPY
   return_value=$?
-  if [[ $eturn_value -eq 0 ]]; then
-    printf "Successfully transferred: ${image}\n" | tee --append $SUMMARY_FILE
+  if [[ $return_value -eq 0 ]]; then
+    printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
     printf "Deleting file...\n"
     rm --verbose ${file}
   else
     # If file not transferred successfully, try again next time, don't delete
-    printf "Transfer failed: ${image}\n" | tee --append $SUMMARY_FILE
+    printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
     printf "File not deleted.\n"
   fi
 done

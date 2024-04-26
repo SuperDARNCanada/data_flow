@@ -26,9 +26,9 @@ source "${HOME}/pydarnio-env/bin/activate"
 # Define directories
 readonly DATA_DIR=/borealis_nfs/borealis_data/antennas_iq_array/
 readonly FAILED_FILE_DEST=/borealis_nfs/borealis_data/conversion_failure/
-readonly PLOT_DEST=${HOME}/logging/daily_plots/
-readonly FULLSIZE_DEST=${HOME}/logging/daily_plots/fullsize/
-readonly FAILED_RESIZE_DEST=${HOME}/logging/daily_plots/failed_resize/
+readonly PLOT_DEST=${HOME}/logs/daily_plots/
+readonly FULLSIZE_DEST=${HOME}/logs/daily_plots/fullsize/
+readonly FAILED_RESIZE_DEST=${HOME}/logs/daily_plots/failed_resize/
 
 # Check the existence of the necessary directories.
 mkdir --parents $PLOT_DEST
@@ -73,7 +73,7 @@ exec &>> $LOGFILE # Redirect STDOUT and STDERR to $LOGFILE
 printf "################################################################################\n\n" | tee --append $SUMMARY_FILE
 
 printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
-date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FIL
+date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 # Get status info on data_flow and pyDARNio repos
 printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
@@ -97,7 +97,7 @@ search_2=$(date -d @$((now - 3600)) +%Y%m%d.%H)
 daily_files=$(find "${DATA_DIR}" "${FAILED_FILE_DEST}" -type f -regex ".*\(${search_1}\|${search_2}\).*0.antennas.*")
 
 printf "\n\n"
-if [[ -n $daily_files ]]; then
+if [[ -n ${daily_files} ]]; then
 	printf "Generating IQ plots:\n"
 	printf '%s\n' "${daily_files[@]}"
 else
@@ -107,7 +107,7 @@ fi
 for f in ${daily_files}; do
   printf "\nPlotting ${f}\n"
 
-  python3 ${HOME}/data_flow/site-linux/iq_plotting.py "${f}" --plot-directory=${FULLSIZE_DEST}
+  python3 ${HOME}/data_flow/library/iq_plotting.py "${f}" --plot-directory=${FULLSIZE_DEST}
 
   if [ $? -eq 0 ]; then
     printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
@@ -124,7 +124,7 @@ done
 if [[ -n $daily_files ]]; then
   # Get the names of all plots just generated
   daily_plots=$(ls ${FULLSIZE_DEST}/*.{png,jpg})
-  if [[ -z daily_plots ]]; then
+  if [[ -z $daily_plots ]]; then
     printf "Unable to find files to resize...\n" | tee --append $SUMMARY_FILE
   fi
 
