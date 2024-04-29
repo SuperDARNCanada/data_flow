@@ -24,11 +24,11 @@ source "${HOME}/pydarnio-env/bin/activate"
 ###################################################################################################
 
 # Define directories
-readonly DATA_DIR=/borealis_nfs/borealis_data/antennas_iq_array/
-readonly FAILED_FILE_DEST=/borealis_nfs/borealis_data/conversion_failure/
-readonly PLOT_DEST=${HOME}/logs/daily_plots/
-readonly FULLSIZE_DEST=${PLOT_DEST}/fullsize/
-readonly FAILED_RESIZE_DEST=${PLOT_DEST}/failed_resize/
+readonly DATA_DIR="/borealis_nfs/borealis_data/antennas_iq_array/"
+readonly FAILED_FILE_DEST="/borealis_nfs/borealis_data/conversion_failure/"
+readonly PLOT_DEST="${HOME}/logs/daily_plots/"
+readonly FULLSIZE_DEST="${PLOT_DEST}/fullsize/"
+readonly FAILED_RESIZE_DEST="${PLOT_DEST}/failed_resize/"
 
 # Check the existence of the necessary directories.
 mkdir --parents $PLOT_DEST
@@ -75,7 +75,7 @@ printf "########################################################################
 printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
-# Get status info on data_flow and pyDARNio repos
+# Get status info on data_flow repo
 printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
