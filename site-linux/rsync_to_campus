@@ -32,7 +32,7 @@ else
 fi
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
 readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
-readonly IQPLOT_SOURCE="${HOME}/logging/daily_plots/"
+readonly IQPLOT_SOURCE="${HOME}/logs/daily_plots/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
 if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
