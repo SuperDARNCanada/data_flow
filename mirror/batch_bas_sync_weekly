@@ -1,0 +1,16 @@
+#!/bin/bash
+curdate=`date +%Y%m%d`
+startdate=`date -d "$curdate - 1 year" +%Y%m`
+startdate="${startdate}01"
+d=${startdate}
+enddate=`date +%Y%m`
+enddate="${enddate}01"
+echo "Date range: ${startdate} - ${enddate}"
+
+while [ "$d" != "${enddate}" ]
+do 
+	yearmonth=`date -d "$d" +%Y%m`
+	/home/dataman/script/sync_bas_data.sh /data/holding/BAS/ ${yearmonth}
+        d=`date -d "$d + 1 month" +%Y%m%d`
+done
+

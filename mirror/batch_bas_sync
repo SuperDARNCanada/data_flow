@@ -1,0 +1,35 @@
+#!/bin/bash
+
+startdate=20060101
+#startdate=20180801
+d=${startdate}
+today=`date +%Y%m%d`
+enddate=`date +%Y%m`
+enddate="${enddate}01"
+#enddate=20181001
+echo "Date range: ${startdate} - ${enddate}"
+
+while [ "$d" != "${enddate}" ]
+do 
+	yearmonth=`date -d "$d" +%Y%m`
+	/home/dataman/script/sync_bas_data.sh /data/holding/BAS/ ${yearmonth}
+        d=`date -d "$d + 1 month" +%Y%m%d`
+done
+# Update mirror comparison
+CMP_DIR=/home/dataman/Documents/mirror_comparison_${today}/
+HASHES_DIRS=/home/dataman/tmp_hashes_usask/${today}.*
+
+mkdir -p ${CMP_DIR}
+find ${HASHES_DIRS} -name '*data.different' -exec cat '{}' \; > ${CMP_DIR}/bas.different
+find ${HASHES_DIRS} -name '*data.blocked' -exec cat '{}' \; > ${CMP_DIR}/bas.blocked
+find ${HASHES_DIRS} -name '*data.not_at_usask' -exec cat '{}' \; > ${CMP_DIR}/bas.not_at_usask
+find ${HASHES_DIRS} -name '*data.not_at_bas' -exec cat '{}' \; > ${CMP_DIR}/bas.not_at_bas
+find ${HASHES_DIRS} -name '*data.failed' -exec cat '{}' \; > ${CMP_DIR}/bas.failed
+
+mkdir -p ${CMP_DIR}/sorted
+sort -k2 ${CMP_DIR}/bas.different > ${CMP_DIR}/sorted/bas_different
+sort -k2 ${CMP_DIR}/bas.not_at_bas > ${CMP_DIR}/sorted/bas_not_at_bas
+sort ${CMP_DIR}/bas.not_at_usask > ${CMP_DIR}/sorted/bas_not_at_usask
+sort ${CMP_DIR}/bas.failed > ${CMP_DIR}/sorted/bas_failed
+sort ${CMP_DIR}/bas.blocked > ${CMP_DIR}/sorted/bas_blocked
+

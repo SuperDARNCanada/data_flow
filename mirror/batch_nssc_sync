@@ -1,0 +1,37 @@
+#!/bin/bash
+
+startdate=20060101
+#startdate=20180801
+d=${startdate}
+today=`date +%Y%m%d`
+enddate=`date +%Y%m`
+enddate="${enddate}01"
+#enddate=20181001
+echo "Date range: ${startdate} - ${enddate}"
+
+while [ "$d" != "${enddate}" ]
+do 
+	yearmonth=`date -d "$d" +%Y%m`
+	/home/dataman/script/sync_nssc_data.sh /data/holding/NSSC/ ${yearmonth}
+        d=`date -d "$d + 1 month" +%Y%m%d`
+done
+
+# Update mirror comparison
+CMP_DIR=/home/dataman/Documents/mirror_comparison_${today}/
+HASHES_DIRS=/home/dataman/tmp_hashes_usask_nssc_cmp/${today}.*
+
+mkdir -p ${CMP_DIR}
+find ${HASHES_DIRS} -name '*data.different' -exec cat '{}' \; > ${CMP_DIR}/nssc.different
+find ${HASHES_DIRS} -name '*data.blocked' -exec cat '{}' \; > ${CMP_DIR}/nssc.blocked
+find ${HASHES_DIRS} -name '*data.not_at_usask' -exec cat '{}' \; > ${CMP_DIR}/nssc.not_at_usask
+find ${HASHES_DIRS} -name '*data.not_at_nssc' -exec cat '{}' \; > ${CMP_DIR}/nssc.not_at_nssc
+find ${HASHES_DIRS} -name '*data.failed' -exec cat '{}' \; > ${CMP_DIR}/nssc.failed
+
+mkdir -p ${CMP_DIR}/sorted
+sort -k2 ${CMP_DIR}/nssc.different > ${CMP_DIR}/sorted/nssc_different
+sort -k2 ${CMP_DIR}/nssc.not_at_nssc > ${CMP_DIR}/sorted/nssc_not_at_nssc
+sort ${CMP_DIR}/nssc.not_at_usask > ${CMP_DIR}/sorted/nssc_not_at_usask
+sort ${CMP_DIR}/nssc.failed > ${CMP_DIR}/sorted/nssc_failed
+sort ${CMP_DIR}/nssc.blocked > ${CMP_DIR}/sorted/nssc_blocked
+
+
