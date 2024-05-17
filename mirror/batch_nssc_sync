@@ -1,19 +1,20 @@
 #!/bin/bash
 
+# Start date is the beginning of 2006
 startdate=20060101
-#startdate=20180801
 d=${startdate}
-today=`date +%Y%m%d`
-enddate=`date +%Y%m`
+today=$(date +%Y%m%d)
+# End date is the 1st of the current month
+enddate=$(date +%Y%m)
 enddate="${enddate}01"
-#enddate=20181001
 echo "Date range: ${startdate} - ${enddate}"
 
+# Loop ends before current month
 while [ "$d" != "${enddate}" ]
 do 
-	yearmonth=`date -d "$d" +%Y%m`
+	yearmonth=$(date -d "$d" +%Y%m)
 	/home/dataman/script/sync_nssc_data.sh /data/holding/NSSC/ ${yearmonth}
-        d=`date -d "$d + 1 month" +%Y%m%d`
+        d=$(date -d "$d + 1 month" +%Y%m%d)
 done
 
 # Update mirror comparison
@@ -33,5 +34,4 @@ sort -k2 ${CMP_DIR}/nssc.not_at_nssc > ${CMP_DIR}/sorted/nssc_not_at_nssc
 sort ${CMP_DIR}/nssc.not_at_usask > ${CMP_DIR}/sorted/nssc_not_at_usask
 sort ${CMP_DIR}/nssc.failed > ${CMP_DIR}/sorted/nssc_failed
 sort ${CMP_DIR}/nssc.blocked > ${CMP_DIR}/sorted/nssc_blocked
-
 

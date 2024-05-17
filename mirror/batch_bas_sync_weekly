@@ -1,16 +1,20 @@
 #!/bin/bash
-curdate=`date +%Y%m%d`
-startdate=`date -d "$curdate - 1 year" +%Y%m`
+curdate=$(date +%Y%m%d)
+startdate=$(date -d "$curdate - 1 year" +%Y%m)
+# Start date is the 1st of the month, 1 year ago
 startdate="${startdate}01"
 d=${startdate}
-enddate=`date +%Y%m`
+# End date is the 1st of the month, now
+enddate=$(date +%Y%m)
 enddate="${enddate}01"
 echo "Date range: ${startdate} - ${enddate}"
 
+# Loop will end before we get to the current month
+# Last iteration will be the month before the current month
 while [ "$d" != "${enddate}" ]
 do 
-	yearmonth=`date -d "$d" +%Y%m`
-	/home/dataman/script/sync_bas_data.sh /data/holding/BAS/ ${yearmonth}
-        d=`date -d "$d + 1 month" +%Y%m%d`
+	yearmonth=$(date -d "$d" +%Y%m)
+	/home/dataman/data_flow/mirror/sync_bas_data.sh /data/holding/BAS/ ${yearmonth}
+        d=$(date -d "$d + 1 month" +%Y%m%d)
 done
 

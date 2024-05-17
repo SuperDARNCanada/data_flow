@@ -39,24 +39,24 @@ YYYYMM=$2
 #YYYYMM="${YYYYMM}_nssc"
 
 # Variables for Cedar user and paths
-CEDAR_USER=saifm@robot.cedar.alliancecan.ca
-CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/raw/
-CEDAR_BLOCKLIST=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/
-CEDAR_FAILED=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt
+readonly CEDAR_USER=saifm@robot.cedar.alliancecan.ca
+readonly CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/raw/
+readonly CEDAR_BLOCKLIST=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/
+readonly CEDAR_FAILED=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt
 
 # What hash program are we using?
 HASHPROG=/usr/bin/sha1sum
 # Date, time and other stuff
-STARTTIME=`date +%s`
-DATE_TIME=`date +%Y%m%d.%H%M`
-DATE_UTC=`date -u`
-CURDAY=`date +%d`
-CURHOUR=`date +%H`
-CURMIN=`date +%M`
-CURYEAR=`date +%Y`
-CURMONTHNAME=`date +%B`
-CURMONTH=`date +%m`
-MONTHNAME=`date --date=${CURYEAR}${CURMONTH}01 +%B`
+STARTTIME=$(date +%s)
+DATE_TIME=$(date +%Y%m%d.%H%M)
+DATE_UTC=$(date -u)
+CURDAY=$(date +%d)
+CURHOUR=$(date +%H)
+CURMIN=$(date +%M)
+CURYEAR=$(date +%Y)
+CURMONTHNAME=$(date +%B)
+CURMONTH=$(date +%m)
+MONTHNAME=$(date --date=${CURYEAR}${CURMONTH}01 +%B)
 # What is our logging file directory?
 LOGGINGDIR=/home/dataman/logs/nssc/${CURYEAR}/${CURMONTH}/
 # What is our log file name?
@@ -76,20 +76,11 @@ EMAILBODY=
 EMAILSUBJECT="sync_nssc_data - [${YYYYMM}]"
 # What sftp program are we using?
 SFTP=/usr/bin/sftp
-# What is the script to get hashes files?
-GLOBUS_GET_HASHES=/home/dataman/globus_mirror_scripts/get_hashes_globus.py
-# What is the script to get the blocked files?
-GLOBUS_GET_BLOCKLIST=/home/dataman/globus_mirror_scripts/get_blocklist_globus.py
-# What is the script to get the previously failed files?
-GLOBUS_GET_FAILED=/home/dataman/globus_mirror_scripts/get_failed_globus.py
-# What is the globus mirror directory root? 
-GLOBUS_MIRROR_ROOT="~/chroot/sddata"
 # What is the username to connect with on the sftp server?
 USER=dataman
 # What is the hostname to connect to (the sftp server)?
 REMOTEHOST=superdarn.mirror.nssdc.ac.cn
 # What is the nssc directory name on the sftp server?
-#REMOTEDIRBASE=/data/ftproot/raw
 REMOTEDIRBASE=/sddata/raw
 # What is the full directory name on the sftp server 
 REMOTEDIR=${REMOTEDIRBASE}
@@ -140,42 +131,35 @@ fi
 #############################################################################
 # Execute step 1) Download the hashes file(s) from the servers
 # as well as the blocklist and previously failed files
+# If any downloads fail: log the error, send an email, and exit the script
 ##############################################################################
 # First we need to rename any older hashes files in this directory, since we
 # may have run this script already this day
-for file in `ls -1 ${LOCALHASHDIR}/*hashes 2>/dev/null`
+for file in $(ls -1 ${LOCALHASHDIR}/*hashes 2>/dev/null)
 do
 	mv -v ${file} ${file}.old >> ${LOGFILE} 2>&1 
 done
-for file in `ls -1 ${NSSCHASHDIR}/*hashes 2>/dev/null`
+for file in $(ls -1 ${NSSCHASHDIR}/*hashes 2>/dev/null)
 do
 	mv -v ${file} ${file}.old >> ${LOGFILE} 2>&1
 done
-#for file in `ls -1 ${LOCALBLDIR}/*txt`
-#do
-#	mv -v ${file} ${file}.old >> ${LOGFILE} 2>&1 
-#done
-#for file in `ls -1 ${LOCALFAILEDDIR}/*txt`
-#do
-#	mv -v ${file} ${file}.old >> ${LOGFILE} 2>&1 
-#done
-
-yyyy=`echo $YYYYMM | cut -b1-4`
-mm=`echo $YYYYMM | cut -b5-6`
+# Get year and month by parsing YYYYMM
+yyyy=$(echo $YYYYMM | cut -b1-4)
+mm=$(echo $YYYYMM | cut -b5-6)
+# Download hashes from Cedar via rsync. Note the use of an ssh key and automated MFA through Digital Research Alliance.
 rsync -avL --timeout=15 -e "ssh -i ~/.ssh/id_rsa" ${CEDAR_USER}:${CEDAR_HASHES}/$yyyy/$mm/$yyyy$mm.hashes ${LOCALHASHDIR}/ >> ${LOGFILE} 2>&1
 RETURN_VALUE=$?
 echo "rsync get hashes returned: ${RETURN_VALUE}" >> ${LOGFILE}
 if [[ ${RETURN_VALUE} -ne 0 ]]
 then
-        echo "Rsync retrieval of hashes failed" >> ${LOGFILE}
-        EMAILBODY="Error: Could not download hash file. Exiting\n"
+	echo "Rsync retrieval of hashes failed" >> ${LOGFILE}
+	EMAILBODY="Error: Could not download hash file. Exiting\n"
 	EMAILSUBJECT="${EMAILSUBJECT} hashes error"
 	echo -e ${EMAILBODY} >> ${LOGFILE}
 	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 	exit
-
 fi
-
+# Download blocklist directory from Cedar via rsync
 rsync -avL --timeout=20 -e "ssh -i ~/.ssh/id_rsa" ${CEDAR_USER}:${CEDAR_BLOCKLIST} ${LOCALBLDIR}/ >> ${LOGFILE} 2>&1
 RETURN_VALUE=$?
 echo "rsync get blocklist returned: ${RETURN_VALUE}" >> ${LOGFILE}
@@ -188,7 +172,7 @@ then
 	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 	exit
 fi
-
+# Download failed files list "all_failed.txt" from Cedar via rsync
 rsync -avL --timeout=15 -e "ssh -i ~/.ssh/id_rsa" ${CEDAR_USER}:${CEDAR_FAILED} ${LOCALFAILEDDIR}/ >> ${LOGFILE} 2>&1
 RETURN_VALUE=$?
 echo "rsync get failed returned: ${RETURN_VALUE}" >> ${LOGFILE}
@@ -196,18 +180,23 @@ if [[ ${RETURN_VALUE} -ne 0 ]]
 then
 	echo "Rsync retrieval of previously failed files failed" >> ${LOGFILE}
 	EMAILBODY="Error: Could not download failed file list. Exiting\n"
-	EMAILSUBJECT="${EMAILSUBJECT} hashes error"
+	EMAILSUBJECT="${EMAILSUBJECT} failed files error"
 	echo -e ${EMAILBODY} >> ${LOGFILE}
 	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 	exit
 fi
 
+# Create file to store sftp commands to be performed on NSSC
 SFTPBATCH=${NSSCHASHDIR}/sftp.batch
+# Create file to write any errors raised by sftp commands
 SFTPERRORS=${NSSCHASHDIR}/sftp.errors
+# Ensure file is empty
 echo -n > ${SFTPBATCH}
 cd ${NSSCHASHDIR}
+# Write commands to get hashes from NSSC and exit to sftp batch file
 echo "-get ${REMOTEDIR}/${yyyy}/${mm}/${yyyy}${mm}.hashes ${NSSCHASHDIR}" >> ${SFTPBATCH}
 echo "exit" >> ${SFTPBATCH}
+# Execute sftp batch file, logging errors to sftp error file
 ${SFTP} -b ${SFTPBATCH} ${USER}@${REMOTEHOST} >> ${LOGFILE} 2> ${SFTPERRORS} 
 
 if [[ -s $SFTPERRORS ]]
@@ -218,7 +207,7 @@ then
 	echo -e ${EMAILBODY} >> ${LOGFILE}
 	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
-
+# Check if hash file successfully transferred from NSSC server. If not: log, email, exit
 if [ ! -e "${NSSCHASHDIR}/${yyyy}${mm}.hashes" ];
 then
 	EMAILBODY="Error: NSSC hash file error. Exiting\n"
@@ -228,6 +217,7 @@ then
         exit
 fi
 
+# Date in seconds after epoch for timing calculations at the end of the script
 HASHTIMEEND=`date +%s`
 ##############################################################################
 # Sort the files, because otherwise we can't properly diff them :/
@@ -284,32 +274,43 @@ cat ${FAILED_HASHES} | awk -F' ' '{print $2}' > ${FAILED_FILES} 2>> ${LOGFILE}
 # This will contain files that nssc has, that usask doesn't, that are not blocked or failed ** NO HASHES IN THE LIST **
 cat ${NOT_AT_USASK} ${BLOCKED_FILES} ${FAILED_FILES} | sort | uniq -u > ${TO_DOWNLOAD} 2>> ${LOGFILE}
 
-totalUpdated=`wc -l ${NOT_AT_USASK} | awk -F' ' '{print $1}'`
-totalMissing_all=`wc -l ${NOT_AT_NSSC} | awk -F' ' '{print $1}'`
-totalDifferent=`wc -l ${DIFFERENT_FILES} | awk -F' ' '{print $1}'`
-totalBlocked=`wc -l ${BLOCKED_FILES} | awk -F' ' '{print $1}'`
-totalFailed=`wc -l ${FAILED_FILES} | awk -F' ' '{print $1}'`
-totalToDownload=`wc -l ${TO_DOWNLOAD} | awk -F' ' '{print $1}'`
+# Variables to store the number of rawacfs in each file defined above
+# wc -l outputs # of lines and filepath separated by a space
+totalUpdated=$(wc -l ${NOT_AT_USASK} | awk -F' ' '{print $1}')
+totalMissing_all=$(wc -l ${NOT_AT_NSSC} | awk -F' ' '{print $1}')
+totalDifferent=$(wc -l ${DIFFERENT_FILES} | awk -F' ' '{print $1}')
+totalBlocked=$(wc -l ${BLOCKED_FILES} | awk -F' ' '{print $1}')
+totalFailed=$(wc -l ${FAILED_FILES} | awk -F' ' '{print $1}')
+totalToDownload=$(wc -l ${TO_DOWNLOAD} | awk -F' ' '{print $1}')
 
+# Only compare files within the last 3 days
 day_threshold=3
 totalOldMissingFiles=0
 
+# Only execute this block if there is at least one file that NSSC is missing
 if [[ ${totalMissing_all} -gt 0 ]] 
 then
 	missing_files_string=""
+        # Store the default IFS value, then change IFS to separate strings by new line
 	DEFAULT_IFS=${IFS}
 	IFS=$'\n'
+        # New IFS allows loop over [hash1 file1, hash2 file2, etc.] rather than [hash1, file1, hash2, file2, etc.]
 	for f in $(cat ${NOT_AT_NSSC})
-	do 
-		file_date=`echo $f | awk -F' ' '{print $2}' | awk -F'.' '{print $1}'`
-		date_threshold=`date --date="$day_threshold days ago" +%Y%m%d`
+	do
+                # Parse date from filename (second entry in line), split filename by '.' and first entry is yyyymmdd
+		file_date=$(echo $f | awk -F' ' '{print $2}' | awk -F'.' '{print $1}')
+		date_threshold=$(date --date="$day_threshold days ago" +%Y%m%d)
+                # Check if the missing file is more than 3 days old
 		if [[ $date_threshold -ge $file_date ]]
 		then
+                        # Append missing file [hash filename] to missing_files_string and increment missing files count
 			missing_files_string="$missing_files_string\n$f"
-			totalOldMissingFiles=`expr ${totalOldMissingFiles} + 1`
+			totalOldMissingFiles=$(expr ${totalOldMissingFiles} + 1)
 		fi
 	done
+        # Reset IFS back to default
 	IFS=${DEFAULT_IFS}
+        # Check if any of the missing files are more than 3 days old. If so, log and email
 	if [[ ${totalOldMissingFiles} -gt 0 ]]
 	then
 		EMAILBODY="NSSC is missing files older than $day_threshold days:\n${missing_files_string}"
@@ -318,6 +319,7 @@ then
 		send_email "${EMAILSUBJECT2}" "${EMAILBODY}"
 	fi
 fi
+# Log and send an email if NSSC has any different files
 if [[ ${totalDifferent} -gt 0 ]]
 then
 	different_files_string=`cat ${DIFFERENT_FILES}`
@@ -326,6 +328,7 @@ then
 	echo -e ${EMAILBODY} >> ${LOGFILE}
 	send_email "${EMAILSUBJECT3}" "${EMAILBODY}"
 fi
+# Log and send an email if NSSC has any blocked files
 if [[ ${totalBlocked} -gt 0 ]]
 then
 	blocked_files_string=`cat ${BLOCKED_FILES}`
@@ -334,6 +337,7 @@ then
 	echo -e ${EMAILBODY} >> ${LOGFILE}
 	send_email "${EMAILSUBJECT4}" "${EMAILBODY}"
 fi
+# Log and send an email if NSSC has any failed files
 if [[ ${totalFailed} -gt 0 ]]
 then
 	failed_files_string=`cat ${FAILED_HASHES}`
@@ -342,6 +346,7 @@ then
 	echo -e ${EMAILBODY} >> ${LOGFILE}
 	send_email "${EMAILSUBJECT5}" "${EMAILBODY}"
 fi
+# Log and exit script if there are no files to download from NSSC
 if [[ ${totalToDownload} -eq 0 ]] 
 then
 	EMAILBODY="No files to download. Exiting\n"
@@ -354,6 +359,7 @@ fi
 ##############################################################################
 # 3) Now that we have the files required to download, let's put together
 # an sftp batch command file, ".batch" and an rsync one
+## NOTE: rsync batch is never executed
 ##############################################################################
 SFTPBATCH=${HOLDINGDIR}/sftp.batch
 RSYNCBATCH=${HOLDINGDIR}/rsync_${yyyy}${mm}.batch
@@ -363,11 +369,12 @@ echo -n > ${SFTPBATCH}
 echo -n > ${RSYNCBATCH}
 # We need to place get commands for each file required
 totalFiles=0
-for ITEM in `cat ${TO_DOWNLOAD}`
+for ITEM in $(cat ${TO_DOWNLOAD})
 do
 	echo "-get ${REMOTEDIR}/${yyyy}/${mm}/${ITEM} ${HOLDINGDIR}" >> ${SFTPBATCH}
 	echo "${REMOTEDIR}/${yyyy}/${mm}/${ITEM}" >> ${RSYNCBATCH}
-	totalFiles=`expr ${totalFiles} + 1`
+        # Increment files to download counter
+	totalFiles=$(expr ${totalFiles} + 1)
 done
 # Finally, we exit from sftp
 echo "exit" >> ${SFTPBATCH}
@@ -381,11 +388,14 @@ echo "Total new files: ${totalFiles}" >> ${LOGFILE}
 ##############################################################################
 SFTPERRORS=${HOLDINGDIR}/sftp.errors
 echo -n > $SFTPERRORS
+# Make sure there is at least one file in sftp batch before executing
 if [[ ${totalFiles} -gt 0 ]]
 then
 	echo "Getting files..." >> ${LOGFILE}
 	${SFTP} -b ${SFTPBATCH} ${USER}@${REMOTEHOST} >> ${LOGFILE} 2> ${SFTPERRORS} 
 else
+        # The script already checked and exited if totalToDownload -eq 0
+        # Should never hit this condition
 	EMAILBODY="${EMAILBODY}\n NO NEW FILES - YOU SHOULD NEVER SEE THIS"
 	EMAILSUBJECT="${EMAILSUBJECT} ERROR"
 	echo -e ${EMAILBODY} >> ${LOGFILE}
@@ -394,26 +404,23 @@ else
 fi
 if [[ -s $SFTPERRORS ]]
 then
-	ERRORS_STRING=`cat $SFTPERRORS`
+	ERRORS_STRING=$(cat $SFTPERRORS)
 	EMAILBODY="${EMAILBODY}\nSFTP errors\n$ERRORS_STRING"
 	EMAILSUBJECT="${EMAILSUBJECT} ERROR"
 	echo -e ${EMAILBODY} >> ${LOGFILE}
 	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
-SYNCTIMEEND=`date +%s`
+SYNCTIMEEND=$(date +%s)
 
 ##############################################################################
 # Cleanup and information 
 ##############################################################################
-ENDTIME=`date +%s`
-HASHSYNCTIME=`expr ${HASHTIMEEND} - ${STARTTIME}`
-SYNCTIME=`expr ${SYNCTIMEEND} - ${HASHTIMEEND}`
-TOTALTIME=`expr ${ENDTIME} - ${STARTTIME}`
+ENDTIME=$(date +%s)
+HASHSYNCTIME=$(expr ${HASHTIMEEND} - ${STARTTIME})
+SYNCTIME=$(expr ${SYNCTIMEEND} - ${HASHTIMEEND})
+TOTALTIME=$(expr ${ENDTIME} - ${STARTTIME})
 
 echo "Time to download hashes files: 	${HASHSYNCTIME} seconds" >> ${LOGFILE}
 echo "Time to download ${totalFiles} rawacf files: 	${SYNCTIME} seconds" >> ${LOGFILE}
 echo "Total time to execute script : 	${TOTALTIME} seconds" >> ${LOGFILE}
-
-
-exit
 
