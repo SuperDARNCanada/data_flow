@@ -1,32 +1,3 @@
-#!/bin/bash
-# Last modification 20231201 by Saif Marei
-# Modified paths for raw hashes and blocklisted/failed files on Cedar
-#
-# Modified from auto_make_fitacf_all_globus 
-#
-# This script is designed to log on to the BAS  
-# SuperDARN mirror in order to sync to the usask mirror
-#
-# Call the script like so with the following arguments:
-# /path/to/script/sync_from_bas /path/to/holding/directory YYYYMM
-# Argument 1 is the data holding directory.
-# Argument 2 is Year and Month (YYYYMM) to get data for, default current YYYYMM
-# 
-# The script will check the arguments and if there are errors with the
-# arguments then it will fail with an email sent out.
-
-# The logic is as follows:
-# 1) Download the hashes files from the usask mirror for the specified dates
-#        also download the blocklist and previously failed files
-# 2) Compare with bas versions of hashes files
-# 3) Find out which data files have been updated or added
-# 4) Remove any blocked files from the files to download 
-# 5) Remove any previously failed files from the files to download
-# 6) Download remaining files not on usask, blocked or previously failed
-#
-#  Emails are sent to indicate files that are different, files that are 
-# missing on BAS, files that are blocked or files that failed checks
-#
 ##############################################################################
 # Initialize some variables
 ##############################################################################
@@ -34,6 +5,8 @@
 HOLDINGDIR=$1
 # What year and month are we getting data for?
 YYYYMM=$2
+# Which mirror are we running for?
+MIRROR=$3
 
 # EDIT 2023-04-28 TK - make filenames specific to the mirror they are for
 #YYYYMM="${YYYYMM}_bas"
@@ -44,25 +17,47 @@ readonly CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/raw
 readonly CEDAR_BLOCKLIST=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/
 readonly CEDAR_FAILED=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt
 
+# Check if mirror was provided
+if [[ "${MIRROR}" == "BAS" ]]
+then
+  mirror="bas"
+  # What is the username to connect with on the sftp server?
+  USER=superdarn
+  # What is the hostname to connect to (the sftp server)?
+  REMOTEHOST=bslsuperdarnb.nerc-bas.ac.uk
+  # What is the base directory name on the sftp server?
+  REMOTEDIRBASE=/data/superdarn/data/raw
+  # What is the full directory name on the sftp server
+  REMOTEDIR=${REMOTEDIRBASE}
+elif [[ "${MIRROR}" == "NSSC" ]]
+then
+  mirror="nssc"
+  # What is the username to connect with on the sftp server?
+  USER=dataman
+  # What is the hostname to connect to (the sftp server)?
+  REMOTEHOST=superdarn.mirror.nssdc.ac.cn
+  # What is the nssc directory name on the sftp server?
+  REMOTEDIRBASE=/sddata/raw
+  # What is the full directory name on the sftp server
+  REMOTEDIR=${REMOTEDIRBASE}
+else
+  echo -e "\n${DATE_UTC}\nPlease provide mirror (BAS or NSSC)...exiting"
+  exit
+fi
 # What hash program are we using?
 HASHPROG=/usr/bin/sha1sum
 # Date, time and other stuff
 STARTTIME=$(date +%s)
 DATE_TIME=$(date +%Y%m%d.%H%M)
 DATE_UTC=$(date -u)
-CURDAY=$(date +%d)
-CURHOUR=$(date +%H)
-CURMIN=$(date +%M)
 CURYEAR=$(date +%Y)
-CURMONTHNAME=$(date +%B)
 CURMONTH=$(date +%m)
-MONTHNAME=$(date --date=${CURYEAR}${CURMONTH}01 +%B)
 # What is our logging file directory?
-LOGGINGDIR=/home/dataman/logs/bas/${CURYEAR}/${CURMONTH}/
+LOGGINGDIR=/home/dataman/logs/${mirror}/${CURYEAR}/${CURMONTH}/
 # What is our log file name?
-LOGFILE=${LOGGINGDIR}${DATE_TIME}_bas.log
+LOGFILE=${LOGGINGDIR}${DATE_TIME}_${mirror}.log
 # Make the log file directory if it doesn't exist
-mkdir -p ${LOGGINGDIR}
+mkdir -p "${LOGGINGDIR}"
 # Check that year and month were supplied or not
 if [[ "" == "${YYYYMM}" ]]
 then
@@ -73,33 +68,25 @@ EMAILFLAG=0
 # What is the email body?
 EMAILBODY=
 # What is the email Subject?
-EMAILSUBJECT="sync_bas_data - [${YYYYMM}]"
+EMAILSUBJECT="sync_${mirror}_data - [${YYYYMM}]"
 # What sftp program are we using?
 SFTP=/usr/bin/sftp
-# What is the username to connect with on the sftp server?
-USER=superdarn
-# What is the hostname to connect to (the sftp server)?
-REMOTEHOST=bslsuperdarnb.nerc-bas.ac.uk
-# What is the base directory name on the sftp server?
-REMOTEDIRBASE=/data/superdarn/data/raw
-# What is the full directory name on the sftp server 
-REMOTEDIR=${REMOTEDIRBASE}
 # What is our holding directory for hashes files?
-LOCALHASHDIR=/home/dataman/tmp_hashes_usask_bas_cmp/$DATE_TIME
-BASHASHDIR=/home/dataman/tmp_hashes_bas/$DATE_TIME
+LOCALHASHDIR=/home/dataman/tmp_hashes_usask_${mirror}_cmp/$DATE_TIME
+MIRRORHASHDIR=/home/dataman/tmp_hashes_${mirror}/$DATE_TIME
 # What is our holding directory for blocked files?
 LOCALBLDIR=/home/dataman/tmp_blocklist/$DATE_TIME
 # What is our holding directory for previously failed files?
 LOCALFAILEDDIR=/home/dataman/tmp_failed/$DATE_TIME
 # Make sure they exist
 mkdir -p "${LOCALHASHDIR}"
-mkdir -p "${BASHASHDIR}"
+mkdir -p "${MIRRORHASHDIR}"
 mkdir -p "${LOCALBLDIR}"
 mkdir -p "${LOCALFAILEDDIR}"
 
 ##############################################################################
-# Email function. Called before any abnormal exit, or at the end of the 
-# script if the email flag was set. 
+# Email function. Called before any abnormal exit, or at the end of the
+# script if the email flag was set.
 # Argument 1 should be the subject
 # Argument 2 should be the body
 ##############################################################################
@@ -112,7 +99,7 @@ send_email () {
 }
 
 ##############################################################################
-# Do some error checking on the arguments 
+# Do some error checking on the arguments
 ##############################################################################
 # Echo the date for logging purposes
 echo -e "\n${DATE_UTC}\nChecking arguments..." >> "${LOGFILE}"
@@ -137,10 +124,11 @@ for file in $(ls -1 ${LOCALHASHDIR}/*hashes 2>/dev/null)
 do
 	mv -v "${file}" "${file}.old" >> "${LOGFILE}" 2>&1
 done
-for file in $(ls -1 ${BASHASHDIR}/*hashes 2>/dev/null)
+for file in $(ls -1 ${MIRRORHASHDIR}/*hashes 2>/dev/null)
 do
 	mv -v "${file}" "${file}.old" >> "${LOGFILE}" 2>&1
 done
+
 # Get year and month by parsing YYYYMM
 yyyy=$(echo "${YYYYMM}" | cut -b1-4)
 mm=$(echo "${YYYYMM}" | cut -b5-6)
@@ -184,33 +172,33 @@ then
 	exit
 fi
 
-# Create file to store sftp commands to be performed on BAS
-SFTPBATCH=${BASHASHDIR}/sftp.batch
+# Create file to store sftp commands to be performed on mirror
+SFTPBATCH=${MIRRORHASHDIR}/sftp.batch
 # Create file to write any errors raised by sftp commands
-SFTPERRORS=${BASHASHDIR}/sftp.errors
+SFTPERRORS=${MIRRORHASHDIR}/sftp.errors
 # Ensure file is empty
 echo -n > "${SFTPBATCH}"
-cd "${BASHASHDIR}" || exit
-# Write commands to get hashes from BAS and exit to sftp batch file
-echo "-get ${REMOTEDIR}/${yyyy}/${mm}/${YYYYMM}.hashes ${BASHASHDIR}" >> "${SFTPBATCH}"
+cd "${MIRRORHASHDIR}" || exit
+# Write commands to get hashes from mirror and exit to sftp batch file
+echo "-get ${REMOTEDIR}/${yyyy}/${mm}/${YYYYMM}.hashes ${MIRRORHASHDIR}" >> "${SFTPBATCH}"
 echo "exit" >> "${SFTPBATCH}"
 # Execute sftp batch file, logging errors to sftp error file
 ${SFTP} -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
 
 if [[ -s $SFTPERRORS ]]
 then
-	ERRORS_STRING=`cat $SFTPERRORS`
+	ERRORS_STRING=$(cat "${SFTPERRORS}")
 	EMAILBODY="${EMAILBODY}\nSFTP errors\n$ERRORS_STRING"
 	EMAILSUBJECT="${EMAILSUBJECT} ERROR"
-	echo -e ${EMAILBODY} >> ${LOGFILE}
+	echo -e "${EMAILBODY}" >> "${LOGFILE}"
 	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
-# Check if hash file successfully transferred from BAS server. If not: log, email, exit
-if [ ! -e "${BASHASHDIR}/${yyyy}${mm}.hashes" ];
+# Check if hash file successfully transferred from server. If not: log, email, exit
+if [ ! -e "${MIRRORHASHDIR}/${YYYYMM}.hashes" ];
 then
-	EMAILBODY="Error: BAS hash file error. Exiting\n"
-	EMAILSUBJECT="${EMAILSUBJECT} BAS hash file error"
- 	echo -e ${EMAILBODY} >> ${LOGFILE}
+	EMAILBODY="Error: ${MIRROR} hash file error. Exiting\n"
+	EMAILSUBJECT="${EMAILSUBJECT} ${MIRROR} hash file error"
+ 	echo -e "${EMAILBODY}" >> "${LOGFILE}"
   send_email "${EMAILSUBJECT}" "${EMAILBODY}"
   exit
 fi
@@ -220,53 +208,53 @@ HASHTIMEEND=$(date +%s)
 ##############################################################################
 # Sort the files, because otherwise we can't properly diff them :/
 ##############################################################################
-localhash=${LOCALHASHDIR}/${yyyy}${mm}.hashes
-bashash=${BASHASHDIR}/${yyyy}${mm}.hashes
+localhash=${LOCALHASHDIR}/${YYYYMM}.hashes
+mirrorhash=${MIRRORHASHDIR}/${YYYYMM}.hashes
 localsorted=${localhash}.usask.sorted
-bassorted=${bashash}.bas.sorted
-sort -k2  ${localhash} > ${localsorted}
-sort -k2 ${bashash} > ${bassorted}
+mirrorsorted=${mirrorhash}.${mirror}.sorted
+sort -k2  "${localhash}" > "${localsorted}"
+sort -k2 "${mirrorhash}" > "${mirrorsorted}"
 
 ##############################################################################
 # 2) Go through the hashes file, comparing with our current copy to see
-# which data files we need to download. 
+# which data files we need to download.
 ##############################################################################
-PREFIX=${LOCALHASHDIR}/${YYYYMM}_bas_data.
-UPDATED_BAS=${PREFIX}updated_bas
+PREFIX=${LOCALHASHDIR}/${YYYYMM}_${mirror}_data.
+UPDATED_MIRROR=${PREFIX}updated_${mirror}
 UPDATED_USASK=${PREFIX}updated_usask
 DIFFERENT_FILES=${PREFIX}different
 NOT_AT_USASK=${PREFIX}not_at_usask
 HASHES_NOT_AT_USASK=${PREFIX}hashes_not_at_usask
-NOT_AT_BAS=${PREFIX}not_at_bas
+NOT_AT_MIRROR=${PREFIX}not_at_${mirror}
 BLOCKED_FILES=${PREFIX}blocked
 FAILED_HASHES=${PREFIX}failed_hashes
 FAILED_FILES=${PREFIX}failed
 TO_DOWNLOAD=${PREFIX}to_download
 FAILED_UNIQ=${PREFIX}failed_uniq
 
-# This will contain files that are either different, or exist on the bas mirror but not usask
-diff -n ${localsorted} ${bassorted} | grep rawacf > ${UPDATED_BAS} 2>> ${LOGFILE}
-# This will contain files that are either different, or exist on the usask mirror but not bas
-diff -n ${bassorted} ${localsorted} | grep rawacf > ${UPDATED_USASK} 2>> ${LOGFILE}
+# This will contain files that are either different, or exist on the external mirror but not usask
+diff -n ${localsorted} ${mirrorsorted} | grep rawacf > ${UPDATED_MIRROR} 2>> ${LOGFILE}
+# This will contain files that are either different, or exist on the usask mirror but not ext mirror
+diff -n ${mirrorsorted} ${localsorted} | grep rawacf > ${UPDATED_USASK} 2>> ${LOGFILE}
 # This will contain files that are different but exist at both sites
-cat ${UPDATED_BAS} ${UPDATED_USASK} | sort -s -k2,2 | uniq -d -f1 > ${DIFFERENT_FILES} 2>> ${LOGFILE}
-# This will contain files that bas has, but usask doesn't **** NO HASHES IN THE LIST ****
-cat ${UPDATED_BAS} ${DIFFERENT_FILES} | sort -s -k2,2 | uniq -u -f1 | awk -F' ' '{print $2}' > ${NOT_AT_USASK} 2>> ${LOGFILE}
-# This will contain files that bas has, but usask doesn't 
-cat ${UPDATED_BAS} ${DIFFERENT_FILES} | sort -s -k2,2 | uniq -u -f1 > ${HASHES_NOT_AT_USASK} 2>> ${LOGFILE}
-# This will contain files that usask has, but bas doesn't
-cat ${UPDATED_USASK} ${DIFFERENT_FILES} | sort -s -k2,2 | uniq -u -f1 > ${NOT_AT_BAS} 2>> ${LOGFILE}
-# This will contain files that bas has, that usask doesn't, that are blocked ** NO HASHES IN THE LIST **
+cat ${UPDATED_MIRROR} ${UPDATED_USASK} | sort -s -k2,2 | uniq -d -f1 > ${DIFFERENT_FILES} 2>> ${LOGFILE}
+# This will contain files that ext mirror has, but usask doesn't **** NO HASHES IN THE LIST ****
+cat ${UPDATED_MIRROR} ${DIFFERENT_FILES} | sort -s -k2,2 | uniq -u -f1 | awk -F' ' '{print $2}' > ${NOT_AT_USASK} 2>> ${LOGFILE}
+# This will contain files that ext mirror has, but usask doesn't
+cat ${UPDATED_MIRROR} ${DIFFERENT_FILES} | sort -s -k2,2 | uniq -u -f1 > ${HASHES_NOT_AT_USASK} 2>> ${LOGFILE}
+# This will contain files that usask has, but ext mirror doesn't
+cat ${UPDATED_USASK} ${DIFFERENT_FILES} | sort -s -k2,2 | uniq -u -f1 > ${NOT_AT_MIRROR} 2>> ${LOGFILE}
+# This will contain files that ext mirror has, that usask doesn't, that are blocked ** NO HASHES IN THE LIST **
 cat ${LOCALBLDIR}/*.txt | sort | uniq > ${BLOCKED_FILES}.tmp 2>> ${LOGFILE}
 cat ${NOT_AT_USASK} ${BLOCKED_FILES}.tmp | sort | uniq -d > ${BLOCKED_FILES} 2>> ${LOGFILE}
-# This will contain files that bas has, that usask doesn't, or that are different, that have failed dmap, bzip2, etc checks
-# First, get unique set of failed files in the failed files list. 
-# The -w70 flag is to only compare the first 70 characters of the hashes_not_at_usask and failed_uniq file 
-# concatenation, since the failed_uniq file also contains the error message. The sha1sum is 160 bits or 40 hex 
-# characters long, then  there are two spaces and then the filename which is either 31 or 33 characters long. 
+# This will contain files that ext mirror has, that usask doesn't, or that are different, that have failed dmap, bzip2, etc checks
+# First, get unique set of failed files in the failed files list.
+# The -w70 flag is to only compare the first 70 characters of the hashes_not_at_usask and failed_uniq file
+# concatenation, since the failed_uniq file also contains the error message. The sha1sum is 160 bits or 40 hex
+# characters long, then  there are two spaces and then the filename which is either 31 or 33 characters long.
 # It's enough to compare up to the 70th character which would be into the 'rawacf.bz2' part of the filename.
 cat ${LOCALFAILEDDIR}/*txt | sort -k2 | uniq > ${FAILED_UNIQ} 2>> ${LOGFILE}
-cat ${UPDATED_BAS} ${FAILED_UNIQ} | sort -k2 | uniq -d -w70  > ${FAILED_HASHES} 2>> ${LOGFILE}
+cat ${UPDATED_MIRROR} ${FAILED_UNIQ} | sort -k2 | uniq -d -w70  > ${FAILED_HASHES} 2>> ${LOGFILE}
 # This will contain the failed files without hashes
 cat ${FAILED_HASHES} | awk -F' ' '{print $2}' > ${FAILED_FILES} 2>> ${LOGFILE}
 # This will contain files that bas has, that usask doesn't, that are not blocked or failed ** NO HASHES IN THE LIST **
@@ -275,7 +263,7 @@ cat ${NOT_AT_USASK} ${BLOCKED_FILES} ${FAILED_FILES} | sort | uniq -u > ${TO_DOW
 # Variables to store the number of rawacfs in each file defined above
 # wc -l outputs # of lines and filepath separated by a space
 totalUpdated=$(wc -l ${NOT_AT_USASK} | awk -F' ' '{print $1}')
-totalMissing_all=$(wc -l ${NOT_AT_BAS} | awk -F' ' '{print $1}')
+totalMissing_all=$(wc -l ${NOT_AT_MIRROR} | awk -F' ' '{print $1}')
 totalDifferent=$(wc -l ${DIFFERENT_FILES} | awk -F' ' '{print $1}')
 totalBlocked=$(wc -l ${BLOCKED_FILES} | awk -F' ' '{print $1}')
 totalFailed=$(wc -l ${FAILED_FILES} | awk -F' ' '{print $1}')
@@ -285,67 +273,67 @@ totalToDownload=$(wc -l ${TO_DOWNLOAD} | awk -F' ' '{print $1}')
 day_threshold=3
 totalOldMissingFiles=0
 
-# Only execute this block if there is at least one file that BAS is missing
-if [[ ${totalMissing_all} -gt 0 ]] 
+# Only execute this block if there is at least one file that mirror is missing
+if [[ ${totalMissing_all} -gt 0 ]]
 then
 	missing_files_string=""
-  # Store the default IFS value, then change IFS to separate strings by new line
+	# Store the default IFS value, then change IFS to separate strings by new line
 	DEFAULT_IFS=${IFS}
 	IFS=$'\n'
-  # New IFS allows loop over [hash1 file1, hash2 file2, etc.] rather than [hash1, file1, hash2, file2, etc.]
-	for f in $(cat ${NOT_AT_BAS})
-	do 
-    # Parse date from filename (second entry in line), split filename by '.' and first entry is yyyymmdd
-		file_date=$(echo $f | awk -F' ' '{print $2}' | awk -F'.' '{print $1}')
+	# New IFS allows loop over [hash1 file1, hash2 file2, etc.] rather than [hash1, file1, hash2, file2, etc.]
+	for f in $(cat ${NOT_AT_MIRROR})
+	do
+	# Parse date from filename (second entry in line), split filename by '.' and first entry is yyyymmdd
+		file_date=$(echo "$f" | awk -F' ' '{print $2}' | awk -F'.' '{print $1}')
 		date_threshold=$(date --date="$day_threshold days ago" +%Y%m%d)
-    # Check if the missing file is more than 3 days old
+	# Check if the missing file is more than 3 days old
 		if [[ $date_threshold -ge $file_date ]]
 		then
-      # Append missing file [hash filename] to missing_files_string and increment missing files count
+	# Append missing file [hash filename] to missing_files_string and increment missing files count
 			missing_files_string="$missing_files_string\n$f"
-			totalOldMissingFiles=$(expr ${totalOldMissingFiles} + 1)
+			totalOldMissingFiles=$((totalOldMissingFiles + 1))
 		fi
 	done
-  # Reset IFS back to default
+	# Reset IFS back to default
 	IFS=${DEFAULT_IFS}
-  # Check if any of the missing files are more than 3 days old. If so, log and email
+	# Check if any of the missing files are more than 3 days old. If so, log and email
 	if [[ ${totalOldMissingFiles} -gt 0 ]]
 	then
-		EMAILBODY="BAS is missing files older than $day_threshold days:\n${missing_files_string}"
-		EMAILSUBJECT2="${EMAILSUBJECT} bas missing files older than $day_threshold days"
+		EMAILBODY="${MIRROR} is missing files older than $day_threshold days:\n${missing_files_string}"
+		EMAILSUBJECT2="${EMAILSUBJECT} ${mirror} missing files older than $day_threshold days"
 		echo -e ${EMAILBODY} >> ${LOGFILE}
 		send_email "${EMAILSUBJECT2}" "${EMAILBODY}"
 	fi
 fi
-# Log and send an email if BAS has any different files
+# Log and send an email if mirror has any different files
 if [[ ${totalDifferent} -gt 0 ]]
 then
-	different_files_string=`cat ${DIFFERENT_FILES}`
-	EMAILBODY="BAS has different files:\n${different_files_string}"
-	EMAILSUBJECT3="${EMAILSUBJECT} bas different files"
-	echo -e ${EMAILBODY} >> ${LOGFILE}
+	different_files_string=$(cat ${DIFFERENT_FILES})
+	EMAILBODY="${MIRROR} has different files:\n${different_files_string}"
+	EMAILSUBJECT3="${EMAILSUBJECT} ${mirror} different files"
+	echo -e "${EMAILBODY}" >> "${LOGFILE}"
 	send_email "${EMAILSUBJECT3}" "${EMAILBODY}"
 fi
-# Log and send an email if BAS has any blocked files
+# Log and send an email if mirror has any blocked files
 if [[ ${totalBlocked} -gt 0 ]]
 then
-	blocked_files_string=`cat ${BLOCKED_FILES}`
-	EMAILBODY="BAS has blocked files:\n${blocked_files_string}"
-	EMAILSUBJECT4="${EMAILSUBJECT} bas blocked files"
-	echo -e ${EMAILBODY} >> ${LOGFILE}
+	blocked_files_string=$(cat ${BLOCKED_FILES})
+	EMAILBODY="${MIRROR} has blocked files:\n${blocked_files_string}"
+	EMAILSUBJECT4="${EMAILSUBJECT} ${mirror} blocked files"
+	echo -e "${EMAILBODY}" >> "${LOGFILE}"
 	send_email "${EMAILSUBJECT4}" "${EMAILBODY}"
 fi
-# Log and send an email if BAS has any failed files
+# Log and send an email if mirror has any failed files
 if [[ ${totalFailed} -gt 0 ]]
 then
-	failed_files_string=`cat ${FAILED_HASHES}`
-	EMAILBODY="BAS has failed files:\n${failed_files_string}"
-	EMAILSUBJECT5="${EMAILSUBJECT} bas failed files"
-	echo -e ${EMAILBODY} >> ${LOGFILE}
+	failed_files_string=$(cat ${FAILED_HASHES})
+	EMAILBODY="${MIRROR} has failed files:\n${failed_files_string}"
+	EMAILSUBJECT5="${EMAILSUBJECT} ${mirror} failed files"
+	echo -e "${EMAILBODY}" >> "${LOGFILE}"
 	send_email "${EMAILSUBJECT5}" "${EMAILBODY}"
 fi
-# Log and exit script if there are no files to download from BAS
-if [[ ${totalToDownload} -eq 0 ]] 
+# Log and exit script if there are no files to download from mirror
+if [[ ${totalToDownload} -eq 0 ]]
 then
 	EMAILBODY="No files to download. Exiting\n"
 	EMAILSUBJECT="${EMAILSUBJECT} no files to download"
@@ -361,23 +349,22 @@ fi
 ##############################################################################
 SFTPBATCH=${HOLDINGDIR}/sftp.batch
 RSYNCBATCH=${HOLDINGDIR}/rsync_${yyyy}${mm}.batch
-echo "Building sftp/rsync batch files to download files..." >> ${LOGFILE}
+echo "Building sftp/rsync batch files to download files..." >> "${LOGFILE}"
 # Empty any previous batch file first.
-echo -n > ${SFTPBATCH}
-echo -n > ${RSYNCBATCH}
-# We need to place get commands for each file required
+echo -n > "${SFTPBATCH}"
+echo -n > "${RSYNCBATCH}"
+# We need to place 'get' commands for each file required
 totalFiles=0
 for ITEM in $(cat ${TO_DOWNLOAD})
 do
-	echo "-get ${REMOTEDIR}/${yyyy}/${mm}/${ITEM} ${HOLDINGDIR}" >> ${SFTPBATCH}
-	echo "${REMOTEDIR}/${yyyy}/${mm}/${ITEM}" >> ${RSYNCBATCH}
-        # Increment files to download counter
-	totalFiles=$(expr ${totalFiles} + 1)
+	echo "-get ${REMOTEDIR}/${yyyy}/${mm}/${ITEM} ${HOLDINGDIR}" >> "${SFTPBATCH}"
+	echo "${REMOTEDIR}/${yyyy}/${mm}/${ITEM}" >> "${RSYNCBATCH}"
+	# Increment files to download counter
+	totalFiles=$((totalFiles + 1))
 done
 # Finally, we exit from sftp
-echo "exit" >> ${SFTPBATCH}
-echo "Total new files: ${totalFiles}" >> ${LOGFILE}
-
+echo "exit" >> "${SFTPBATCH}"
+echo "Total new files: ${totalFiles}" >> "${LOGFILE}"
 
 ##############################################################################
 # Finally, we are ready to execute the sftp batch file and download the
@@ -385,40 +372,39 @@ echo "Total new files: ${totalFiles}" >> ${LOGFILE}
 # if there were zero files that required downloading.
 ##############################################################################
 SFTPERRORS=${HOLDINGDIR}/sftp.errors
-echo -n > $SFTPERRORS
+echo -n > "$SFTPERRORS"
 # Make sure there is at least one file in sftp batch before executing
 if [[ ${totalFiles} -gt 0 ]]
 then
-	echo "Getting files..." >> ${LOGFILE}
-	${SFTP} -b ${SFTPBATCH} ${USER}@${REMOTEHOST} >> ${LOGFILE} 2> ${SFTPERRORS} 
+	echo "Getting files..." >> "${LOGFILE}"
+	${SFTP} -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
 else
-        # The script already checked and exited if totalToDownload -eq 0
-        # Should never hit this condition
+	# The script already checked and exited if totalToDownload -eq 0
+	# Should never hit this condition
 	EMAILBODY="${EMAILBODY}\n NO NEW FILES - YOU SHOULD NEVER SEE THIS"
 	EMAILSUBJECT="${EMAILSUBJECT} ERROR"
-	echo -e ${EMAILBODY} >> ${LOGFILE}
+	echo -e "${EMAILBODY}" >> "${LOGFILE}"
 	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 	exit
 fi
 if [[ -s $SFTPERRORS ]]
 then
-	ERRORS_STRING=$(cat $SFTPERRORS)
+	ERRORS_STRING=$(cat "${SFTPERRORS}")
 	EMAILBODY="${EMAILBODY}\nSFTP errors\n$ERRORS_STRING"
 	EMAILSUBJECT="${EMAILSUBJECT} ERROR"
-	echo -e ${EMAILBODY} >> ${LOGFILE}
+	echo -e "${EMAILBODY}" >> "${LOGFILE}"
 	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
 SYNCTIMEEND=$(date +%s)
 
 ##############################################################################
-# Cleanup and information 
+# Cleanup and information
 ##############################################################################
 ENDTIME=$(date +%s)
-HASHSYNCTIME=$(expr ${HASHTIMEEND} - ${STARTTIME})
-SYNCTIME=$(expr ${SYNCTIMEEND} - ${HASHTIMEEND})
-TOTALTIME=$(expr ${ENDTIME} - ${STARTTIME})
+HASHSYNCTIME=$((HASHTIMEEND - STARTTIME))
+SYNCTIME=$((SYNCTIMEEND - HASHTIMEEND))
+TOTALTIME=$((ENDTIME - STARTTIME))
 
-echo "Time to download hashes files: 	${HASHSYNCTIME} seconds" >> ${LOGFILE}
-echo "Time to download ${totalFiles} rawacf files: 	${SYNCTIME} seconds" >> ${LOGFILE}
-echo "Total time to execute script : 	${TOTALTIME} seconds" >> ${LOGFILE}
-
+echo "Time to download hashes files: 	${HASHSYNCTIME} seconds" >> "${LOGFILE}"
+echo "Time to download ${totalFiles} rawacf files: 	${SYNCTIME} seconds" >> "${LOGFILE}"
+echo "Total time to execute script : 	${TOTALTIME} seconds" >> "${LOGFILE}"

@@ -213,8 +213,8 @@ then
 	EMAILBODY="Error: NSSC hash file error. Exiting\n"
 	EMAILSUBJECT="${EMAILSUBJECT} NSSC hash file error"
  	echo -e ${EMAILBODY} >> ${LOGFILE}
-        send_email "${EMAILSUBJECT}" "${EMAILBODY}"
-        exit
+  send_email "${EMAILSUBJECT}" "${EMAILBODY}"
+  exit
 fi
 
 # Date in seconds after epoch for timing calculations at the end of the script

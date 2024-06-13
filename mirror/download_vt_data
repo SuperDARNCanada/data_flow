@@ -178,7 +178,7 @@ HASHESERRORS=hashes.errors
 ##############################################################################
 echo "Getting hashes for remote files..." >> ${LOGFILE}
 REMOTEHASHESSTART=$(date +%s)
-cd ${LOCALRADARDIR}
+cd ${LOCALRADARDIR} || exit
 # This will write message to stderr if sha1sum fails
 # ssh into VT and hash the rawacf files for the given radar, output to hashes.remote
 ssh ${USER}@${REMOTEHOST} "cd ${REMOTEDIR}; ${HASHPROG} *${RADAR}*rawacf.bz2" > ${HASHESFILE} 2> ${HASHESERRORS}
@@ -233,6 +233,10 @@ echo -n > ${FILESTODOWNLOAD}
 echo -n > ${FILESTODELETE}
 echo -n > ${UPDATEDRAWFILES}
 echo -n > ${UNKNOWNLINES}
+# *** WE CANNOT USE THIS PIPE METHOD - IT SPAWNS SUBSHELL WITH DIFFERENT ENVIRONMENT ***
+# Instead, we must change the separator temporarily so we can
+# use the 'for LINE in $TEXT' method that will separate on newlines.
+#cat ${HASHESCHECKFILE} | while read LINE;
 # Store default IFS before changing IFS to separate on new lines
 OIFS="${IFS}"
 NIFS=$'\n'
@@ -278,7 +282,7 @@ IFS="${OIFS}"
 # command file, ".batch".
 ##############################################################################
 SFTPBATCH=${HASHESFILE}.batch
-echo "Building sftp batch file for downloads..." >> ${LOGFILE}
+echo "Building sftp batch file for downloads..." >> "${LOGFILE}"
 # Empty any previous batch file first.
 echo -n > ${SFTPBATCH}
 # First we need to change to proper directory
@@ -288,8 +292,9 @@ totalFiles=0
 for ITEM in $(cat ${FILESTODOWNLOAD})
 do
 	echo "-get ${ITEM}" >> ${SFTPBATCH}
-        # Incremenet count of total # of files to download from VT
-	totalFiles=$(expr ${totalFiles} + 1)
+  # Increment count of total # of files to download from VT
+	#totalFiles=$(expr ${totalFiles} + 1)
+	totalFiles=$((totalFiles + 1))
 done
 # Finally we exit from sftp
 echo "exit" >> ${SFTPBATCH}
@@ -377,8 +382,9 @@ totalFilesDelete=0
 for ITEM in $(cat ${FILESTODELETEFINAL})
 do
 	echo "-rm ${ITEM}" >> ${SFTPBATCHDELETE}
-        # Increment count of # of files to remove from VT
-	totalFilesDelete=$(expr ${totalFilesDelete} + 1)
+  # Increment count of # of files to remove from VT
+	#totalFilesDelete=$(expr ${totalFilesDelete} + 1)
+	totalFilesDelete=$((totalFilesDelete + 1))
 done
 # Finally we exit from sftp
 echo "exit" >> ${SFTPBATCHDELETE}
@@ -409,31 +415,31 @@ if [[ $(cat ${HASHESERRORS} 2> /dev/null) != "" ]];
 then
 	EMAILFLAG=1
 	EMAILBODY="${EMAILBODY}\n\nErrors from file hashing:\n"
-	EMAILBODY="${EMAILBODY}`cat ${HASHESERRORS}`"
+	EMAILBODY="${EMAILBODY}$(cat ${HASHESERRORS})"
 fi
 if [[ $(cat ${UPDATEDRAWFILES} 2> /dev/null) != "" ]];
 then
 	EMAILFLAG=1
 	EMAILBODY="${EMAILBODY}\n\nFiles that we have but don't match remote:\n"
-	EMAILBODY="${EMAILBODY}`cat ${UPDATEDRAWFILES}`"
+	EMAILBODY="${EMAILBODY}$(cat ${UPDATEDRAWFILES})"
 fi
 if [[ $(cat ${UNKNOWNLINES} 2> /dev/null) != "" ]];
 then
 	EMAILFLAG=1
 	EMAILBODY="${EMAILBODY}\n\nUnknown output lines of hash checking:\n"
-	EMAILBODY="${EMAILBODY}`cat ${UNKNOWNLINES}`"
+	EMAILBODY="${EMAILBODY}$(cat ${UNKNOWNLINES})"
 fi
 if [[ $(cat ${SFTPERRORS} 2> /dev/null) != "" ]];
 then
 	EMAILFLAG=1
 	EMAILBODY="${EMAILBODY}\n\nSFTP Downloading errors:\n"
-	EMAILBODY="${EMAILBODY}`cat ${SFTPERRORS}`"
+	EMAILBODY="${EMAILBODY}$(cat ${SFTPERRORS})"
 fi
 if [[ $(cat ${SFTPERRORSDELETE} 2> /dev/null) != "" ]];
 then
 	EMAILFLAG=1
 	EMAILBODY="${EMAILBODY}\n\nSFTP Delete errors:\n"
-	EMAILBODY="${EMAILBODY}`cat ${SFTPERRORSDELETE}`"
+	EMAILBODY="${EMAILBODY}$(cat ${SFTPERRORSDELETE})"
 fi
 
 #rm -v ${HASHESFILE} 
@@ -449,13 +455,13 @@ fi
 #rm -v ${FILESTODELETEFINAL} 
 #rm -v ${SFTPBATCHDELETE} 
 #rm -v ${SFTPERRORSDELETE} 
-REMOTEHASHESTIME=$(expr ${REMOTEHASHESEND} - ${REMOTEHASHESSTART})
-HASHESTIME=$(expr ${HASHESTIMEEND} - ${HASHESTIMESTART})
-DOWNLOADTIME=$(expr ${DOWNLOADTIMEEND} - ${DOWNLOADTIMESTART})
-HASHESTIMEDELETE=$(expr ${HASHESTIMEENDDELETE} - ${HASHESTIMESTARTDELETE})
-DELETETIME=$(expr ${DELETETIMEEND} - ${DELETETIMESTART})
+REMOTEHASHESTIME=$((REMOTEHASHESEND - REMOTEHASHESSTART))
+HASHESTIME=$((HASHESTIMEEND - HASHESTIMESTART))
+DOWNLOADTIME=$((DOWNLOADTIMEEND - DOWNLOADTIMESTART))
+HASHESTIMEDELETE=$((HASHESTIMEENDDELETE - HASHESTIMESTARTDELETE))
+DELETETIME=$((DELETETIMEEND - DELETETIMESTART))
 NOW=$(date +%s)
-SCRIPTTIME=$(expr ${NOW} - ${STARTTIME})
+SCRIPTTIME=$((NOW - STARTTIME))
 echo "Time to calculate remote hashes: ${REMOTEHASHESTIME} seconds" >> ${LOGFILE}
 echo "Time to compares hashes: ${HASHESTIME} seconds" >> ${LOGFILE}
 echo "Time to download ${totalFiles} files: ${DOWNLOADTIME} seconds" >> ${LOGFILE}
