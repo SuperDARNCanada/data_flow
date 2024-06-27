@@ -1484,13 +1484,13 @@ if __name__ == '__main__':
     # Check which files succeeded in the transfer
     succeeded = gk.get_task_successful_transfers()  # If a file was skipped it won't appear in this
     # Setup filenames as keys for succeeded and skipped dictionaries
-    succeeded_files_dict = {str(info['destination_path'].split('/')[-1]): {} for info in succeeded}
-    skipped_files_dict = {filename: {} for filename in files_to_upload_dict if filename not in succeeded_files_dict}
+    succeeded_files = [str(info['destination_path'].split('/')[-1]) for info in succeeded]
+    skipped_files = [filename for filename in files_to_upload_dict if filename not in succeeded_files]
 
-    print("Skipped files list: {}".format(skipped_files_dict.keys()))
+    print("Skipped files list: {}".format(skipped_files))
     print("Skipped files: {}".format(gk.get_num_files_skipped()))
-    print("Transferred files: {}".format(len(succeeded_files_dict.keys())))
-    print("Total files: {}".format(gk.get_num_files_skipped() + len(succeeded_files_dict.keys())))
+    print("Transferred files: {}".format(len(succeeded_files)))
+    print("Total files: {}".format(gk.get_num_files_skipped() + len(succeeded_files)))
     print("Files to upload: {}".format(len(files_to_upload)))
 
     # Update the hashes files with the succeeded files list and upload to the mirror.
@@ -1499,54 +1499,22 @@ if __name__ == '__main__':
     yearmonth.sort()
     yearmonth_hash_dict = {ym: {} for ym in yearmonth}
 
-    for filename in succeeded_files_dict.keys():
-        succeeded_files_dict[filename].update(files_to_upload_dict[filename])
-        yyyymm = succeeded_files_dict[filename]['yearmonth']
+    # All the metadata of interest below is stored in files_to_upload_dict
+    for filename in succeeded_files:
+        ym = files_to_upload_dict[filename]['yearmonth']
+        data_hash = files_to_upload_dict[filename]['hash']
         remove("{}/{}".format(gk.get_holding_dir(), filename))
-        yearmonth_hash_dict[yyyymm] += succeeded_files_dict[filename]['hash'] + "  " + filename + "\n"
-
-    # Fill skipped files dict with metadata from files_tp_upload
-    for filename in skipped_files_dict.keys():
-        skipped_files_dict[filename].update(files_to_upload_dict[filename])
-
-    for filename in skipped_files_dict.keys():
-        yyyymm = skipped_files_dict[filename]['yearmonth']
-        hashfile = "{}.hashes".format(yyyymm)
-        hashfile_path = "{}/{}".format(gk.get_working_dir(), hashfile)
-        if not isfile(hashfile_path):
-            if new_hash_file:
-                open(hashfile_path, 'w')
-            else:
-                # Bad news! We can't find the hash file!
-                msg = "Can't find hash file that should exist! Trying to download..."
-                print(msg)
-                email_flag = 1
-                gk.email_message += msg
-                gk.get_hashes(int(skipped_files_dict[filename]['year']),
-                              int(skipped_files_dict[filename]['month']), dest_path=gk.get_working_dir())
-                # Couldn't get hash file! Email and continue to next skipped file in list
-                if not gk.wait_for_last_task():
-                    msg = "Attempt to get hashes for {} didn't complete. " \
-                          "Please try again".format(hashfile)
-                    print(msg)
-                    gk.email_message += msg
-
-        if filename not in open(hashfile_path).read():
-            # Add it to the hashes file and print error message
-            msg = "Skipped file {} wasn't in hashes file. Adding it now.".format(filename)
-            email_flag = 1
-            gk.email_message += msg
-            yearmonth_hash_dict[yyyymm] += skipped_files_dict[filename]['hash'] + "  " + filename + "\n"
+        yearmonth_hash_dict[ym] += data_hash + "  " + filename + "\n"
 
     print("List of updated hash files: {}".format(yearmonth_hash_dict.keys()))
     # Update yyyymm.hashes and upload to mirror
     for ym, hash_string in yearmonth_hash_dict.items():
         hashfile_path = "{}/{}.hashes".format(gk.get_working_dir(), ym)
         if hash_string is not "":
+            hash_string.strip("\n")
             with open(hashfile_path, 'a') as f:
-                hash_string.strip("\n")
                 f.write("{}".format(hash_string))
-            gk.put_hashes(ym[0:4], ym[4:6],
+            gk.put_hashes(int(ym[0:4]), int(ym[4:6]),
                           source_path=gk.get_working_dir())
             while not gk.wait_for_last_task():
                 print("Still waiting for hashes task to finish... ")
