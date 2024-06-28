@@ -30,6 +30,7 @@ import time
 import smtplib
 from email.mime.text import MIMEText
 import pydarnio
+import logging
 
 # Make sure there is only one instance running of this script
 from tendo import singleton
@@ -46,6 +47,24 @@ if isfile(PERSONAL_UUID_FILENAME):
 
 # Client ID retrieved from https://auth.globus.oorg/v2/web/developers
 gatekeeper_app_CLIENT_ID = 'bc9d5b7a-6592-4156-bfb8-aeb0fc4fb07e'
+
+
+def extendable_logger(log_name, file_name, level=logging.INFO):
+    """ Will set up and format a logger referenced as such: logger.info(msg), logger.warning(msg), etc.
+
+    :param log_name: The name of the log file to be written to
+    :param file_name: The identifier by which to reference the log file, written in each log
+    :param level: Base logging level, default to INFO
+    :returns: Logger to be used
+    """
+    handler = logging.FileHandler(log_name)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    specified_logger = logging.getLogger(file_name)
+    specified_logger.setLevel(level)
+    specified_logger.addHandler(handler)
+    return specified_logger
+
 
 def month_year_iterator(start_month, start_year, end_month, end_year):
     """ Found on stackoverflow by user S.Lott.
@@ -139,6 +158,9 @@ class Gatekeeper(object):
 
         self.cur_year = datetime.now().year
         self.cur_month = datetime.now().month
+        self.cur_day = datetime.now().day
+        self.cur_hour = datetime.now().hour
+        self.cur_minute = datetime.now().minute
         self.cur_date = datetime.now().strftime("%Y%m%d")
         self.possible_data_types = ['raw', 'dat']
         
@@ -1035,10 +1057,15 @@ class Gatekeeper(object):
 
 if __name__ == '__main__':
     email_flag = 0
+
+    ###################################################################################################################
+    # Step 1)
+    # Check for refresh token and relevant consents
+
     # If we have refresh token, try initializing gatekeeper object with it for auto authentication
     if isfile(TRANSFER_RT_FILENAME):
         with open(TRANSFER_RT_FILENAME) as f:
-            print("Have refresh token for automatic authentication")
+            print("Found refresh token for automatic authentication")
             gk = Gatekeeper(gatekeeper_app_CLIENT_ID, transfer_rt=f.readline())
     # Otherwise, manually authenticate and get a refresh token for future auto authentication
     else:
@@ -1052,18 +1079,34 @@ if __name__ == '__main__':
                   "and you must login a second time (dumb, I know) to get those consents.")
         gk.get_auth_with_login(gk.consents)
 
+    ###################################################################################################################
+    # Step 2)
+    # Setup logger and check script arguments as well as existence of various directories
+
+    # Setup logger
+    LOGDIR = "/home/dataman/logs/globus"
+    logfile = ("{}/{:04d}/{:02d}/{:04d}{:02d}{:02d}.{:02d}{:02d}_globus_gatekeeper.log".format(LOGDIR,
+                                                                                         gk.cur_year, gk.cur_month,
+                                                                                         gk.cur_year, gk.cur_month,
+                                                                                         gk.cur_day, gk.cur_hour,
+                                                                                         gk.cur_minute))
+    function = "Gatekeeper"
+    logger = extendable_logger(logfile, function, level=logging.INFO)
+
     # Clear out working directory /home/dataman/tmp/* before use
     if isdir(gk.get_working_dir()):
         shutil.rmtree(gk.get_working_dir())
         mkdir(gk.get_working_dir())
+        logger.info("Clearing out working directory: {}".format(gk.get_working_dir()))
     if not isdir(gk.get_working_dir()):
         msg = "Directory {} DNE".format(gk.get_working_dir())
         gk.email_subject += msg
         gk.send_email()
+        logger.error(msg)
         sys.exit(msg)
 
-    print("Number of args: {}".format(len(sys.argv)))
-    print("Args: {}".format(str(sys.argv)))
+    logger.info("Number of args: {}".format(len(sys.argv)))
+    logger.info("Args: {}".format(str(sys.argv)))
 
     if (len(sys.argv)) == 3:
         gk.set_holding_dir(sys.argv[1])
@@ -1079,47 +1122,66 @@ if __name__ == '__main__':
         gk.email_subject += "Argument error"
         gk.email_message += msg
         gk.send_email()
+        logger.error(msg)
         sys.exit(msg)
 
-    print("Checking for holding and mirror directories...")
+    logger.info("Checking for holding and mirror directories...")
 
     if not isdir(gk.get_holding_dir()):
         msg = "Holding dir {} DNE".format(gk.get_holding_dir())
         gk.email_subject += msg
         gk.send_email()
+        logger.error(msg)
         sys.exit(msg)
 
     if not gk.check_for_file_existence(gk.get_mirror_root_dir()):
         msg = "Mirror root dir {} DNE".format(gk.get_mirror_root_dir())
         gk.email_subject += msg
         gk.send_email()
+        logger.error(msg)
         sys.exit(msg)
 
-    print("Getting master hashes file and blocklist...")
+    ###################################################################################################################
+    # Step 3)
+    # Get files from mirror
+    # This includes master hashes, failed files list and blocklist directory
+
     # Get master hashes file
+    logger.info("Getting master hashes file...")
     gk.get_master_hashes()
     if not gk.wait_for_last_task():
         msg = "get_master_hashes timeout"
         gk.email_subject += msg
         gk.send_email()
+        logger.error(msg)
         sys.exit(msg)
 
     # Get failed files list
+    logger.info("Getting failed files list (all_failed.txt)...")
     gk.get_failed()
     if not gk.wait_for_last_task():
         msg = "get_failed timeout"
         gk.email_subject += msg
         gk.send_email()
+        logger.error(msg)
         sys.exit(msg)
 
     # Recursively get blocklist folder and generate list of blocked files
+    logger.info("Getting blocklist directory...")
     gk.get_blocklist(dest_path=gk.get_working_dir() + "/blocklist/")
     if not gk.wait_for_last_task(timeout_s=120):
         msg = "get_blocklist timeout"
         gk.email_subject += msg
         gk.send_email()
+        logger.error(msg)
         sys.exit(msg)
-    # print gk.last_transfer_result
+
+    ###################################################################################################################
+    # Step 4)
+    # Make a list of blocked data files from the blocklist/ directory obtained above
+    # Make a list of files_to_upload consisting of all rawacf files in the holding directory
+    # Remove all blocked data files from files_to_upload
+
     # Store all txt files from blocklist directory
     blocklist_files = []
     for f in listdir(gk.get_working_dir() + "/blocklist/"):
@@ -1135,16 +1197,18 @@ if __name__ == '__main__':
                 blocked_data.append(line.strip('\n').strip('\r'))
 
     # Get list of files to upload from the holding directory
+    # Create files to upload dictionary where keys are filenames and values are empty dictionaries
+    # Values will be set in Step 5) after the holding directory is hashed
     files_to_upload = gk.list_of_files_to_upload()
     files_to_upload.sort()
     files_to_upload_dict = {file: {} for file in files_to_upload}
-    # Remove files from list that appear in the blocklist and inform user
+    # Remove from files_to_upload if file appears in the blocklist and inform user
     blocked_files_to_remove = []
     for data_file in sorted(list(files_to_upload_dict.keys())):
         for blocked_file in blocked_data:
             if data_file in blocked_file:
                 blocked_files_to_remove.append(data_file)
-                print("Removed blocked file: {} from files to upload".format(data_file))
+                logger.info("Removed blocked file: {} from files to upload".format(data_file))
     blocked_files_to_remove = list(set(blocked_files_to_remove))
     for file_to_remove in blocked_files_to_remove:
         files_to_upload_dict.pop(file_to_remove)
@@ -1159,18 +1223,21 @@ if __name__ == '__main__':
         blocked_subdirectory = "{}/{}".format(blocked_directory, gk.cur_date)
         if not isdir(blocked_subdirectory):
             mkdir(blocked_subdirectory)
-        print("Moving blocked files to {}".format(blocked_subdirectory))
+        logger.info("Moving blocked files to {}".format(blocked_subdirectory))
         for blocked_file in blocked_files_to_remove:
-            print("Moving {}/{} to {}/{}".format(gk.get_holding_dir(), blocked_file,
-                                                 blocked_subdirectory, blocked_file))
+            logger.info("Moving {}/{} to {}/{}".format(gk.get_holding_dir(), blocked_file,
+                                                       blocked_subdirectory, blocked_file))
             rename("{}/{}".format(gk.get_holding_dir(), blocked_file),
                    "{}/{}".format(blocked_subdirectory, blocked_file))
         gk.email_subject += "Blocked files "
         gk.email_message += "Blocked files:\r\n{}\r\n\r\n".format(blocked_files_to_remove)
         email_flag = 1
 
+    ###################################################################################################################
+    # Step 5)
+    # Hash holding directory and fill files_to_upload dictionary with relevant metadata
+
     # Do a sha1sum on all files in holding directory,
-    # then remove from the list ones that don't pass all the tests
     sha1sum_process = subprocess.Popen("cd {}; sha1sum {}".format(gk.get_holding_dir(),
                                                                   gk.get_sync_pattern()),
                                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -1182,11 +1249,13 @@ if __name__ == '__main__':
     else:
         sha1sum_output = out.split("\n")
         sha1sum_error = err.split("\n")
-    sha1sum_output = [x for x in sha1sum_output if x]  # Remove emtpy items from the sha1sum output
+    # Remove empty items from the sha1sum output
+    sha1sum_output = [x for x in sha1sum_output if x]
     if sha1sum_process.returncode != 0 or len(sha1sum_output) == 0:
         msg = "Error hashing files, probably no files passed"
         gk.email_subject += msg
         gk.send_email()
+        logger.error(msg)
         sys.exit(msg)
 
     # Fill files_to_upload_dict with relevant metadata
@@ -1197,6 +1266,16 @@ if __name__ == '__main__':
                     'yearmonth': filename[0:6], 'hash': data_hash}
         files_to_upload_dict[filename].update(metadata)
 
+    ###################################################################################################################
+    # Step 6)
+    # Get unique list of yyyymm combos from files to upload dictionary
+    # Create yearmonth dictionary to organize files_to_upload by their yearmonth
+    # Loop through yyyymm combos and get the yyyymm.hashes file from the mirror on each iteration
+    # Perform sha1sum comparison between rawacfs in holding dir and recently acquired hashfile in working dir
+    # Handle each file individually depending on the result of the sha1sum comparison
+
+    # Get unique list of yyyymm combos and create dictionary
+    # Keys are yyyymm and values are the files to upload dictionary items corresponding to the given yyyymm
     yearmonth = list(set([filename[0:6] for filename in files_to_upload_dict.keys()]))
     yearmonth.sort()
     yearmonth_dict = {ym: {} for ym in yearmonth}
@@ -1204,33 +1283,28 @@ if __name__ == '__main__':
         d = {k: v for k, v in files_to_upload_dict.items() if k[0:6] == ym}
         yearmonth_dict[ym].update(d)
 
-    # Get appropriate hashes files for YYYYMM for all files in list
-    # Need to go through files_to_upload and find all unique yyyymm combos
-#    yearmonth = list(set([filename[0:6] for filename in files_to_upload]))
-    print("Set of years and months for data files in holding directory:\n{}".format(str(yearmonth)))
+    # Get appropriate hashes files for yyyymm for all files in list
+    logger.info("Set of years and months for data files in holding directory:\n{}".format(str(yearmonth)))
     new_hash_file = False
     non_matching_files = []
-    for hashfile in yearmonth:
-        hash_path = gk.get_hash_file_path(int(hashfile[0:4]), int(hashfile[4:6]))
-        print("Checking if {} exists on mirror...".format(hash_path))
+    for ym in yearmonth:
+        hash_path = gk.get_hash_file_path(int(ym[0:4]), int(ym[4:6]))
+        logger.info("Checking if {} exists on mirror...".format(hash_path))
         if gk.check_for_file_existence(hash_path):
             # Get yyyymm.hashes from mirror to working dir
-            gk.get_hashes(int(hashfile[0:4]), int(hashfile[4:6]), dest_path=gk.get_working_dir())
+            gk.get_hashes(int(ym[0:4]), int(ym[4:6]), dest_path=gk.get_working_dir())
             if not gk.wait_for_last_task():
-                print(
-                    "Get hashes for {} didn't complete. Removing files from files_to_upload".format(
-                        hashfile))
+                logger.warning("Get hashes for {} didn't complete. Removing files from files_to_upload".format(ym))
                 # Remove all files w/ given yyyymm from files_to_upload if get hashes timed out
-                for item in list(yearmonth_dict[yearmonth].keys()):
+                for item in list(yearmonth_dict[ym].keys()):
                     files_to_upload_dict.pop(item)
-                yearmonth_dict.pop(yearmonth)
+                yearmonth_dict.pop(ym)
             else:
-                print("{} hash file retrieved from mirror.".format(hashfile))
-                # sha1sum files in holding_dir and compare to yyyymm.hashes now in working dir
+                logger.info("{} hash file retrieved from mirror.".format(ym))
+                # sha1sum files in holding_dir and compare to yyyymm.hashes now in working dir (-c == compare)
                 command_string = "cd {}; sha1sum -c {}/{}.hashes".format(gk.get_holding_dir(),
                                                                          gk.get_working_dir(),
-                                                                         hashfile)
-                # print("Executing: {}".format(command_string))
+                                                                         ym)
                 sha1sum_process = subprocess.Popen(command_string, shell=True,
                                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 out, err = sha1sum_process.communicate()
@@ -1250,50 +1324,53 @@ if __name__ == '__main__':
                         pass
                     # If hashes do not match, add file to nonmatching files list, remove from files_to_upload
                     elif sha1sum_result.find("FAILED") != -1:
-                        print("{} hash doesn't match. Adding to no match list,"
-                              " and removing from list of files to upload.".format(hashed_file))
+                        logger.warning("{} hash doesn't match. Adding to no match list,"
+                                       " and removing from list of files to upload.".format(hashed_file))
                         non_matching_files.append(hashed_file)
                         files_to_upload_dict.pop(hashed_file)
                     # If hashes match, remove from files_to_upload as it is already on mirror
                     elif sha1sum_result.find("OK") != -1:
-                        print("{} already exists on mirror and hash matches.".format(hashed_file))
+                        logger.info("{} already exists on mirror and hash matches. "
+                                    "Removing from files to upload.".format(hashed_file))
                         files_to_upload_dict.pop(hashed_file)
                         try:
                             remove("{}/{}".format(gk.get_holding_dir(), hashed_file))
                         except OSError as error:
-                            print("Error trying to remove file: {}.".format(error))
+                            logger.error("Error trying to remove file: {}.".format(error))
                     elif sha1sum_result is "":
                         pass
                     else:
-                        print("Error, I don't know how to deal with: {}.".format(sha1sum_result))
+                        logger.warning("Error, I don't know how to deal with: {}.".format(sha1sum_result))
         # If yyyymm.hashes DNE, create it ONLY IF yyyymm is the current year and month
         else:
             # Need to check if this is the current month, otherwise error out
-            if gk.cur_month == int(hashfile[4:6]) and gk.cur_year == int(hashfile[0:4]):
-                print("Hash file for {} doesn't exist, creating new directory.".format(hashfile))
-                gk.create_new_data_dir(hashfile[0:4], hashfile[4:6])
+            if gk.cur_month == int(ym[4:6]) and gk.cur_year == int(ym[0:4]):
+                logger.info("Hash file for {} doesn't exist, creating new directory.".format(ym))
+                gk.create_new_data_dir(ym[0:4], ym[4:6])
                 new_hash_file = True
             else:
                 # Error, previous month's hash files should exist already
-                msg = "Hash file {} not found".format(hashfile)
+                msg = "Hash file {} not found".format(ym)
                 gk.email_subject += msg
                 gk.send_email()
+                logger.error(msg)
                 sys.exit(msg)
 
-    print("No match list: {}".format(non_matching_files))
+    logger.info("No match list: {}".format(non_matching_files))
 
+    ###################################################################################################################
+    # Step 7)
     # Bzip check all files in list, and do other checks like file size check
     # Create a dictionary of failed_files, the keys are the filenames (string) and the values are
     # the hash and the reason for failure (strings) in a tuple, which is immutable and fixed in size
+
     failed_files = {}
-    # Maybe loop through files_to_upload_dict instead
+    # Loop through files_to_upload_dict as it contains only rawacfs still eligible for transfer
     for filename in files_to_upload_dict:
-        # Need to get just the file name from the sha1sum output. The format is 'hash  filename'
-        # data_file = hash_data_file.strip().split()[1]
-        # data_file_hash = hash_data_file.strip().split()[0]
         data_file = filename
         data_file_hash = files_to_upload_dict[filename]['hash']
-        print("bunzip -t {}".format(data_file))
+        logger.info("bunzip -t {}".format(data_file))
+        # Perform bzip test on data file (-t == test)
         bunzip2_process = subprocess.Popen("cd {}; bunzip2 -t {}".format(gk.get_holding_dir(),
                                                                          data_file),
                                            shell=True, stdout=subprocess.PIPE,
@@ -1309,31 +1386,31 @@ if __name__ == '__main__':
         # Check error code of bzip test and log a relevant error message
         # Remove from files_to_upload if any nonzero error code
         if bunzip2_process.returncode == 1 or bunzip2_process.returncode == 3:
-            print("OUTPUT: {}".format(bunzip2_process_output))
-            print("ERROR: {}".format(str(err)))
+            logger.warning("OUTPUT: {}".format(bunzip2_process_output))
+            logger.warning("ERROR: {}".format(str(err)))
             # File probably not there. Error so let us know
-            print("Error. File {} not found by bunzip2 test. Removing from list.".format(data_file))
+            logger.warning("Error. File {} not found by bunzip2 test. Removing from list.".format(data_file))
             files_to_upload_dict.pop(data_file)
         elif bunzip2_process.returncode == 2:
             # Error with bz2 integrity of file.
-            print("Error. File {} failed the bzip2 test! Removing from list.".format(data_file))
+            logger.warning("Error. File {} failed the bzip2 test! Removing from list.".format(data_file))
             files_to_upload_dict.pop(data_file)
             failed_files[data_file] = (data_file_hash, "Failed BZ2 integrity test")
-        # Check if data file is empty
-        elif filesize == 14 or filesize == 0:  # Header of rawacf is 14 bytes
-            print("File {} empty. Removing from list.".format(data_file))
+        # Check if data file is empty (header of rawacf is 14 bytes)
+        elif filesize == 14 or filesize == 0:
+            logger.warning("File {} empty. Removing from list.".format(data_file))
             files_to_upload_dict.pop(data_file)
             failed_files[data_file] = (data_file_hash, "File contains no records (empty)")
         # Check if data file is smaller than the header (14 bytes)
         elif filesize < 14:
-            print("File {} too small. Removing from list.".format(data_file))
+            logger.warning("File {} too small. Removing from list.".format(data_file))
             files_to_upload_dict.pop(data_file)
             failed_files[data_file] = (data_file_hash, "File contains no records (empty)")
         # If file passed bzip test and is not empty, run bzcat to unzip the file
         else:
             # Try using backscatter package to test dmap integrity
             unzipped_filename = data_file.split(".bz2")[0]
-            print("bzcat {} > {}".format(data_file, unzipped_filename))
+            logger.info("bzcat {} > {}".format(data_file, unzipped_filename))
             bzcat_process = subprocess.Popen("cd {0}; bzcat {1} > {2}".format(gk.get_holding_dir(),
                                                                               data_file,
                                                                               unzipped_filename),
@@ -1349,14 +1426,14 @@ if __name__ == '__main__':
             # Check error code of bzcat and log a relevant error message
             # Remove from files_to_upload if any nonzero error code
             if bzcat_process.returncode == 1 or bzcat_process.returncode == 3:
-                print("OUTPUT: {}".format(bzcat_process_output))
-                print("ERROR: {}".format(bzcat_process_error))
+                logger.warning("OUTPUT: {}".format(bzcat_process_output))
+                logger.warning("ERROR: {}".format(bzcat_process_error))
                 # File probably not there. Error so let us know
-                print("Error. File {} not found by bzcat. Removing from list.".format(data_file))
+                logger.warning("Error. File {} not found by bzcat. Removing from list.".format(data_file))
                 files_to_upload_dict.pop(data_file)
             elif bunzip2_process.returncode == 2:
                 # Error with bz2 integrity of file.
-                print("Error. File {} failed with bzcat! Removing from list.".format(data_file))
+                logger.warning("Error. File {} failed with bzcat! Removing from list.".format(data_file))
                 files_to_upload_dict.pop(data_file)
                 failed_files[data_file] = (data_file_hash, "Failed BZ2 integrity test")
             # If bzcat succeeded on file, test dmap integrity and read using pyDARNio
@@ -1370,34 +1447,40 @@ if __name__ == '__main__':
                     errstr = "Error. File {0} failed with error {1}".format(data_file,
                                                                             str(error).replace("\n",
                                                                                                ""))
-                    print(' '.join(errstr.split()))
+                    logger.warning(' '.join(errstr.split()))
                     files_to_upload_dict.pop(data_file)
                     errstr = ' '.join(str(error).replace("\n", "").split())
                     failed_files[data_file] = (data_file_hash, errstr)
                 # At this point, remaining files passed bzip, bzcat, and dmap integrity test
                 # Remaining files are also not empty
                 else:
-                    print("{0} passed pydarnio dmap tests.".format(data_file))
+                    logger.info("{0} passed pydarnio dmap tests.".format(data_file))
                 # Remove unzipped rawacf from holding_dir (created by bzcat test)
                 finally:
                     remove("{0}/{1}".format(gk.get_holding_dir(), unzipped_filename))
 
-    print("Failed files list: ")
+    logger.info("Failed files list: ")
     for failed in failed_files:
-        print("{}  {} | {}".format(failed_files[failed][0], failed, failed_files[failed][1]))
+        logger.info("{}  {} | {}".format(failed_files[failed][0], failed, failed_files[failed][1]))
 
-    # Append failed files to all_failed.txt in working_dir and transfer updated list to mirror
+    ###################################################################################################################
+    # Step 8)
+    # Append failed files to all_failed.txt in working dir and upload to mirror
+    # Move failed files to holding_dir/failed/ and move nonmatching files to holding_dir/nomatch/
+    # Transfer failed files to failed directory on mirror
+
+    # Update all_failed.txt with new failed files and upload to mirror
     try:
         result = gk.update_failed(failed_files)
         if result is None:
-            print("Error with updating failed files list on mirror")
+            logger.warning("Error with updating failed files list on mirror")
             gk.email_subject += "error updating all_failed.txt"
             gk.email_message += "Error with updating failed files list on mirror, please check it manually\r\n"
             email_flag = 1
         while not gk.wait_for_last_task(timeout_s=300):
-            print("Still waiting for failed files list to upload and complete...")
+            logger.info("Still waiting for failed files list to upload and complete...")
     except Exception as e:
-        print("Error: {}. Please update manually".format(e))
+        logger.warning("Error: {}. Please update manually".format(e))
 
     # If any non-matching files were found, make nomatch dir in holding_dir
     # /holding_dir/nomatch/cur_date/
@@ -1409,7 +1492,7 @@ if __name__ == '__main__':
         nomatch_subdirectory = "{}/{}".format(nomatch_directory, gk.cur_date)
         if not isdir(nomatch_subdirectory):
             mkdir(nomatch_subdirectory)
-        print("Moving non-matching files to {}".format(nomatch_subdirectory))
+        logger.info("Moving non-matching files to {}".format(nomatch_subdirectory))
         for non_matched_file in non_matching_files:
             rename("{}/{}".format(gk.get_holding_dir(), non_matched_file),
                    "{}/{}".format(nomatch_subdirectory, non_matched_file))
@@ -1422,8 +1505,7 @@ if __name__ == '__main__':
     if len(failed_files) > 0:
         # Now upload the files to the mirror
         upload_timeout = 60 + 10 * len(failed_files)
-        print(
-            "Uploading failed files to mirror failed dir with {} s timeout".format(upload_timeout))
+        logger.info("Uploading failed files to mirror failed dir with {} s timeout".format(upload_timeout))
 
         if not gk.sync_failed_files_from_list(list(failed_files)):
             msg = "Failed to sync failed files, sync manually."
@@ -1432,7 +1514,7 @@ if __name__ == '__main__':
             gk.send_email()
         gk.wait_for_last_task(timeout_s=upload_timeout)
         while not gk.wait_for_last_task():
-            print("Still waiting for failed files to upload and complete...")
+            logger.info("Still waiting for failed files to upload and complete...")
         if not gk.last_task_succeeded():
             msg = "Don't know which failed files were transferred successfully and which were not!"
             gk.email_message += msg
@@ -1447,7 +1529,7 @@ if __name__ == '__main__':
         failed_subdirectory = "{}/{}".format(failed_directory, gk.cur_date)
         if not isdir(failed_subdirectory):
             mkdir(failed_subdirectory)
-        print("Moving failed files to {}".format(failed_subdirectory))
+        logger.info("Moving failed files to {}".format(failed_subdirectory))
         for failed_file in failed_files:
             rename("{}/{}".format(gk.get_holding_dir(), failed_file),
                    "{}/{}".format(failed_subdirectory, failed_file))
@@ -1455,9 +1537,13 @@ if __name__ == '__main__':
         gk.email_message += "Failed files:\r\n{}\r\n\r\n".format(failed_files)
         email_flag = 1
 
+    ###################################################################################################################
+    # Step 9)
+    # Upload files_to_upload to mirror
+
     # Get updated list of files_to_upload from dictionary
     files_to_upload = sorted(list(files_to_upload_dict.keys()))
-    print("Final set of files to upload: {}\n".format(files_to_upload))
+    logger.info("Final set of files to upload: {}\n".format(files_to_upload))
 
     # Now sync the files up to the mirror in the appropriate place
     if len(files_to_upload) == 0:
