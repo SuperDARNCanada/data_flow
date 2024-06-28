@@ -1056,6 +1056,7 @@ class Gatekeeper(object):
 
 
 if __name__ == '__main__':
+    start_time = datetime.now().strftime("%s")
     email_flag = 0
 
     ###################################################################################################################
@@ -1143,7 +1144,7 @@ if __name__ == '__main__':
 
     ###################################################################################################################
     # Step 3)
-    # Get files from mirror
+    # Get some files from mirror
     # This includes master hashes, failed files list and blocklist directory
 
     # Get master hashes file
@@ -1262,6 +1263,10 @@ if __name__ == '__main__':
     for item in sha1sum_output:
         filename = item.split()[1]
         data_hash = item.split()[0]
+        # parsed_file = parse_data_filename(filename)
+        # metadata = {'year': parsed_file[0], 'month': parsed_file[1], 'day': parsed_file[2],
+        #             'yearmonth': str(parsed_file[0]) + str(parsed_file[1]), 'hash': data_hash}
+
         metadata = {'year': filename[0:4], 'month': filename[4:6], 'day': filename[6:8],
                     'yearmonth': filename[0:6], 'hash': data_hash}
         files_to_upload_dict[filename].update(metadata)
@@ -1545,69 +1550,85 @@ if __name__ == '__main__':
     files_to_upload = sorted(list(files_to_upload_dict.keys()))
     logger.info("Final set of files to upload: {}\n".format(files_to_upload))
 
-    # Now sync the files up to the mirror in the appropriate place
+    # Exit if there are no files to upload
     if len(files_to_upload) == 0:
         msg = "No files to upload"
         gk.email_subject += msg
         gk.send_email()
+        logger.info(msg)
         sys.exit(msg)
 
+    # Similar to failed files, timeout is 60 seconds plus an additional 10 seconds for each file
     upload_timeout = 60 + 10 * len(files_to_upload)
-    print("Uploading files to mirror with {} s timeout...".format(upload_timeout))
+    logger.info("Uploading files to mirror with {} s timeout...".format(upload_timeout))
 
+    # Now sync the files up to the mirror in the appropriate place
     gk.sync_files_from_list(files_to_upload)
     gk.wait_for_last_task(timeout_s=upload_timeout)
     while not gk.wait_for_last_task():
-        print("Still waiting for last task to complete...")
+        logger.info("Still waiting for last task to complete...")
     if not gk.last_task_succeeded():
         msg = "Don't know which files were transferred successfully and which were not!"
         gk.email_message += msg
         gk.email_subject += "sync_files_from_list failed"
         gk.send_email()
+        logger.warning(msg)
         sys.exit(msg)
 
-    # Checking succeeded vs skipped files can be done better with the use of dictionaries
-    # Check which files succeeded in the transfer
-    succeeded = gk.get_task_successful_transfers()  # If a file was skipped it won't appear in this
+    ###################################################################################################################
+    # Step 10)
+    # Get a list of files that succeeded the transfer and a list of files that were skipped
+    # Create a dictionary and store the string to append to yyyymm.hashes for each yyyymm
+
+    # Check which files succeeded in the transfer. If a file was skipped it won't appear in this
+    succeeded = gk.get_task_successful_transfers()
     # Setup filenames as keys for succeeded and skipped dictionaries
     succeeded_files = [str(info['destination_path'].split('/')[-1]) for info in succeeded]
     skipped_files = [filename for filename in files_to_upload_dict if filename not in succeeded_files]
 
-    print("Skipped files list: {}".format(skipped_files))
-    print("Skipped files: {}".format(gk.get_num_files_skipped()))
-    print("Transferred files: {}".format(len(succeeded_files)))
-    print("Total files: {}".format(gk.get_num_files_skipped() + len(succeeded_files)))
-    print("Files to upload: {}".format(len(files_to_upload)))
+    logger.info("Skipped files list: {}".format(skipped_files))
+    logger.info("Skipped files: {}".format(gk.get_num_files_skipped()))
+    logger.info("Transferred files: {}".format(len(succeeded_files)))
+    logger.info("Total files: {}".format(gk.get_num_files_skipped() + len(succeeded_files)))
+    logger.info("Files to upload: {}".format(len(files_to_upload)))
 
-    # Update the hashes files with the succeeded files list and upload to the mirror.
-    # Make sure the transfer works because otherwise there will be files unaccounted for
-    yearmonth = list(set([filename[0:6] for filename in files_to_upload_dict.keys()]))
+    # Make a dictionary to store the '<hash1> <file1> \n <hash2> <file2>' string for each yyyymm.hashes file
+    # Use list of succeeded files to get yyyymm bc only succeeded files should be added to hash file
+    yearmonth = list(set([filename[0:6] for filename in succeeded_files]))
     yearmonth.sort()
     yearmonth_hash_dict = {ym: {} for ym in yearmonth}
 
     # All the metadata of interest below is stored in files_to_upload_dict
+    # Remove each succeeded file from the holding dir and append "<hash> <filename> \n" to dictionary for yyyymm
     for filename in succeeded_files:
         ym = files_to_upload_dict[filename]['yearmonth']
         data_hash = files_to_upload_dict[filename]['hash']
         remove("{}/{}".format(gk.get_holding_dir(), filename))
         yearmonth_hash_dict[ym] += data_hash + "  " + filename + "\n"
 
-    print("List of updated hash files: {}".format(yearmonth_hash_dict.keys()))
-    # Update yyyymm.hashes and upload to mirror
+    ###################################################################################################################
+    # Step 11)
+    # Update the yyyymm.hashes files with their corresponding succeeded files and upload to mirror
+    # Finally, update the master hashes on the mirror
+
+    logger.info("List of updated hash files: {}".format(yearmonth_hash_dict.keys()))
+    # Update yyyymm.hashes from dictionary and upload to mirror
     for ym, hash_string in yearmonth_hash_dict.items():
         hashfile_path = "{}/{}.hashes".format(gk.get_working_dir(), ym)
+        # If string is not empty, append it to hashfile
         if hash_string is not "":
             hash_string.strip("\n")
             with open(hashfile_path, 'a') as f:
                 f.write("{}".format(hash_string))
+            # Upload hashfile to mirror
             gk.put_hashes(int(ym[0:4]), int(ym[4:6]),
                           source_path=gk.get_working_dir())
             while not gk.wait_for_last_task():
-                print("Still waiting for hashes task to finish... ")
+                logger.info("Still waiting for hashes task to finish... ")
                 continue
         else:
             msg = "{} update string is empty...".format(hashfile_path)
-            print(msg)
+            logger.info(msg)
             email_flag = 1
             gk.email_message += msg
 
@@ -1616,27 +1637,33 @@ if __name__ == '__main__':
         gk.update_master_hashes()
         if not gk.wait_for_last_task():
             msg = "Updating of master hashes didn't complete."
-            print(msg)
+            logger.warning(msg)
             email_flag = 1
             gk.email_message += msg
     except globus_sdk.GlobusError as error:
-        print(error)
+        logger.error(error)
         msg = "Updating of master hashes didn't complete."
-        print(msg)
+        logger.error(msg)
         email_flag = 1
         gk.email_message += msg
         gk.email_message += error
     except Exception as error:
-        print(error)
+        logger.error(error)
         msg = "Updating master hashes failed."
+        logger.error(msg)
         email_flag = 1
         gk.email_message += msg
         gk.email_message += str(error)
 
-    finish_time = datetime.now().strftime("%s")
     if email_flag:
         gk.send_email()
-    print("Finished at : {} s".format(finish_time))
+
+    finish_time_utc = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    finish_time = datetime.now().strftime("%s")
+
+    logger.info("Finished at : {}".format(finish_time_utc))
+    total_time = (int(finish_time) - int(start_time))/60
+    logger.info("Script took {} minutes".format(total_time))
 
 # TODO: Make logging similar to original gatekeeper
 # TODO: Make yearmonth into dict of data files with year, month, name of hash file, etc.
