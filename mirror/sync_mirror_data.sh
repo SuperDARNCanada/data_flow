@@ -3,10 +3,10 @@
 ##############################################################################
 # What is the local holding directory to store data?
 HOLDINGDIR=$1
-# What year and month are we getting data for?
-YYYYMM=$2
 # Which mirror are we running for?
-MIRROR=$3
+MIRROR=$2
+# What year and month are we getting data for?
+YYYYMM=$3
 
 # EDIT 2023-04-28 TK - make filenames specific to the mirror they are for
 #YYYYMM="${YYYYMM}_bas"
@@ -53,7 +53,7 @@ DATE_UTC=$(date -u)
 CURYEAR=$(date +%Y)
 CURMONTH=$(date +%m)
 # What is our logging file directory?
-LOGGINGDIR=/home/dataman/logs/${mirror}/${CURYEAR}/${CURMONTH}/
+LOGGINGDIR=/home/dataman/logs_test/${mirror}/${CURYEAR}/${CURMONTH}/  # Add _test for testing purposes
 # What is our log file name?
 LOGFILE=${LOGGINGDIR}${DATE_TIME}_${mirror}.log
 # Make the log file directory if it doesn't exist
@@ -72,12 +72,13 @@ EMAILSUBJECT="sync_${mirror}_data - [${YYYYMM}]"
 # What sftp program are we using?
 SFTP=/usr/bin/sftp
 # What is our holding directory for hashes files?
-LOCALHASHDIR=/home/dataman/tmp_hashes_usask_${mirror}_cmp/$DATE_TIME
-MIRRORHASHDIR=/home/dataman/tmp_hashes_${mirror}/$DATE_TIME
+# Add /test_mirror/NSSC/ in all 4 of the below paths for testing purposes
+LOCALHASHDIR=/home/dataman/test_mirror/${MIRROR}/tmp_hashes_usask_${mirror}_cmp/$DATE_TIME
+MIRRORHASHDIR=/home/dataman/test_mirror/${MIRROR}/tmp_hashes_${mirror}/$DATE_TIME
 # What is our holding directory for blocked files?
-LOCALBLDIR=/home/dataman/tmp_blocklist/$DATE_TIME
+LOCALBLDIR=/home/dataman/test_mirror/${MIRROR}/tmp_blocklist/$DATE_TIME
 # What is our holding directory for previously failed files?
-LOCALFAILEDDIR=/home/dataman/tmp_failed/$DATE_TIME
+LOCALFAILEDDIR=/home/dataman/test_mirror/${MIRROR}/tmp_failed/$DATE_TIME
 # Make sure they exist
 mkdir -p "${LOCALHASHDIR}"
 mkdir -p "${MIRRORHASHDIR}"
