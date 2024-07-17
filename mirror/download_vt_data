@@ -53,13 +53,13 @@
 # What is the local holding area directory? (Should be /data/holding/)
 LOCALHOLDINGDIR=$1
 # What is the local holding area for globus? (/data/holding/globus/)
-LOCALGLOBUSDIR=${LOCALHOLDINGDIR}/globus/
+LOCALGLOBUSDIR=${LOCALHOLDINGDIR}/test_mirror/globus/  # Added /test_mirror/ for testing purposes
 # How much are we willing to fill up the holding directory partition to? (percent)
 HOLDINGDIR_USAGE_THRESHOLD=98
 # What is the radar? (3 letter radar code)
 RADAR=$2
 # What is the holding directory for the radar? (e.g., /data/holding/sas)
-LOCALRADARDIR=${LOCALHOLDINGDIR}/${RADAR}
+LOCALRADARDIR=${LOCALHOLDINGDIR}/test_mirror/${RADAR}/  # Added /test_mirror/ for testing purposes
 # What hash program are we using?
 HASHPROG=/usr/bin/sha1sum
 # Date, time and other stuff
@@ -75,7 +75,7 @@ CURMONTHNAME=$(date +%B)
 CURMONTH=$(date +%m)
 MONTHNAME=$(date --date=${YEAR}${MONTH}01 +%B)
 # What is our logging file directory?
-LOGGINGDIR=/home/dataman/logs/vt/${CURYEAR}/${CURMONTH}
+LOGGINGDIR=/home/dataman/logs_test/vt/${CURYEAR}/${CURMONTH} # Added _test for testing purposes
 # What is our log file name?
 LOGFILE=${LOGGINGDIR}/${DATE}.${RADAR}.log
 # Make the log file directory if it doesn't exist
@@ -399,11 +399,12 @@ echo "Total files to delete: ${totalFilesDelete}" >> ${LOGFILE}
 DELETETIMESTART=$(date +%s)
 SFTPERRORSDELETE=${HASHESFILE}.errors.del
 echo "Deleting files..." >> ${LOGFILE}
+# Commented deletion of transferred files for testing purposes
 # Only execute sftp batch file if there is at least one file to remove from VT 
-if [[ ${totalFilesDelete} -gt 0 ]]
-then
-	${SFTP} -p -b ${SFTPBATCHDELETE} ${USER}@${REMOTEHOST} 1>> ${LOGFILE} 2> ${SFTPERRORSDELETE}
-fi
+#if [[ ${totalFilesDelete} -gt 0 ]]
+#then
+#	${SFTP} -p -b ${SFTPBATCHDELETE} ${USER}@${REMOTEHOST} 1>> ${LOGFILE} 2> ${SFTPERRORSDELETE}
+#fi
 DELETETIMEEND=$(date +%s)
 
 
