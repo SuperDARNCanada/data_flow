@@ -5,7 +5,7 @@
 HOLDINGDIR=$1
 # Which mirror are we running for?
 MIRROR=$2
-# What year and month are we getting data for?
+# What year and month are we getting data for? Leave blank for current year and month
 YYYYMM=$3
 
 # EDIT 2023-04-28 TK - make filenames specific to the mirror they are for
@@ -13,9 +13,10 @@ YYYYMM=$3
 
 # Variables for Cedar user and paths
 readonly CEDAR_USER=saifm@robot.cedar.alliancecan.ca
-readonly CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/raw/
-readonly CEDAR_BLOCKLIST=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/
-readonly CEDAR_FAILED=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt
+# Add _test to Cedar paths for testing purposes
+readonly CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata_test/raw/
+readonly CEDAR_BLOCKLIST=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata_test/.config/blocklist/
+readonly CEDAR_FAILED=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata_test/.config/all_failed.txt
 
 # Check if mirror was provided
 if [[ "${MIRROR}" == "BAS" ]]
@@ -72,13 +73,13 @@ EMAILSUBJECT="sync_${mirror}_data - [${YYYYMM}]"
 # What sftp program are we using?
 SFTP=/usr/bin/sftp
 # What is our holding directory for hashes files?
-# Add /test_mirror/NSSC/ in all 4 of the below paths for testing purposes
-LOCALHASHDIR=/home/dataman/test_mirror/${MIRROR}/tmp_hashes_usask_${mirror}_cmp/$DATE_TIME
-MIRRORHASHDIR=/home/dataman/test_mirror/${MIRROR}/tmp_hashes_${mirror}/$DATE_TIME
+# Add /test_mirror/ in all 4 of the below paths for testing purposes
+LOCALHASHDIR=/home/dataman/test_mirror/tmp_hashes_usask_${mirror}_cmp/$DATE_TIME
+MIRRORHASHDIR=/home/dataman/test_mirror/tmp_hashes_${mirror}/$DATE_TIME
 # What is our holding directory for blocked files?
-LOCALBLDIR=/home/dataman/test_mirror/${MIRROR}/tmp_blocklist/$DATE_TIME
+LOCALBLDIR=/home/dataman/test_mirror/tmp_blocklist/$DATE_TIME
 # What is our holding directory for previously failed files?
-LOCALFAILEDDIR=/home/dataman/test_mirror/${MIRROR}/tmp_failed/$DATE_TIME
+LOCALFAILEDDIR=/home/dataman/test_mirror/tmp_failed/$DATE_TIME
 # Make sure they exist
 mkdir -p "${LOCALHASHDIR}"
 mkdir -p "${MIRRORHASHDIR}"

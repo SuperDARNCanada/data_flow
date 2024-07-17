@@ -133,7 +133,8 @@ class Gatekeeper(object):
     """ This is the gatekeeper class. It knows about globus and will
     control data flow onto the mirror """
 
-    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=HOME + "/tmp/"):
+    # Add _test to 3rd argument in constructor below for testing purposes
+    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=HOME + "/tmp_test/"):
         """ Initialize member variables, check arguments, etc..
 
         :param client_id: retrieved from "Manage Apps" section of
@@ -154,7 +155,8 @@ class Gatekeeper(object):
         self.holding_dir = None
         self.mirror_root_dir = None
         self.sync_pattern = None
-        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed/'  # TODO: This is hacky, should be handled better, using the input args or something
+        # Add _test for testing purposes
+        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed_test/'  # TODO: This is hacky, should be handled better, using the input args or something
 
         self.cur_year = datetime.now().year
         self.cur_month = datetime.now().month
@@ -1085,7 +1087,7 @@ if __name__ == '__main__':
     # Setup logger and check script arguments as well as existence of various directories
 
     # Setup logger
-    LOGDIR = "/home/dataman/logs/globus"
+    LOGDIR = "/home/dataman/logs_test/globus"  # Add _test for testing purposes
     logfile = ("{}/{:04d}/{:02d}/{:04d}{:02d}{:02d}.{:02d}{:02d}_globus_gatekeeper.log".format(LOGDIR,
                                                                                          gk.cur_year, gk.cur_month,
                                                                                          gk.cur_year, gk.cur_month,
@@ -1263,10 +1265,6 @@ if __name__ == '__main__':
     for item in sha1sum_output:
         filename = item.split()[1]
         data_hash = item.split()[0]
-        # parsed_file = parse_data_filename(filename)
-        # metadata = {'year': parsed_file[0], 'month': parsed_file[1], 'day': parsed_file[2],
-        #             'yearmonth': str(parsed_file[0]) + str(parsed_file[1]), 'hash': data_hash}
-
         metadata = {'year': filename[0:4], 'month': filename[4:6], 'day': filename[6:8],
                     'yearmonth': filename[0:6], 'hash': data_hash}
         files_to_upload_dict[filename].update(metadata)
@@ -1349,6 +1347,7 @@ if __name__ == '__main__':
         # If yyyymm.hashes DNE, create it ONLY IF yyyymm is the current year and month
         else:
             # Need to check if this is the current month, otherwise error out
+            # No need to do the above checks for this yearmonth as there is clearly no data for it yet
             if gk.cur_month == int(ym[4:6]) and gk.cur_year == int(ym[0:4]):
                 logger.info("Hash file for {} doesn't exist, creating new directory.".format(ym))
                 gk.create_new_data_dir(ym[0:4], ym[4:6])
