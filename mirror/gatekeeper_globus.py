@@ -1595,7 +1595,7 @@ if __name__ == '__main__':
     # Use list of succeeded files to get yyyymm bc only succeeded files should be added to hash file
     yearmonth = list(set([filename[0:6] for filename in succeeded_files]))
     yearmonth.sort()
-    yearmonth_hash_dict = {ym: {} for ym in yearmonth}
+    yearmonth_hash_dict = {ym: "" for ym in yearmonth}
 
     # All the metadata of interest below is stored in files_to_upload_dict
     # Remove each succeeded file from the holding dir and append "<hash> <filename> \n" to dictionary for yyyymm
