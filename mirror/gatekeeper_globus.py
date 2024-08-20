@@ -1223,8 +1223,8 @@ if __name__ == '__main__':
         for blocked_file in blocked_data:
             if data_file in blocked_file:
                 blocked_files_to_remove.append(data_file)
-                logger.info("Removed blocked file: {} from files to upload".format(data_file))
-    blocked_files_to_remove = list(set(blocked_files_to_remove))
+    blocked_files_to_remove = sorted(list(set(blocked_files_to_remove)))
+    logger.info("Found blocked files: {}".format(blocked_files_to_remove))
     for file_to_remove in blocked_files_to_remove:
         files_to_upload_dict.pop(file_to_remove)
 
@@ -1291,7 +1291,7 @@ if __name__ == '__main__':
 
     # Get unique list of yyyymm combos and create dictionary
     # Keys are yyyymm and values are the files to upload dictionary items corresponding to the given yyyymm
-    yearmonth = list(set([filename[0:6] for filename in files_to_upload_dict.keys()]))
+    yearmonth = sorted(list(set([filename[0:6] for filename in files_to_upload_dict.keys()])))
     yearmonth.sort()
     yearmonth_dict = {ym: {} for ym in yearmonth}
     for ym in yearmonth:
@@ -1299,7 +1299,7 @@ if __name__ == '__main__':
         yearmonth_dict[ym].update(d)
 
     # Get appropriate hashes files for yyyymm for all files in list
-    logger.info("Set of years and months for data files in holding directory:\n{}".format(str(yearmonth)))
+    logger.info("Set of years and months for data files in holding directory: {}".format(str(yearmonth)))
     new_hash_file = False
     non_matching_files = []
     for ym in yearmonth:
