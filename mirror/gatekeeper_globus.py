@@ -1088,11 +1088,22 @@ if __name__ == '__main__':
 
     # Setup logger
     LOGDIR = "/home/dataman/logs_test/globus"  # Add _test for testing purposes
-    logfile = ("{}/{:04d}/{:02d}/{:04d}{:02d}{:02d}.{:02d}{:02d}_globus_gatekeeper.log".format(LOGDIR,
+    logfile = "{}/{:04d}/{:02d}/{:04d}{:02d}{:02d}.{:02d}{:02d}_globus_gatekeeper.log".format(LOGDIR,
                                                                                          gk.cur_year, gk.cur_month,
                                                                                          gk.cur_year, gk.cur_month,
                                                                                          gk.cur_day, gk.cur_hour,
-                                                                                         gk.cur_minute))
+                                                                                         gk.cur_minute)
+
+    # Make sure year and month directories for logfile exist
+    if not isdir("{}/{:04d}/".format(LOGDIR, gk.cur_year)):
+        mkdir("{}/{:04d}/".format(LOGDIR, gk.cur_year))
+    if not isdir("{}/{:04d}/{:02d}/".format(LOGDIR, gk.cur_year, gk.cur_month)):
+        mkdir("{}/{:04d}/{:02d}/".format(LOGDIR, gk.cur_year, gk.cur_month))
+
+    # Make sure stdout and stderr are written to the log file
+#     sys.stdout = logfile
+#     sys.stderr = logfile
+
     function = "Gatekeeper"
     logger = extendable_logger(logfile, function, level=logging.INFO)
 
@@ -1610,7 +1621,7 @@ if __name__ == '__main__':
     # Update the yyyymm.hashes files with their corresponding succeeded files and upload to mirror
     # Finally, update the master hashes on the mirror
 
-    logger.info("List of updated hash files: {}".format(yearmonth_hash_dict.keys()))
+    logger.info("Updating hash files: {}".format(yearmonth_hash_dict.keys()))
     # Update yyyymm.hashes from dictionary and upload to mirror
     for ym, hash_string in yearmonth_hash_dict.items():
         hashfile_path = "{}/{}.hashes".format(gk.get_working_dir(), ym)
@@ -1632,6 +1643,7 @@ if __name__ == '__main__':
             gk.email_message += msg
 
     # Update master.hashes with all successfully uploaded files
+    logger.info("Updating master hashes")
     try:
         gk.update_master_hashes()
         if not gk.wait_for_last_task():
@@ -1660,9 +1672,9 @@ if __name__ == '__main__':
     finish_time_utc = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     finish_time = datetime.now().strftime("%s")
 
-    logger.info("Finished at : {}".format(finish_time_utc))
+    # logger.info("Finished at: {}".format(finish_time_utc))
     total_time = (int(finish_time) - int(start_time))/60
-    logger.info("Script took {} minutes".format(total_time))
+    logger.info("Script finished. Total time: {} minutes".format(total_time))
 
 # TODO: Make logging similar to original gatekeeper
 # TODO: Make yearmonth into dict of data files with year, month, name of hash file, etc.
