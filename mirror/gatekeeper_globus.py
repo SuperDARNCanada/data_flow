@@ -1161,7 +1161,7 @@ if __name__ == '__main__':
     # This includes master hashes, failed files list and blocklist directory
 
     # Get master hashes file
-    logger.info("Getting master hashes file...")
+    logger.info("\nGetting master hashes file...")
     gk.get_master_hashes()
     if not gk.wait_for_last_task():
         msg = "get_master_hashes timeout"
@@ -1216,7 +1216,7 @@ if __name__ == '__main__':
     files_to_upload = gk.list_of_files_to_upload()
     files_to_upload.sort()
     files_to_upload_dict = {file: {} for file in files_to_upload}
-    logger.info("Initial set of files to upload: {}".format(files_to_upload))
+    logger.info("\nInitial set of files to upload: {}\n".format(files_to_upload))
     # Remove from files_to_upload if file appears in the blocklist and inform user
     blocked_files_to_remove = []
     for data_file in sorted(list(files_to_upload_dict.keys())):
@@ -1299,7 +1299,7 @@ if __name__ == '__main__':
         yearmonth_dict[ym].update(d)
 
     # Get appropriate hashes files for yyyymm for all files in list
-    logger.info("Set of years and months for data files in holding directory: {}".format(str(yearmonth)))
+    logger.info("\nSet of years and months for data files in holding directory: {}".format(str(yearmonth)))
     new_hash_file = False
     non_matching_files = []
     for ym in yearmonth:
@@ -1372,7 +1372,7 @@ if __name__ == '__main__':
                 logger.error(msg)
                 sys.exit(msg)
 
-    logger.info("No match list: {}".format(non_matching_files))
+    logger.info("No match list: {}\n".format(non_matching_files))
 
     ###################################################################################################################
     # Step 7)
@@ -1475,7 +1475,7 @@ if __name__ == '__main__':
                 finally:
                     remove("{0}/{1}".format(gk.get_holding_dir(), unzipped_filename))
 
-    logger.info("Failed files list: ")
+    logger.info("\nFailed files list: ")
     for failed in failed_files:
         logger.info("{}  {} | {}".format(failed_files[failed][0], failed, failed_files[failed][1]))
 
@@ -1486,6 +1486,7 @@ if __name__ == '__main__':
     # Transfer failed files to failed directory on mirror
 
     # Update all_failed.txt with new failed files and upload to mirror
+    logger.info("Updating all_failed.txt")
     try:
         result = gk.update_failed(failed_files)
         if result is None:
@@ -1559,7 +1560,7 @@ if __name__ == '__main__':
 
     # Get updated list of files_to_upload from dictionary
     files_to_upload = sorted(list(files_to_upload_dict.keys()))
-    logger.info("Final set of files to upload: {}".format(files_to_upload))
+    logger.info("\nFinal set of files to upload: {}".format(files_to_upload))
 
     # Exit if there are no files to upload
     if len(files_to_upload) == 0:
@@ -1597,7 +1598,7 @@ if __name__ == '__main__':
     succeeded_files = [str(info['destination_path'].split('/')[-1]) for info in succeeded]
     skipped_files = [filename for filename in files_to_upload_dict if filename not in succeeded_files]
 
-    logger.info("Skipped files list: {}".format(skipped_files))
+    logger.info("\nSkipped files list: {}".format(skipped_files))
     logger.info("Skipped files: {}".format(gk.get_num_files_skipped()))
     logger.info("Transferred files: {}".format(len(succeeded_files)))
     logger.info("Total files: {}".format(gk.get_num_files_skipped() + len(succeeded_files)))
@@ -1622,7 +1623,7 @@ if __name__ == '__main__':
     # Update the yyyymm.hashes files with their corresponding succeeded files and upload to mirror
     # Finally, update the master hashes on the mirror
 
-    logger.info("Updating hash files: {}".format(sorted(list(yearmonth_hash_dict.keys()))))
+    logger.info("\nUpdating hash files: {}".format(sorted(list(yearmonth_hash_dict.keys()))))
     # Update yyyymm.hashes from dictionary and upload to mirror
     for ym, hash_string in yearmonth_hash_dict.items():
         hashfile_path = "{}/{}.hashes".format(gk.get_working_dir(), ym)
