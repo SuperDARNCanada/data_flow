@@ -1216,6 +1216,7 @@ if __name__ == '__main__':
     files_to_upload = gk.list_of_files_to_upload()
     files_to_upload.sort()
     files_to_upload_dict = {file: {} for file in files_to_upload}
+    logger.info("Initial set of files to upload: {}".format(files_to_upload))
     # Remove from files_to_upload if file appears in the blocklist and inform user
     blocked_files_to_remove = []
     for data_file in sorted(list(files_to_upload_dict.keys())):
@@ -1558,7 +1559,7 @@ if __name__ == '__main__':
 
     # Get updated list of files_to_upload from dictionary
     files_to_upload = sorted(list(files_to_upload_dict.keys()))
-    logger.info("Final set of files to upload: {}\n".format(files_to_upload))
+    logger.info("Final set of files to upload: {}".format(files_to_upload))
 
     # Exit if there are no files to upload
     if len(files_to_upload) == 0:
