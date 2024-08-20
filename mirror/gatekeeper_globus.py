@@ -1621,7 +1621,7 @@ if __name__ == '__main__':
     # Update the yyyymm.hashes files with their corresponding succeeded files and upload to mirror
     # Finally, update the master hashes on the mirror
 
-    logger.info("Updating hash files: {}".format(yearmonth_hash_dict.keys()))
+    logger.info("Updating hash files: {}".format(sorted(list(yearmonth_hash_dict.keys()))))
     # Update yyyymm.hashes from dictionary and upload to mirror
     for ym, hash_string in yearmonth_hash_dict.items():
         hashfile_path = "{}/{}.hashes".format(gk.get_working_dir(), ym)
