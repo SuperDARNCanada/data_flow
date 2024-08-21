@@ -1513,6 +1513,8 @@ if __name__ == '__main__':
             mkdir(nomatch_subdirectory)
         logger.info("Moving non-matching files to {}\n".format(nomatch_subdirectory))
         for non_matched_file in non_matching_files:
+            logger.info("Moving {}/{} to {}/{}\n".format(gk.get_holding_dir(), non_matched_file,
+                                                         nomatch_subdirectory, non_matched_file))
             rename("{}/{}".format(gk.get_holding_dir(), non_matched_file),
                    "{}/{}".format(nomatch_subdirectory, non_matched_file))
         gk.email_subject += "Non matching files "
@@ -1550,6 +1552,8 @@ if __name__ == '__main__':
             mkdir(failed_subdirectory)
         logger.info("Moving failed files to {}\n".format(failed_subdirectory))
         for failed_file in failed_files:
+            logger.info("Moving {}/{} to {}/{}\n".format(gk.get_holding_dir(), failed_file,
+                                                         failed_subdirectory, failed_file))
             rename("{}/{}".format(gk.get_holding_dir(), failed_file),
                    "{}/{}".format(failed_subdirectory, failed_file))
         gk.email_subject += "Failed files "
