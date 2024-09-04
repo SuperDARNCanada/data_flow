@@ -1384,7 +1384,8 @@ if __name__ == '__main__':
 
     failed_files = {}
     # Loop through files_to_upload_dict as it contains only rawacfs still eligible for transfer
-    for filename in files_to_upload_dict:
+    files_to_upload = sorted(list(files_to_upload_dict.keys()))
+    for filename in files_to_upload:
         data_file = filename
         data_file_hash = files_to_upload_dict[filename]['hash']
         logger.info("bunzip -t {}".format(data_file))
@@ -1467,11 +1468,8 @@ if __name__ == '__main__':
                                                                                                ""))
                     logger.warning(' '.join(errstr.split()))
                     files_to_upload_dict.pop(data_file)
-                    logger.info("{} removed from dictionary".format(data_file))
                     errstr = ' '.join(str(error).replace("\n", "").split())
-                    logger.info("updated error string")
                     failed_files[data_file] = (data_file_hash, errstr)
-                    logger.info("updated failed files dictionary")
                 # At this point, remaining files passed bzip, bzcat, and dmap integrity test
                 # Remaining files are also not empty
                 else:
@@ -1479,7 +1477,6 @@ if __name__ == '__main__':
                 # Remove unzipped rawacf from holding_dir (created by bzcat test)
                 finally:
                     remove("{0}/{1}".format(gk.get_holding_dir(), unzipped_filename))
-                    logger.info("removed unzipped file")
 
     logger.info("Failed files list: ")
     for failed in failed_files:
