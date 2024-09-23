@@ -3,7 +3,7 @@
 # Author: Marci Detwiller
 
 # A script that uses pydarnio to convert Borealis files to SDARN DMap files
-# Uses borealis_array_to_dmap.py script to convert already-restructured array files
+# Uses borealis_to_dmap.py script to convert already-restructured array files
 # to dmap. 
 
 # to be run on SDCOPY for when bandwidth limits exist at site and both hdf5 and 
@@ -78,7 +78,7 @@ for f in ${RAWACF_CONVERT_FILES}
 do
     echo "" >> ${LOGFILE} 2>&1
     echo "python3 ${HOME}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py ${f}" >> ${LOGFILE} 2>&1
-    python3 ${HOME}/data_flow/superdarn-cssdp/borealis_array_to_dmap.py ${f} >> ${LOGFILE} 2>&1
+    python3 ${HOME}/data_flow/superdarn-cssdp/borealis_to_dmap.py ${f} >> ${LOGFILE} 2>&1
     ret=$?
     if [ $ret -eq 0 ]; then
         # move the resulting files if all was successful

@@ -44,8 +44,8 @@ do
     then
         printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0\n"
 
-        printf "Executing convert_and_restructure...\n"
-        $HOME/data_flow/site-linux/convert_and_restructure
+#        printf "Executing convert_and_restructure...\n"
+#        $HOME/data_flow/site-linux/convert_and_restructure
         printf "Generating antennas iq plots...\n"
         $HOME/data_flow/site-linux/plot_antennas_iq
         printf "Executing rsync_to_campus...\n"

@@ -91,22 +91,22 @@ if [[ -z "$SOURCE" ]]; then
 fi
 printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 
-# Get all files that aren't currently being written do. First, find all .site files in source 
+# Get all files that aren't currently being written do. First, find all files in the source
 # directory. Then, filter out all files that have same timestamp in the filename as the file that 
 # triggered the script via inotify. This will effectively prevent the script from transferring 
 # files currently being written by Borealis
 
 if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	printf "Transferring to NAS: $DEST\n\n" | tee --append $SUMMARY_FILE
-	search=(\( -name "*rawacf.hdf5.*" -o -name "*bfiq.hdf5.*" -o -name "*antennas_iq.hdf5.*" \))
+	search=(\( -name "*rawacf*" -o -name "*bfiq*" -o -name "*antennas_iq*" \))
 else
 	printf "Transferring to Site-Linux: $DEST\n\n" | tee --append $SUMMARY_FILE
-	search=(\( -name "*rawacf.hdf5.*" \)) 	# If transferring to site computer, only send rawacf
+	search=(\( -name "*rawacf*" \)) 	# If transferring to site computer, only send rawacf
 fi
 
 # Using the filename that this script triggered on, a pattern can be determined to omit the current
-# .site file being written in Borealis. omit_pattern trims the input filename, for example 
-# "20221018.1200.00.sas.1.rawacf.hdf5.site", down to "20221018.1200.00." 
+# file being written in Borealis. omit_pattern trims the input filename, for example
+# "20221018.1200.00.sas.1.rawacf.h5", down to "20221018.1200.00."
 if [[ $# -eq 0 ]]; then
 	# Default to omitting nothing and grabbing files not written to in last 5 minutes
 	files=$(find ${SOURCE} "${search[@]}" -cmin +5) 

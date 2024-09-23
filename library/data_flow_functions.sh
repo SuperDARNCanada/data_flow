@@ -27,9 +27,9 @@ ord() {
 }
 
 ###################################################################################################
-# Get rawacf dmap filename from corresponding array filename. 
+# Get rawacf dmap filename from corresponding borealis filename.
 #
-# Example: `get_dmap_name 20231004.1400.00.pgr.1.rawacf.hdf5` will print 
+# Example: `get_dmap_name 20231004.1400.00.pgr.1.rawacf.h5` will print
 #          20231004.1400.00.pgr.b.rawacf.bz2 to standard output.
 #
 # Argument 1: array filename
@@ -42,15 +42,15 @@ get_dmap_name() {
 		return 1
 	fi
 
-	array_filename=$(basename $1)
-	array_directory=$(dirname $1)
+	borealis_filename=$(basename $1)
+	borealis_directory=$(dirname $1)
 	# Check that the filename given is a valid rawacf file name
-	if [[ ! "$array_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[0-9]+.rawacf.hdf5$   ]]; then
-		printf "get_dmap_name(): Invalid filename - $array_filename isn't a valid array file name\n"
+	if [[ ! "$borealis_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[0-9]+.rawacf.h5$   ]]; then
+		printf "get_dmap_name(): Invalid filename - $borealis_filename isn't a valid borealis file name\n"
 		return 1
 	fi
 
-	file_start="${array_filename%.rawacf.hdf5}"
+	file_start="${borealis_filename%.rawacf.h5}"
 
 	# Remove last character(s) (slice_id)
 	slice_id=$(echo $file_start | rev | cut --delimiter='.' --fields=1 | rev)
@@ -60,25 +60,25 @@ get_dmap_name() {
 	file_character=$(chr $ordinal_id)
 
 	dmap_file="${file_start_wo_slice_id}${file_character}.rawacf.bz2"
-	printf "${array_directory}/${dmap_file}"
+	printf "${borealis_directory}/${dmap_file}"
 
 	return 0
 }
 
 
 ###################################################################################################
-# Get rawacf array filename from corresponding dmap filename. 
+# Get rawacf borealis filename from corresponding dmap filename.
 #
-# Example: `get_array_name 20231004.1400.00.pgr.b.rawacf.bz2` will print 
-#          20231004.1400.00.pgr.1.rawacf.hdf5 to standard output.
+# Example: `get_borealis_name 20231004.1400.00.pgr.b.rawacf.bz2` will print
+#          20231004.1400.00.pgr.1.rawacf.h5 to standard output.
 #
 # Argument 1: dmap filename
 # Returns:    0 on successful name translation
 ###################################################################################################
-get_array_name() {
+get_borealis_name() {
 	# Check function was called correctly
 	if [[ $# -ne 1 ]]; then
-		printf "get_array_name(): Invalid number of arguments\n" 
+		printf "get_borealis_name(): Invalid number of arguments\n"
 		return 1
 	fi
 
@@ -91,7 +91,7 @@ get_array_name() {
 	elif [[ "$dmap_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[[:lower:]]+.rawacf$ ]]; then
 		file_start="${dmap_filename%.rawacf}"
 	else
-		printf "get_array_name(): Invalid filename - $dmap_filename isn't a valid dmap file name\n"
+		printf "get_borealis_name(): Invalid filename - $dmap_filename isn't a valid dmap file name\n"
 		return 1
 	fi
 
@@ -104,8 +104,8 @@ get_array_name() {
 	slice_id=$(($ordinal_id - 97))
 
 	# Put it all together
-	array_file="${file_start_wo_character}${slice_id}.rawacf.hdf5"
-	printf "${dmap_directory}/${array_file}"
+	borealis_file="${file_start_wo_character}${slice_id}.rawacf.h5"
+	printf "${dmap_directory}/${borealis_file}"
 
 	return 0
 }
@@ -185,7 +185,7 @@ alert_slack() {
 # time of the file (found with the 'stat' command). If the difference in these times is greater
 # than a specified threshold, the function returns an error code.
 #
-# Argument 1: Path to a Borealis .site file to check.
+# Argument 1: Path to a Borealis file to check.
 #
 # Returns 0: Success: difference between timestamp and modification time are consistent.
 #         1: Error: Function used incorrectly
@@ -205,8 +205,8 @@ check_timestamp() {
 	local threshold=86400				# Threshold is 1 day (86400 seconds)
 
 	# Check that the filename given is a valid file name
-	if [[ ! "$filename" =~ ^[0-9]{8}\.[0-9]{4}\.[0-9]{2}\.[[:lower:]]{3}\.[0-9]+\..+\.hdf5.site$   ]]; then
-		printf "check_timestamp(): Invalid filename - $filename isn't a valid .site file name\n"
+	if [[ ! "$filename" =~ ^[0-9]{8}\.[0-9]{4}\.[0-9]{2}\.[[:lower:]]{3}\.[0-9]+\..+\.h5$   ]]; then
+		printf "check_timestamp(): Invalid filename - $filename isn't a valid file name\n"
 		return 1
 	fi
 
