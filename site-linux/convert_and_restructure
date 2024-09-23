@@ -2,10 +2,9 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Marci Detwiller, Theodore Kolkman
 #
-# A script that uses pydarnio to convert Borealis files to SuperDARN DMap files as well as
-# restructures the hdf5 files to be multidimensional arrays for better file readability. If
-# $RADAR_ID is specified in CONVERT_ON_CAMPUS_SITES in config.sh, then only restructuring is done
-# (no DMap conversion). Backs up the source site files before it begins. This script is to be run on
+# A script that uses pydarnio to convert Borealis files to SuperDARN DMap files. If
+# $RADAR_ID is specified in CONVERT_ON_CAMPUS_SITES in config.sh, then no DMAP conversion is done.
+# Backs up the source rawacf files before it begins. This script is to be run on
 # the Site-Linux computer.
 #
 # To modify this script to operate on files stored on the Site-Linux computer instead of the NAS:
@@ -77,20 +76,19 @@ printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last com
 printf "Conversion directory: $DATA_DIR\n\n" | tee --append $SUMMARY_FILE
 
 # Find files to be converted
-RAWACF_CONVERT_FILES=$(find "${SOURCE}" -name "*rawacf.hdf5.site" -type f)
-BFIQ_CONVERT_FILES=$(find "${SOURCE}" -name "*bfiq.hdf5.site" -type f)
-ANTENNAS_IQ_CONVERT_FILES=$(find "${SOURCE}" -name "*antennas_iq.hdf5.site" -type f)
+RAWACF_CONVERT_FILES=$(find "${SOURCE}" -name "*rawacf.h5" -type f)
+RAWACF_DMAP_FILES=$(find "${SOURCE}" -name "*.rawacf" -type f)
 
 # Copy the source rawacf file to backup.
 if [[ -n $RAWACF_CONVERT_FILES ]]; then
-    printf "Backing up rawacf .site files\n"
+    printf "Backing up rawacf hdf5 files\n"
     cp --verbose --preserve $RAWACF_CONVERT_FILES $BACKUP_DEST
 fi
-if [[ -n $BFIQ_CONVERT_FILES ]]; then
-    printf "Backing up bfiq .site files\n"
-    cp --verbose --preserve $BFIQ_CONVERT_FILES $BACKUP_DEST
+# Copy the source rawacf DMAP file to backup.
+if [[ -n $RAWACF_DMAP_FILES ]]; then
+    printf "Backing up rawacf DMAP files\n"
+    cp --verbose --preserve $RAWACF_DMAP_FILES $BACKUP_DEST
 fi
-
 
 printf "\n\n"
 if [[ -n $RAWACF_CONVERT_FILES ]]; then
@@ -164,103 +162,22 @@ for f in $RAWACF_CONVERT_FILES; do
     fi
 done
 
-
 printf "\n\n"
-if [[ -n $BFIQ_CONVERT_FILES ]]; then
-	printf "Converting the following bfiq files:\n"
-	printf '%s\n' "${BFIQ_CONVERT_FILES[@]}"
-else
-	printf "No bfiq files found to be converted.\n" | tee --append $SUMMARY_FILE
-fi
+# Transfer rawacf dmap files to campus
+for f in $RAWACF_DMAP_FILES; do
+    if [[ " ${RAWACF_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+        printf "\nHandling ${f}\n"
 
-# Convert bfiq files to array format
-for f in $BFIQ_CONVERT_FILES; do
-    if [[ " ${BFIQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
-        printf "\nConverting ${f}\n"
-        printf "python3 remove_record.py $(basename ${f})\n"
-        output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
-        if [[ -n "$output" ]]; then
-            printf "Removed records from ${f}:\n${output}\n" | tee --append $SUMMARY_FILE
-        fi
-        printf "python3 borealis_convert_file.py $(basename ${f})\n"
-        python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" $f
-        ret=$?
-        if [[ $ret -eq 0 ]]; then
-            # Only converting array file
-            array_file="${f%.site}"
+        # Ensure the permissions are read/write/execute for the group
+        chmod --verbose 775 $f
 
-            # First ensure the permissions are read/write/execute for the group
-            chmod --verbose 775 $array_file
+        # Move the file so the rsync_to_campus script will pick it up
+        mv --verbose $f $RAWACF_DMAP_DEST
 
-            mv --verbose $array_file $BFIQ_ARRAY_DEST
-            rm --verbose $f
-            printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
-        else
-            error="File failed to convert from bfiq from site to array: ${f}\n"
-            printf "${error}" | tee --append $SUMMARY_FILE
-
-            message="$(date +'%Y%m%d %H:%M:%S')   ${RADAR_ID} - ${error}"
-            alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
-
-            mv --verbose $f $PROBLEM_FILES_DEST
-        fi
     else
-        printf "Not converting: ${f}\n" | tee --append $SUMMARY_FILE
-        mv --verbose $f $BFIQ_ARRAY_DEST
-    fi
-done
-
-
-printf "\n\n"
-if [[ -n $ANTENNAS_IQ_CONVERT_FILES ]]; then
-	printf "Converting the following antennas_iq files:\n"
-	printf '%s\n' "${ANTENNAS_IQ_CONVERT_FILES[@]}"
-else
-	printf "No antennas_iq files found to be converted.\n" | tee --append $SUMMARY_FILE
-fi
-
-# Convert antennas_iq files to array format
-for f in $ANTENNAS_IQ_CONVERT_FILES; do
-    if [[ " ${ANTENNAS_IQ_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
-        printf "\nConverting ${f}\n"
-        printf "python3 remove_record.py $(basename ${f})\n"
-        output=$(python3 ${HOME}/data_flow/site-linux/remove_record.py ${f})
-        if [[ -n "$output" ]]; then
-            printf "Removed records from ${f}:\n${output}\n" | tee --append $SUMMARY_FILE
-        fi
-
-        # Use BorealisRestructure if site computer has low memory
-        if [[ " ${LOW_MEMORY_SITES[*]} " =~ " ${RADAR_ID} " ]]; then 
-            printf "python3 borealis_convert_file.py --low_memory $(basename ${f})\n"
-            python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" --low_memory $f
-        else 
-            printf "python3 borealis_convert_file.py $(basename ${f})\n"
-            python3 "${HOME}/data_flow/site-linux/borealis_convert_file.py" $f
-        fi
-        ret=$?
-
-        if [ $ret -eq 0 ]; then
-            # If restructure successful, remove source site file.
-            array_file="${f%.site}"
-
-            # Ensure the permissions are read/write/execute for the group
-            chmod --verbose 775 $array_file
-            
-            mv --verbose $array_file $ANTENNAS_IQ_ARRAY_DEST
-            rm --verbose $f
-            printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
-        else
-            error="File failed to convert from antennas_iq from site to array: ${f}\n"
-            printf "${error}" | tee --append $SUMMARY_FILE
-
-            message="$(date +'%Y%m%d %H:%M:%S')   ${RADAR_ID} - ${error}"
-            alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
-
-            mv --verbose $f $PROBLEM_FILES_DEST
-        fi
-    else
-        printf "Not converting: ${f}\n" | tee --append $SUMMARY_FILE
-        mv --verbose $f  $ANTENNAS_IQ_ARRAY_DEST
+        printf "Not transferring: ${f}\n" | tee --append $SUMMARY_FILE
+        # File is already backed up, so we can remove it from this directory
+        rm --verbose $f
     fi
 done
 

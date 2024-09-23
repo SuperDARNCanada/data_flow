@@ -3,7 +3,7 @@
 # Author: Marci Detwiller, Theodore Kolkman
 #
 # A script that uses pydarnio to convert Borealis rawacf files to SuperDARN DMap files. Uses the
-# borealis_array_to_dmap.py script to convert already-restructured array files to dmap. 
+# borealis_to_dmap.py script to convert already-restructured array files to dmap.
 # 
 # This script is executed on sdc-serv.usask.ca for all sites, but only performs conversions for
 # sites specified in the CONVERT_ON_CAMPUS_SITES array. Only sites that don't transfer dmap
@@ -80,7 +80,7 @@ if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 
     printf "Conversion directory: $DATA_DIR\n\n"
 
-    RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
+    RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.h5" -type f)
 
     if [[ -n $RAWACF_CONVERT_FILES ]]; then
         printf "Converting the following files:\n"

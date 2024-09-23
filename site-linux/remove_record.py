@@ -26,13 +26,11 @@ def usage_msg():
     :returns: the usage message
     """
 
-    usage_message = """ remove_record.py [-h] borealis_site_file
+    usage_message = """ remove_record.py [-h] borealis_file
 
     Pass in the filename you wish to check. If no record name is given, the 
     file will be searched for records where the data arrays are not the correct
     size for the given num_sequences, then remove those records.
-
-    If a record name is provided, only the given record will be removed. 
     """
 
     return usage_message
@@ -40,7 +38,7 @@ def usage_msg():
 
 def remove_records_parser():
     parser = argparse.ArgumentParser(usage=usage_msg())
-    parser.add_argument("borealis_site_file", help="Path to the array file that needs correction.")
+    parser.add_argument("borealis_file", help="Path to the file that needs correction.")
     parser.add_argument("--remove-bad-recs",
                         help="Flag to remove records that are missing fields, have extra fields, or have fields of the "
                              "wrong type.", default=False, action="store_true")
@@ -56,7 +54,7 @@ def find_borealis_sequence_errors(filename):
         records = sorted(list(f.keys()))
         for record_name in records:
             data = f[record_name]
-            if data['sqn_timestamps'].shape[0] != data.attrs['num_sequences']:
+            if data['sqn_timestamps'].shape[0] != data['num_sequences'][()]:
                 del f[record_name]
                 print(f'Deleted: {record_name}')
 
@@ -66,7 +64,7 @@ def find_borealis_record_errors(filename):
     Removes any records in the file where there are missing fields.
     """
     try:
-        _ = pydarnio.BorealisRead(filename, 'rawacf', borealis_file_structure='site')
+        _ = pydarnio.BorealisRead(filename, 'rawacf')
     except pydarnio.borealis_exceptions.BorealisBadRecordsError as err:
         bad_records = (list(err.missing_fields.keys()) +
                        list(err.extra_fields.keys()) +

@@ -31,7 +31,7 @@ else
 	readonly DATA_DIR="/data/borealis_data" # On Site Linux
 fi
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
-readonly ARRAY_SOURCE="${DATA_DIR}/rawacf_array/"
+readonly BOREALIS_SOURCE="${DATA_DIR}/rawacf_array/"
 readonly IQPLOT_SOURCE="${HOME}/logs/daily_plots/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
@@ -115,13 +115,13 @@ fi
 
 
 # Find all hdf5 files to transfer
-files=$(find ${ARRAY_SOURCE} -name '*rawacf.hdf5' -printf '%p\n')
+files=$(find ${BOREALIS_SOURCE} -name '*rawacf.h5' -printf '%p\n')
 
 if [[ -n $files ]]; then
 	printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
 	printf '%s\n' "${files[@]}"
 else
-	printf "\nNo array files found to be transferred.\n" | tee --append $SUMMARY_FILE
+	printf "\nNo hdf5 files found to be transferred.\n" | tee --append $SUMMARY_FILE
 fi
 
 # Transfer all files found
