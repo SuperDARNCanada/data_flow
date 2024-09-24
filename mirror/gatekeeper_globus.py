@@ -1694,7 +1694,7 @@ if __name__ == '__main__':
 
         with open("{}/master.hashes".format(gk.get_working_dir()), 'w') as master_file:
             for key, val in hashes.items():
-                master_file.write(val + "  " + key)
+                master_file.write(val + "  " + key + "\n")
 
     """
     logger.info("Updating master hashes")
