@@ -1693,8 +1693,8 @@ if __name__ == '__main__':
         hashes["./raw/{}.hashes".format(ym)] = hash_process_output[0].split()[0]
 
         with open("{}/master.hashes".format(gk.get_working_dir()), 'w') as master_file:
-            for key, val in hashes.items():
-                master_file.write(val + "  " + key + "\n")
+            for key in sorted(list(hashes.keys())):
+                master_file.write(hashes[key] + "  " + key + "\n")
 
     """
     logger.info("Updating master hashes")
