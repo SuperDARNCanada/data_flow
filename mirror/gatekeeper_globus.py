@@ -1630,7 +1630,8 @@ if __name__ == '__main__':
     # Update the yyyymm.hashes files with their corresponding succeeded files and upload to mirror
     # Finally, update the master hashes on the mirror
 
-    logger.info("Updating hash files: {}".format(sorted(list(yearmonth_hash_dict.keys()))))
+    yearmonth = sorted(list(yearmonth_hash_dict.keys()))
+    logger.info("Updating hash files: {}".format(yearmonth))
     # Update yyyymm.hashes from dictionary and upload to mirror
     for ym, hash_string in yearmonth_hash_dict.items():
         hashfile_path = "{}/{}.hashes".format(gk.get_working_dir(), ym)
@@ -1651,7 +1652,51 @@ if __name__ == '__main__':
             email_flag = 1
             gk.email_message += msg
 
+    # New method to update master hashes:
+    # 1) get master hashes
+    # 2) read master hashes
+    # 3) if updated ym in master hash, replace hash
+    # 4) if new ym, add to master hash
+    # 5) put master hashes, skip this for testing purposes
     # Update master.hashes with all successfully uploaded files
+    # Get master hashes file
+    logger.info("Getting master hashes file...")
+    gk.get_master_hashes()
+    if not gk.wait_for_last_task():
+        msg = "get_master_hashes timeout"
+        gk.email_subject += msg
+        gk.send_email()
+        logger.error(msg)
+        sys.exit(msg)
+
+    hashes = {}
+    with open("{}/master.hashes".format(gk.get_working_dir()), 'r') as master_file:
+        for line in master_file:
+            (val, key) = line.split()
+            hashes[key] = val
+
+    for ym in yearmonth:
+        raw_hash_dir = "{}/raw".format(gk.get_working_dir())
+        if not isdir(raw_hash_dir):
+            mkdir(raw_hash_dir)
+        logger.info("Moving {}.hashes to {}\n".format(ym, raw_hash_dir))
+        rename("{}/{}.hashes".format(gk.get_working_dir(), ym),
+               "{}/{}.hashes".format(raw_hash_dir, ym))
+        hash_process = subprocess.Popen("cd {}; sha1sum ./raw/{}.hashes".format(gk.get_working_dir(), ym),
+                                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        hash_process_out, hash_process_err = hash_process.communicate()
+        if sys.version_info > (3, 0):
+            hash_process_output = hash_process_out.decode().split("\n")
+        else:
+            hash_process_output = hash_process_out.split("\n")
+
+        hashes["./raw/{}.hashes".format(ym)] = hash_process_output[0].split()[0]
+
+        with open("{}/master.hashes".format(gk.get_working_dir()), 'w') as master_file:
+            for key, val in hashes.items():
+                master_file.write(val + "  " + key)
+
+    """
     logger.info("Updating master hashes")
     try:
         gk.update_master_hashes()
@@ -1674,6 +1719,7 @@ if __name__ == '__main__':
         email_flag = 1
         gk.email_message += msg
         gk.email_message += str(error)
+    """
 
     if email_flag:
         gk.send_email()
