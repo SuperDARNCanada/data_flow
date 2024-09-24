@@ -1619,7 +1619,7 @@ if __name__ == '__main__':
 
     # All the metadata of interest below is stored in files_to_upload_dict
     # Remove each succeeded file from the holding dir and append "<hash> <filename> \n" to dictionary for yyyymm
-    for filename in succeeded_files:
+    for filename in sorted(list(succeeded_files)):
         ym = files_to_upload_dict[filename]['yearmonth']
         data_hash = files_to_upload_dict[filename]['hash']
         # remove("{}/{}".format(gk.get_holding_dir(), filename))  # Comment this line for testing purposes
@@ -1633,7 +1633,9 @@ if __name__ == '__main__':
     yearmonth = sorted(list(yearmonth_hash_dict.keys()))
     logger.info("Updating hash files: {}".format(yearmonth))
     # Update yyyymm.hashes from dictionary and upload to mirror
-    for ym, hash_string in yearmonth_hash_dict.items():
+    # for ym, hash_string in yearmonth_hash_dict.items():
+    for ym in yearmonth:
+        hash_string = yearmonth_hash_dict[ym]
         hashfile_path = "{}/{}.hashes".format(gk.get_working_dir(), ym)
         # If string is not empty, append it to hashfile
         if hash_string is not "":
