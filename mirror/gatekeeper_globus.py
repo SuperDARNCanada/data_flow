@@ -1698,10 +1698,10 @@ if __name__ == '__main__':
         for key in sorted(list(hashes.keys())):
             master_file.write(hashes[key] + "  " + key + "\n")
 
-    """
     logger.info("Updating master hashes")
     try:
-        gk.update_master_hashes()
+        gk.put_master_hashes()
+        # gk.update_master_hashes()
         if not gk.wait_for_last_task():
             msg = "Updating of master hashes didn't complete."
             logger.warning(msg)
@@ -1721,7 +1721,6 @@ if __name__ == '__main__':
         email_flag = 1
         gk.email_message += msg
         gk.email_message += str(error)
-    """
 
     if email_flag:
         gk.send_email()
