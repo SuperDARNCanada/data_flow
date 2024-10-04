@@ -1622,7 +1622,7 @@ if __name__ == '__main__':
     for filename in sorted(list(succeeded_files)):
         ym = files_to_upload_dict[filename]['yearmonth']
         data_hash = files_to_upload_dict[filename]['hash']
-        # remove("{}/{}".format(gk.get_holding_dir(), filename))  # Comment this line for testing purposes
+        remove("{}/{}".format(gk.get_holding_dir(), filename))  # Comment this line for testing purposes
         yearmonth_hash_dict[ym] += data_hash + "  " + filename + "\n"
 
     ###################################################################################################################
