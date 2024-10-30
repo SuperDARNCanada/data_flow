@@ -136,7 +136,7 @@ class Gatekeeper(object):
     control data flow onto the mirror """
 
     # Add _test to 3rd argument in constructor below for testing purposes
-    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=HOME + "/tmp_test/"):
+    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=HOME + "/tmp/"):
         """ Initialize member variables, check arguments, etc..
 
         :param client_id: retrieved from "Manage Apps" section of
@@ -158,7 +158,7 @@ class Gatekeeper(object):
         self.mirror_root_dir = None
         self.sync_pattern = None
         # Add _test for testing purposes
-        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed_test/'  # TODO: This is hacky, should be handled better, using the input args or something
+        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed/'  # TODO: This is hacky, should be handled better, using the input args or something
 
         self.cur_year = datetime.now().year
         self.cur_month = datetime.now().month
@@ -1089,7 +1089,7 @@ if __name__ == '__main__':
     # Setup logger and check script arguments as well as existence of various directories
 
     # Setup logger
-    LOGDIR = "/home/dataman/logs_test/globus"  # Add _test for testing purposes
+    LOGDIR = "/home/dataman/logs/globus"  # Add _test for testing purposes
     logfile = "{}/{:04d}/{:02d}/{:04d}{:02d}{:02d}.{:02d}{:02d}_globus_gatekeeper.log".format(LOGDIR,
                                                                                          gk.cur_year, gk.cur_month,
                                                                                          gk.cur_year, gk.cur_month,
@@ -1348,10 +1348,10 @@ if __name__ == '__main__':
                                     "Removing from files to upload.".format(hashed_file))
                         files_to_upload_dict.pop(hashed_file)
                         # Comment out removal of matching files from holding dir for testing purposes
-                        # try:
-                        #     remove("{}/{}".format(gk.get_holding_dir(), hashed_file))
-                        # except OSError as error:
-                        #     logger.error("Error trying to remove file: {}.".format(error))
+                        try:
+                            remove("{}/{}".format(gk.get_holding_dir(), hashed_file))
+                        except OSError as error:
+                            logger.error("Error trying to remove file: {}.".format(error))
                     elif sha1sum_result is "":
                         pass
                     else:
@@ -1657,7 +1657,7 @@ if __name__ == '__main__':
     # 2) read master hashes
     # 3) if updated ym in master hash, replace hash
     # 4) if new ym, add to master hash
-    # 5) put master hashes, skip this for testing purposes
+    # 5) put master hashes
     # Update master.hashes with all successfully uploaded files
     # Get master hashes file
     logger.info("Getting master hashes file...")
