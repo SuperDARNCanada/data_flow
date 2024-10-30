@@ -3,7 +3,7 @@
 ##############################################################################
 # What is the local holding directory to store data?
 HOLDINGDIR=$1
-# Which mirror are we running for?
+# Which mirror are we running for? "BAS" or "NSSC"
 MIRROR=$2
 # What year and month are we getting data for? Leave blank for current year and month
 YYYYMM=$3
