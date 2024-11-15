@@ -1,5 +1,7 @@
 # coding: utf-8
-""" Last modification 202304 by Kevin Krieger
+""" Last modified: 202410 by Saif Marei
+
+ Last modification 202304 by Kevin Krieger
  ported from gatekeeper
 
  This script is designed to log on to the University of Saskatchewan globus
@@ -134,7 +136,7 @@ class Gatekeeper(object):
     control data flow onto the mirror """
 
     # Add _test to 3rd argument in constructor below for testing purposes
-    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=HOME + "/tmp_test/"):
+    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=HOME + "/tmp/"):
         """ Initialize member variables, check arguments, etc..
 
         :param client_id: retrieved from "Manage Apps" section of
@@ -156,7 +158,7 @@ class Gatekeeper(object):
         self.mirror_root_dir = None
         self.sync_pattern = None
         # Add _test for testing purposes
-        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed_test/'  # TODO: This is hacky, should be handled better, using the input args or something
+        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed/'  # TODO: This is hacky, should be handled better, using the input args or something
 
         self.cur_year = datetime.now().year
         self.cur_month = datetime.now().month
@@ -1087,7 +1089,7 @@ if __name__ == '__main__':
     # Setup logger and check script arguments as well as existence of various directories
 
     # Setup logger
-    LOGDIR = "/home/dataman/logs_test/globus"  # Add _test for testing purposes
+    LOGDIR = "/home/dataman/logs/globus"  # Add _test for testing purposes
     logfile = "{}/{:04d}/{:02d}/{:04d}{:02d}{:02d}.{:02d}{:02d}_globus_gatekeeper.log".format(LOGDIR,
                                                                                          gk.cur_year, gk.cur_month,
                                                                                          gk.cur_year, gk.cur_month,
@@ -1099,10 +1101,6 @@ if __name__ == '__main__':
         mkdir("{}/{:04d}/".format(LOGDIR, gk.cur_year))
     if not isdir("{}/{:04d}/{:02d}/".format(LOGDIR, gk.cur_year, gk.cur_month)):
         mkdir("{}/{:04d}/{:02d}/".format(LOGDIR, gk.cur_year, gk.cur_month))
-
-    # Make sure stdout and stderr are written to the log file
-#     sys.stdout = logfile
-#     sys.stderr = logfile
 
     function = "Gatekeeper"
     logger = extendable_logger(logfile, function, level=logging.INFO)
@@ -1659,7 +1657,7 @@ if __name__ == '__main__':
     # 2) read master hashes
     # 3) if updated ym in master hash, replace hash
     # 4) if new ym, add to master hash
-    # 5) put master hashes, skip this for testing purposes
+    # 5) put master hashes
     # Update master.hashes with all successfully uploaded files
     # Get master hashes file
     logger.info("Getting master hashes file...")
@@ -1671,19 +1669,26 @@ if __name__ == '__main__':
         logger.error(msg)
         sys.exit(msg)
 
+    # Read current master hashes file in as dictionary with filenames as keys and hashes as values
+    # "Filenames" are of the form ./raw/yyyymm.hashes and ./dat/yyyymm.hashes
     hashes = {}
     with open("{}/master.hashes".format(gk.get_working_dir()), 'r') as master_file:
         for line in master_file:
             (val, key) = line.split()
             hashes[key] = val
 
+    # For each yyyymm in holding dir which passed all tests
+    #    - hash the corresponding yyyymm.hashes
+    #    - update/append the key, value pair to the hashes dictionary
     for ym in yearmonth:
         raw_hash_dir = "{}/raw".format(gk.get_working_dir())
         if not isdir(raw_hash_dir):
             mkdir(raw_hash_dir)
+        # Move hash file to working_dir/raw/ to ensure entry in master hash of the form ./raw/yyyymm.hashes
         logger.info("Moving {}.hashes to {}\n".format(ym, raw_hash_dir))
         rename("{}/{}.hashes".format(gk.get_working_dir(), ym),
                "{}/{}.hashes".format(raw_hash_dir, ym))
+        # Hash yyyymm.hashes file in working_dir/raw/ from working_dir
         hash_process = subprocess.Popen("cd {}; sha1sum ./raw/{}.hashes".format(gk.get_working_dir(), ym),
                                         shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         hash_process_out, hash_process_err = hash_process.communicate()
@@ -1692,12 +1697,15 @@ if __name__ == '__main__':
         else:
             hash_process_output = hash_process_out.split("\n")
 
+        # Add yyyymm.hashes to dictionary if it doesn't exist, update existing hash o/w.
         hashes["./raw/{}.hashes".format(ym)] = hash_process_output[0].split()[0]
 
+    # Overwrite entire master.hashes file with dictionary
     with open("{}/master.hashes".format(gk.get_working_dir()), 'w') as master_file:
         for key in sorted(list(hashes.keys())):
             master_file.write(hashes[key] + "  " + key + "\n")
 
+    # Upload master hash to mirror
     logger.info("Updating master hashes")
     try:
         gk.put_master_hashes()

@@ -14,7 +14,7 @@ echo "Date range: ${startdate} - ${enddate}"
 while [ "$d" != "${enddate}" ]
 do 
 	yearmonth=$(date -d "$d" +%Y%m)
-	/home/dataman/data_flow/mirror/sync_bas_data.sh /data/holding/BAS/ ${yearmonth}
-        d=$(date -d "$d + 1 month" +%Y%m%d)
+	/home/dataman/data_flow/mirror/sync_mirror_data.sh /data/holding/BAS BAS ${yearmonth}
+  d=$(date -d "$d + 1 month" +%Y%m%d)
 done
 

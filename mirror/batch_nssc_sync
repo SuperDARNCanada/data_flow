@@ -13,8 +13,8 @@ echo "Date range: ${startdate} - ${enddate}"
 while [ "$d" != "${enddate}" ]
 do 
 	yearmonth=$(date -d "$d" +%Y%m)
-	/home/dataman/script/sync_nssc_data.sh /data/holding/NSSC/ ${yearmonth}
-        d=$(date -d "$d + 1 month" +%Y%m%d)
+	/home/dataman/data_flow/mirror/sync_mirror_data.sh /data/holding/NSSC NSSC ${yearmonth}
+  d=$(date -d "$d + 1 month" +%Y%m%d)
 done
 
 # Update mirror comparison
