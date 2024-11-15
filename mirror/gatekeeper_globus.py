@@ -1350,10 +1350,10 @@ if __name__ == '__main__':
                                     "Removing from files to upload.".format(hashed_file))
                         files_to_upload_dict.pop(hashed_file)
                         # Comment out removal of matching files from holding dir for testing purposes
-                        # try:
-                        #     remove("{}/{}".format(gk.get_holding_dir(), hashed_file))
-                        # except OSError as error:
-                        #     logger.error("Error trying to remove file: {}.".format(error))
+                        try:
+                            remove("{}/{}".format(gk.get_holding_dir(), hashed_file))
+                        except OSError as error:
+                            logger.error("Error trying to remove file: {}.".format(error))
                     elif sha1sum_result is "":
                         pass
                     else:
