@@ -136,7 +136,7 @@ class Gatekeeper(object):
     control data flow onto the mirror """
 
     # Add _test to 3rd argument in constructor below for testing purposes
-    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=HOME + "/tmp/"):
+    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=f"{HOME}/tmp/"):
         """ Initialize member variables, check arguments, etc..
 
         :param client_id: retrieved from "Manage Apps" section of
@@ -277,7 +277,7 @@ class Gatekeeper(object):
 
     def get_blocklist_dir(self):
         """:returns: String representing the blocklist directory on the mirror"""
-        return "{}/{}".format(self.mirror_root_dir, "/blocklist")
+        return "{}/{}".format(self.mirror_root_dir, "blocklist")
 
     def get_holding_dir(self):
         """:returns: String representing the holding directory which contains data to be sync'd"""
@@ -408,8 +408,7 @@ class Gatekeeper(object):
                                                 label=function_name, sync_level="checksum",
                                                 notify_on_succeeded=False, notify_on_failed=True)
         for holding_file in files_to_sync:
-            dest_dir_prefix = self.mirror_root_dir + "/" + data_type + "/" + \
-                              holding_file[0:4] + "/" + holding_file[4:6] + "/"
+            dest_dir_prefix = f"{self.mirror_root_dir}/{data_type}/{holding_file[0:4]}/{holding_file[4:6]}/"
             transfer_data.add_item("{}/{}".format(self.holding_dir, holding_file),
                                    "{}/{}".format(dest_dir_prefix, holding_file))
         transfer_result = self.transfer_client.submit_transfer(transfer_data)
@@ -435,9 +434,9 @@ class Gatekeeper(object):
         for failed_file_from_list in files_to_sync:
             elements = parse_data_filename(failed_file_from_list)
             if elements is None:
-                dest_dir_prefix = self.mirror_failed_dir + "/"
+                dest_dir_prefix = f"{self.mirror_failed_dir}/"
             else:
-                dest_dir_prefix = self.mirror_failed_dir + "/" + elements[6] + "/"
+                dest_dir_prefix = f"{self.mirror_failed_dir}/{elements[6]}/"
             if not self.create_new_dir(dest_dir_prefix):
                 return None  # Failed to create directory, so we can't upload these files
             transfer_data.add_item("{}/{}".format(self.holding_dir, failed_file_from_list),
@@ -463,8 +462,8 @@ class Gatekeeper(object):
                                                 label=inspect.currentframe().f_code.co_name,
                                                 sync_level="checksum", notify_on_succeeded=False,
                                                 notify_on_failed=True)
-        transfer_data.add_item(source_path + "master.hashes",
-                               "{}/.config/master.hashes".format(self.mirror_root_dir))
+        transfer_data.add_item(f"{source_path}master.hashes",
+                               f"{self.mirror_root_dir}/.config/master.hashes")
         transfer_result = self.transfer_client.submit_transfer(transfer_data)
         self.last_transfer_result = transfer_result
         return transfer_result
@@ -491,7 +490,7 @@ class Gatekeeper(object):
                                                                      data_type, int(year),
                                                                      int(month), int(year),
                                                                      int(month))
-        source_path += str("{:04d}{:02d}.hashes".format(int(year), int(month)))
+        source_path += "{:04d}{:02d}.hashes".format(int(year), int(month))
         transfer_data = globus_sdk.TransferData(self.transfer_client, source_uuid, dest_uuid,
                                                 label=inspect.currentframe().f_code.co_name,
                                                 sync_level="checksum", notify_on_succeeded=False,
@@ -557,7 +556,7 @@ class Gatekeeper(object):
                                                                        data_type, int(year),
                                                                        int(month), int(year),
                                                                        int(month))
-        dest_path += str("{:04d}{:02d}.hashes".format(int(year), int(month)))
+        dest_path += "{:04d}{:02d}.hashes".format(int(year), int(month))
         deadline_1min = str(datetime.now() + timedelta(minutes=1))
         transfer_data = globus_sdk.TransferData(self.transfer_client, source_uuid, dest_uuid,
                                                 label=inspect.currentframe().f_code.co_name,
@@ -586,8 +585,8 @@ class Gatekeeper(object):
                                                 label=inspect.currentframe().f_code.co_name,
                                                 sync_level="checksum", notify_on_succeeded=False,
                                                 notify_on_failed=True)
-        transfer_data.add_item("{}/.config/master.hashes".format(self.mirror_root_dir),
-                               dest_path + str("master.hashes"))
+        transfer_data.add_item(f"{self.mirror_root_dir}/.config/master.hashes",
+                               f"{dest_path}master.hashes")
         transfer_result = self.transfer_client.submit_transfer(transfer_data)
         self.last_transfer_result = transfer_result
         return transfer_result
@@ -677,7 +676,7 @@ class Gatekeeper(object):
                                                                            data_type, int(year),
                                                                            int(month), int(year),
                                                                            int(month))
-            final_dest_path = dest_path + str("{:04d}{:02d}.hashes".format(int(year), int(month)))
+            final_dest_path = f"{dest_path}{int(year):04d}{int(month):02d}.hashes"
 
             if self.check_for_file_existence(source_path):
                 at_least_one_file = True
