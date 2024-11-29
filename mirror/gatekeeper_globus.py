@@ -1246,8 +1246,9 @@ def main():
     for item in sha1sum_output:
         filename = item.split()[1]
         data_hash = item.split()[0]
-        metadata = {'year': filename[0:4], 'month': filename[4:6], 'day': filename[6:8],
-                    'yearmonth': filename[0:6], 'hash': data_hash}
+        year, month, day, _, _, _, _, data_type = parse_data_filename(filename)
+        metadata = {'year': elements[0], 'month': elements[1], 'day': elements[2], 'yearmonth': filename[0:6],
+                    'hash': data_hash, 'type': elements[7]}
         files_to_upload_dict[filename].update(metadata)
 
     ###################################################################################################################
@@ -1564,13 +1565,29 @@ def main():
     yearmonth.sort()
     yearmonth_hash_dict = {ym: "" for ym in yearmonth}
 
+    # Get set of data types for current run (raw, dat, etc.)
+    used_data_types = []
+    for file in sorted(list(succeeded_files)):
+        used_data_types.append(files_to_upload_dict[file]['type'])
+    used_data_types = set(used_data_types)
+
+    # Make lists of data files on the mirror for all datatypes and all yearmonths
+    mirror_list = []
+    for data_type in used_data_types:
+        for ym in yearmonth:
+            mirror_list.append(gk.get_file_list(ym[0:4], ym[4:6]), data_type)
+
     # All the metadata of interest below is stored in files_to_upload_dict
     # Remove each succeeded file from the holding dir and append "<hash> <filename> \n" to dictionary for yyyymm
     for filename in sorted(list(succeeded_files)):
         ym = files_to_upload_dict[filename]['yearmonth']
-        data_hash = files_to_upload_dict[filename]['hash']
-        remove(f"{gk.get_holding_dir()}/{filename}")  # Comment this line for testing purposes
-        yearmonth_hash_dict[ym] += f"{data_hash}  {filename}\n"
+        # Make sure "succeeded" file actually made it to the mirror
+        if filename in mirror_list:
+            data_hash = files_to_upload_dict[filename]['hash']
+            remove(f"{gk.get_holding_dir()}/{filename}")  # Comment this line for testing purposes
+            yearmonth_hash_dict[ym] += f"{data_hash}  {filename}\n"
+        else:
+            logger.warning(f"Transfer of {filename} listed as succeeded but not found on mirror!")
 
     ###################################################################################################################
     # Step 11)
@@ -1682,7 +1699,7 @@ def main():
     finish_time_utc = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     finish_time = datetime.now().strftime("%s")
 
-    # logger.info("Finished at: {}".format(finish_time_utc))
+    logger.info(f"Finished at: {finish_time_utc}")
     total_time = (int(finish_time) - int(start_time))/60
     logger.info(f"Script finished. Total time: {total_time} minutes")
 
@@ -1692,3 +1709,4 @@ def main():
 
 
 # TODO: check if file exists in the hashes file but not on the mirror
+# TODO: go through all "print" statements and either remove them or add them to logger
