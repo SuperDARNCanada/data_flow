@@ -33,6 +33,7 @@ import smtplib
 from email.mime.text import MIMEText
 import pydarnio
 import logging
+import argparse
 
 # Make sure there is only one instance running of this script
 from tendo import singleton
@@ -1031,9 +1032,19 @@ class Gatekeeper(object):
             continue
 
 
-if __name__ == '__main__':
+def main():
     start_time = datetime.now().strftime("%s")
     email_flag = 0
+
+    parser = argparse.ArgumentParser(description='Given a local holding directory and a mirror directory this program'
+                                                 'will perform checks on all local rawacf files, transfer all files to'
+                                                 'the mirror (or other designated location -- e.g., failed,'
+                                                 'blocklisted, nomatch), and update the hash files accordingly.')
+    parser.add_argument('-d', '--holding', type=str, default='', help='Path to local holding directory.')
+    parser.add_argument('-m', '--mirror', type=str, default='', help='Path to root directory on mirror.')
+    parser.add_argument('-p', '--pattern', type=str, default="*rawacf.bz2",
+                        help='Sync pattern of rawacf files, default is rawacf.bz2')
+    args = parser.parse_args()
 
     ###################################################################################################################
     # Step 1)
@@ -1085,24 +1096,12 @@ if __name__ == '__main__':
         logger.error(msg)
         sys.exit(msg)
 
-    logger.info(f"Number of args: {len(sys.argv)}")
-    logger.info(f"Args: {str(sys.argv)}")
+    logger.info(f"Args: {args.holding}  {args.mirror}  {args.pattern}")
 
-    if (len(sys.argv)) == 3:
-        gk.set_holding_dir(sys.argv[1])
-        gk.set_mirror_root_dir(sys.argv[2])
-        gk.set_sync_pattern("*rawacf.bz2")
-    elif (len(sys.argv)) == 4:
-        gk.set_holding_dir(sys.argv[1])
-        gk.set_mirror_root_dir(sys.argv[2])
-        gk.set_sync_pattern(sys.argv[3])
-    else:
-        msg = f"{len(sys.argv) - 1} arguments supplied. Expected: /path/to/holding/dir /path/to/mirror/root optional*pattern. Exiting."
-        gk.email_subject += "Argument error"
-        gk.email_message += msg
-        gk.send_email()
-        logger.error(msg)
-        sys.exit(msg)
+    # Set holding directory, mirror directory, and sync pattern from parsed arguments
+    gk.set_holding_dir(args.holding)
+    gk.set_mirror_root_dir(args.mirror)
+    gk.set_sync_pattern(args.pattern)
 
     logger.info("Checking for holding and mirror directories...\n")
 
@@ -1676,7 +1675,9 @@ if __name__ == '__main__':
     total_time = (int(finish_time) - int(start_time))/60
     logger.info(f"Script finished. Total time: {total_time} minutes")
 
-# TODO: Make logging similar to original gatekeeper
-# TODO: Make yearmonth into dict of data files with year, month, name of hash file, etc.
-# TODO: Use dict & not list for files, you can have hash file, year, month, radar, datatype, etc.
+
+    if __name__ == "__main__":
+        main()
+
+
 # TODO: check if file exists in the hashes file but not on the mirror
