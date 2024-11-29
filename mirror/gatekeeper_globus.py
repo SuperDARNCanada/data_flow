@@ -1575,7 +1575,7 @@ def main():
     mirror_list = []
     for data_type in used_data_types:
         for ym in yearmonth:
-            mirror_list.append(gk.get_file_list(ym[0:4], ym[4:6]), data_type)
+            mirror_list.append(gk.get_file_list(ym[0:4], ym[4:6], data_type))
 
     # All the metadata of interest below is stored in files_to_upload_dict
     # Remove each succeeded file from the holding dir and append "<hash> <filename> \n" to dictionary for yyyymm
