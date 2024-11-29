@@ -172,6 +172,18 @@ class Gatekeeper(object):
         self.cur_minute = datetime.now().minute
         self.cur_date = datetime.now().strftime("%Y%m%d")
         self.possible_data_types = ['raw', 'dat']
+
+        # Setup logger
+        LOGDIR = "/home/dataman/logs/globus"  # Add _test for testing purposes
+        logfile = (f"{LOGDIR}/{self.cur_year:04d}/{self.cur_month:02d}/{self.cur_year:04d}{self.cur_month:02d}"
+                   f"{self.cur_day:02d}.{self.cur_hour:02d}{self.cur_minute:02d}_globus_gatekeeper.log")
+        # Make sure year and month directories for logfile exist
+        if not isdir(f"{LOGDIR}/{self.cur_year:04d}/"):
+            mkdir(f"{LOGDIR}/{self.cur_year:04d}/")
+        if not isdir(f"{LOGDIR}/{self.cur_year:04d}/{self.cur_month:02d}/"):
+            mkdir(f"{LOGDIR}/{self.cur_year:04d}/{self.cur_month:02d}/")
+
+        self.logger = extendable_logger(logfile, "Gatekeeper")
         
         # Potential consents required (new as of Globus endpoints v5 - see here: https://globus-sdk-python.readthedocs.io/en/stable/examples/minimal_transfer_script/index.html#example-minimal-transfer)
         self.consents = []
@@ -1075,20 +1087,8 @@ def main():
 
     ###################################################################################################################
     # Step 2)
-    # Setup logger and check script arguments as well as existence of various directories
-
-    # Setup logger
-    LOGDIR = "/home/dataman/logs/globus"  # Add _test for testing purposes
-    logfile = f"{LOGDIR}/{gk.cur_year:04d}/{gk.cur_month:02d}/{gk.cur_year:04d}{gk.cur_month:02d}{gk.cur_day:02d}.{gk.cur_hour:02d}{gk.cur_minute:02d}_globus_gatekeeper.log"
-
-    # Make sure year and month directories for logfile exist
-    if not isdir(f"{LOGDIR}/{gk.cur_year:04d}/"):
-        mkdir(f"{LOGDIR}/{gk.cur_year:04d}/")
-    if not isdir(f"{LOGDIR}/{gk.cur_year:04d}/{gk.cur_month:02d}/"):
-        mkdir(f"{LOGDIR}/{gk.cur_year:04d}/{gk.cur_month:02d}/")
-
-    function = "Gatekeeper"
-    logger = extendable_logger(logfile, function, level=logging.INFO)
+    # Check script arguments as well as existence of various directories
+    logger = gk.logger
 
     # Clear out working directory /home/dataman/tmp/* before use
     if isdir(gk.get_working_dir()):
