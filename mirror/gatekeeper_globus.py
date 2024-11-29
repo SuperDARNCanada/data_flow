@@ -12,10 +12,12 @@
  moved to an appropriate location, given the nature of the failure.
 
  Call the script like so with the following arguments:
- /path/to/script/gatekeeper_globus /path/to/local/holding/dir/ /path/to/mirror/root/ [pattern]
+ /path/to/script/gatekeeper_globus -d /path/to/local/holding/dir/ -m /path/to/mirror/root/ -p [pattern]
  Argument 1 is a path to a local holding directory with data you wish to put on the mirror
  Argument 2 is a path to the root of data mirror under which appear the directories for data type
  Argument 3 is the optional pattern, omit to sync all rawacf files
+ Run
+ python /path/to/script/gatekeeper_globus -h for more information on the usage of this script.
 
  The script needs to be run on the same machine that the globus personal endpoint is
  running on (i.e. the same machine where the local holding directory is located)
