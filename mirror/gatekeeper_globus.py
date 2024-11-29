@@ -40,8 +40,8 @@ from tendo import singleton
 me = singleton.SingleInstance()
 
 HOME = expanduser("~")
-TRANSFER_RT_FILENAME = HOME + "/.globus_transfer_rt"
-PERSONAL_UUID_FILENAME = HOME + "/.globusonline/lta/client-id.txt"
+TRANSFER_RT_FILENAME = f"{HOME}/.globus_transfer_rt"
+PERSONAL_UUID_FILENAME = f"{HOME}/.globusonline/lta/client-id.txt"
 
 if isfile(PERSONAL_UUID_FILENAME):
     with open(PERSONAL_UUID_FILENAME) as f:
@@ -330,11 +330,7 @@ class Gatekeeper(object):
         authorize_url = client.oauth2_get_authorize_url()
         print(f'Please go to this URL and login: {authorize_url}')
 
-        if sys.version_info > (3, 0):
-            auth_code = input('Please enter the code you get after login here: ').strip()
-        else:
-            auth_code = raw_input('Please enter the code you get after login here: ').strip()
-
+        auth_code = input('Please enter the code you get after login here: ').strip()
         token_response = client.oauth2_exchange_code_for_tokens(auth_code)
 
         # the useful values that you want at the end of this
@@ -612,10 +608,7 @@ class Gatekeeper(object):
                                             shell=True, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE)
             hash_process_out, hash_process_err = hash_process.communicate()
-            if sys.version_info > (3, 0):
-                hash_process_output = hash_process_out.decode().split("\n")
-            else:
-                hash_process_output = hash_process_out.split("\n")
+            hash_process_output = hash_process_out.decode().split("\n")
             with open(master_hashes_file_path, 'a+') as master_hash_file:
                 master_hash_file.write('\n'.join(hash_process_output))
         return self.put_master_hashes(source_path, source_uuid, dest_uuid)
@@ -754,7 +747,7 @@ class Gatekeeper(object):
         if dest_uuid is None:
             dest_uuid = self.mirror_uuid
         if failed_update_files is None:
-            failed_update_files = self.get_working_dir() + '/all_failed.txt'
+            failed_update_files = f"{self.get_working_dir()}/all_failed.txt"
 
         # Make sure that the failed_files file exists, or if None, then move on
         if failed_update_files:
@@ -881,7 +874,7 @@ class Gatekeeper(object):
                 retries += 1
         email_msg = f"Checking for file existence failed after {retries} retries. Exiting!"
         if errormsg is not None:
-            email_msg = email_msg + "\n" + errormsg
+            email_msg = f"{email_msg}\n{errormsg}"
         self.email_subject += "Check for file existence failed"
         self.email_message += email_msg
         self.send_email()
@@ -1178,7 +1171,7 @@ if __name__ == '__main__':
     # Append filename from beginning of line
     blocked_data = []
     for f in blocklist_files:
-        with open(f"{gk.get_working_dir()/blocklist/{f}") as blocklist_file:
+        with open(f"{gk.get_working_dir()}/blocklist/{f}") as blocklist_file:
             for line in blocklist_file:
                 blocked_data.append(line.strip('\n').strip('\r'))
 
@@ -1228,13 +1221,8 @@ if __name__ == '__main__':
     sha1sum_process = subprocess.Popen(f"cd {gk.get_holding_dir()}; sha1sum {gk.get_sync_pattern()}",
                                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = sha1sum_process.communicate()
-    # Handle both python 3 and python 2
-    if sys.version_info > (3, 0):
-        sha1sum_output = out.decode().split("\n")
-        sha1sum_error = err.decode().split("\n")
-    else:
-        sha1sum_output = out.split("\n")
-        sha1sum_error = err.split("\n")
+    sha1sum_output = out.decode().split("\n")
+    sha1sum_error = err.decode().split("\n")
     # Remove empty items from the sha1sum output
     sha1sum_output = [x for x in sha1sum_output if x]
     if sha1sum_process.returncode != 0 or len(sha1sum_output) == 0:
@@ -1292,13 +1280,8 @@ if __name__ == '__main__':
                 sha1sum_process = subprocess.Popen(command_string, shell=True,
                                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 out, err = sha1sum_process.communicate()
-                # Handle both python 3 and python 2
-                if sys.version_info > (3, 0):
-                    sha1sum_decoded_output = out.decode().split("\n")
-                    sha1sum_decoded_error = err.decode().split("\n")
-                else:
-                    sha1sum_decoded_output = out.split("\n")
-                    sha1sum_decoded_error = err.split("\n")
+                sha1sum_decoded_output = out.decode().split("\n")
+                sha1sum_decoded_error = err.decode().split("\n")
                 # Loop through result of sha1sum comparison for each file
                 # Only remove from files_to_upload if file exists both in holding_dir and hashfile in working_dir
                 # Need further investigation into "Failed open or read" and "" results
@@ -1360,13 +1343,10 @@ if __name__ == '__main__':
                                            shell=True, stdout=subprocess.PIPE,
                                            stderr=subprocess.PIPE)
         out, err = bunzip2_process.communicate()
-        if sys.version_info > (3, 0):
-            bunzip2_process_output = out.decode().split("\n")
-            bunzip2_process_error = err.decode().split("\n")
-        else:
-            bunzip2_process_output = out.split("\n")
-            bunzip2_process_error = err.split("\n")
-        filesize = getsize(gk.get_holding_dir() + data_file)
+        bunzip2_process_output = out.decode().split("\n")
+        bunzip2_process_error = err.decode().split("\n")
+
+        filesize = getsize(f"{gk.get_holding_dir()}{data_file}")
         # Check error code of bzip test and log a relevant error message
         # Remove from files_to_upload if any nonzero error code
         if bunzip2_process.returncode == 1 or bunzip2_process.returncode == 3:
@@ -1399,12 +1379,8 @@ if __name__ == '__main__':
                                              shell=True, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE)
             out, err = bzcat_process.communicate()
-            if sys.version_info > (3, 0):
-                bzcat_process_output = out.decode().split("\n")
-                bzcat_process_error = err.decode().split("\n")
-            else:
-                bzcat_process_output = out.split("\n")
-                bzcat_process_error = err.split("\n")
+            bzcat_process_output = out.decode().split("\n")
+            bzcat_process_error = err.decode().split("\n")
             # Check error code of bzcat and log a relevant error message
             # Remove from files_to_upload if any nonzero error code
             if bzcat_process.returncode == 1 or bzcat_process.returncode == 3:
@@ -1655,10 +1631,7 @@ if __name__ == '__main__':
         hash_process = subprocess.Popen(f"cd {gk.get_working_dir()}; sha1sum ./raw/{ym}.hashes",
                                         shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         hash_process_out, hash_process_err = hash_process.communicate()
-        if sys.version_info > (3, 0):
-            hash_process_output = hash_process_out.decode().split("\n")
-        else:
-            hash_process_output = hash_process_out.split("\n")
+        hash_process_output = hash_process_out.decode().split("\n")
 
         # Add yyyymm.hashes to dictionary if it doesn't exist, update existing hash o/w.
         hashes[f"./raw/{ym}.hashes"] = hash_process_output[0].split()[0]
