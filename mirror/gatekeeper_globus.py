@@ -1127,8 +1127,21 @@ def main():
 
     ###################################################################################################################
     # Step 3)
-    # Get some files from mirror
-    # This includes master hashes, failed files list and blocklist directory
+    # Make a list of files_to_upload consisting of all rawacf files in the holding directory
+    # Get some files from mirror: master hashes, failed files list, blocklist directory
+
+    # Get list of files to upload from the holding directory
+    # Create files to upload dictionary where keys are filenames and values are empty dictionaries
+    # Values will be set in Step 5) after the holding directory is hashed
+    files_to_upload = gk.list_of_files_to_upload()
+    files_to_upload.sort()
+    files_to_upload_dict = {file: {} for file in files_to_upload}
+    if len(files_to_upload) == 0:
+        msg = "No files to upload. Exiting."
+        logger.error(msg)
+        sys.exit(msg)
+    else:
+        logger.info(f"Initial set of files to upload ({len(files_to_upload)}): {files_to_upload}\n")
 
     # Get master hashes file
     logger.info("Getting master hashes file...")
@@ -1163,7 +1176,6 @@ def main():
     ###################################################################################################################
     # Step 4)
     # Make a list of blocked data files from the blocklist/ directory obtained above
-    # Make a list of files_to_upload consisting of all rawacf files in the holding directory
     # Remove all blocked data files from files_to_upload
 
     # Store all txt files from blocklist directory
@@ -1180,13 +1192,6 @@ def main():
             for line in blocklist_file:
                 blocked_data.append(line.strip('\n').strip('\r'))
 
-    # Get list of files to upload from the holding directory
-    # Create files to upload dictionary where keys are filenames and values are empty dictionaries
-    # Values will be set in Step 5) after the holding directory is hashed
-    files_to_upload = gk.list_of_files_to_upload()
-    files_to_upload.sort()
-    files_to_upload_dict = {file: {} for file in files_to_upload}
-    logger.info(f"Initial set of files to upload ({len(files_to_upload)}): {files_to_upload}\n")
     # Remove from files_to_upload if file appears in the blocklist and inform user
     blocked_files_to_remove = []
     for data_file in sorted(list(files_to_upload_dict.keys())):
