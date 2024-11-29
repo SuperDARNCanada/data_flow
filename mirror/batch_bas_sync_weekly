@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# A script to compare our mirror to the BAS mirror 1 month at a time going back 12 months, and download any
+# rawacf files that we are missing. Runs weekly.
+
 curdate=$(date +%Y%m%d)
 startdate=$(date -d "$curdate - 1 year" +%Y%m)
 # Start date is the 1st of the month, 1 year ago

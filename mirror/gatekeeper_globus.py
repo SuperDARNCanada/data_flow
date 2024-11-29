@@ -6,6 +6,10 @@
 
  This script is designed to log on to the University of Saskatchewan globus
  SuperDARN mirror in order to upload rawacf files for a specific pattern.
+ The script performs various checks on all specified rawacf files in a
+ local holding directory and only transfers the files which pass all tests
+ to the SuperDARN mirror. Files which fail any of the checks are then
+ moved to an appropriate location, given the nature of the failure.
 
  Call the script like so with the following arguments:
  /path/to/script/gatekeeper_globus /path/to/local/holding/dir/ /path/to/mirror/root/ [pattern]

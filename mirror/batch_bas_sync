@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# A script to compare our mirror to the BAS mirror 1 month at a time going back to January 2006, and download any
+# rawacf files that we are missing. Runs monthly.
+
 # Start date is the beginning of 2006
 startdate=20060101
 d=${startdate}
