@@ -623,7 +623,7 @@ class Gatekeeper(object):
                                 dest_path=data_type_path)
             while not self.wait_for_last_task(timeout_s=600):
                 print("Still waiting for last task...")
-            hash_process = subprocess.Popen(f"cd {gk.get_working_dir()}; sha1sum ./{data_type}/*hashes",
+            hash_process = subprocess.Popen(f"cd {self.get_working_dir()}; sha1sum ./{data_type}/*hashes",
                                             shell=True, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE)
             hash_process_out, hash_process_err = hash_process.communicate()
@@ -1246,9 +1246,9 @@ def main():
     for item in sha1sum_output:
         filename = item.split()[1]
         data_hash = item.split()[0]
-        year, month, day, _, _, _, _, data_type = parse_data_filename(filename)
-        metadata = {'year': elements[0], 'month': elements[1], 'day': elements[2], 'yearmonth': filename[0:6],
-                    'hash': data_hash, 'type': elements[7]}
+        elements = parse_data_filename(filename)
+        metadata = {'year': f'{elements[0]}', 'month': f'{elements[1]}', 'day': f'{elements[2]}',
+                    'yearmonth': filename[0:6], 'hash': data_hash, 'type': elements[7]}
         files_to_upload_dict[filename].update(metadata)
 
     ###################################################################################################################
@@ -1565,24 +1565,16 @@ def main():
     yearmonth.sort()
     yearmonth_hash_dict = {ym: "" for ym in yearmonth}
 
-    # Get set of data types for current run (raw, dat, etc.)
-    used_data_types = []
-    for file in sorted(list(succeeded_files)):
-        used_data_types.append(files_to_upload_dict[file]['type'])
-    used_data_types = set(used_data_types)
-
-    # Make lists of data files on the mirror for all datatypes and all yearmonths
-    mirror_list = []
-    for data_type in used_data_types:
-        for ym in yearmonth:
-            mirror_list.append(gk.get_file_list(ym[0:4], ym[4:6], data_type))
-
     # All the metadata of interest below is stored in files_to_upload_dict
     # Remove each succeeded file from the holding dir and append "<hash> <filename> \n" to dictionary for yyyymm
     for filename in sorted(list(succeeded_files)):
-        ym = files_to_upload_dict[filename]['yearmonth']
+        file_data = files_to_upload_dict[filename]
+        ym = file_data['yearmonth']
         # Make sure "succeeded" file actually made it to the mirror
-        if filename in mirror_list:
+        data_type = file_data['type']
+        year = file_data['year']
+        month = file_data['month']
+        if gk.check_for_file_existence(f"{gk.mirror_root_dir}/{data_type}/{int(year):04d}/{int(month):02d}/{filename}"):
             data_hash = files_to_upload_dict[filename]['hash']
             remove(f"{gk.get_holding_dir()}/{filename}")  # Comment this line for testing purposes
             yearmonth_hash_dict[ym] += f"{data_hash}  {filename}\n"
@@ -1704,8 +1696,8 @@ def main():
     logger.info(f"Script finished. Total time: {total_time} minutes")
 
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
 
 
 # TODO: check if file exists in the hashes file but not on the mirror
