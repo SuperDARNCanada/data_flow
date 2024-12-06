@@ -1204,7 +1204,7 @@ def main():
     # /holding_dir/blocked/cur_date/
     # Move blocked files from /holding_dir/ to /holding_dir/blocked/cur_date/
     if len(blocked_files_to_remove) > 0:
-        logger.info(f"Found blocked files: {blocked_files_to_remove}")
+        logger.info(f"Found blocked files ({len(blocked_files_to_remove)}): {blocked_files_to_remove}")
         for file_to_remove in blocked_files_to_remove:
             files_to_upload_dict.pop(file_to_remove)
 
@@ -1334,7 +1334,7 @@ def main():
                 logger.error(msg)
                 sys.exit(msg)
 
-    logger.info(f"No match list: {non_matching_files}\n")
+    logger.info(f"No match list ({len(non_matching_files)}): {non_matching_files}\n")
 
     ###################################################################################################################
     # Step 7)
@@ -1428,7 +1428,7 @@ def main():
                 finally:
                     remove(f"{gk.get_holding_dir()}/{unzipped_filename}")
 
-    logger.info("Failed files list: ")
+    logger.info(f"Failed files list ({len(failed_files)}): ")
     for failed in failed_files:
         logger.info(f"{failed_files[failed][0]}  {failed} | {failed_files[failed][1]}")
 
@@ -1515,7 +1515,7 @@ def main():
 
     # Get updated list of files_to_upload from dictionary
     files_to_upload = sorted(list(files_to_upload_dict.keys()))
-    logger.info(f"Final set of files to upload: {files_to_upload}")
+    logger.info(f"Final set of files to upload ({len(files_to_upload)}): {files_to_upload}")
 
     # Exit if there are no files to upload
     if len(files_to_upload) == 0:
