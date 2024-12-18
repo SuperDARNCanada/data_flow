@@ -1049,6 +1049,27 @@ class Gatekeeper(object):
             print("Still waiting to delete files from origin.")
             continue
 
+    def move_files_to_subdir(self, fail_type, files_to_move):
+        """ Moves blocked, non-matching, or failed files to corresponding subdirectories within local holding directory.
+
+        :param fail_type: The type of fail leading to file move. ("Blocked", "Nomatch", "Failed")
+        :param files_to_move: List of filenames in holding dir to be moved to specific subdirectory.
+        """
+
+        directory = f"{self.get_holding_dir()}/{fail_type.lower()}"
+        if not isdir(directory):
+            mkdir(directory)
+        subdir = f"{directory}/{self.cur_date}"
+        if not isdir(subdir):
+            mkdir(subdir)
+        self.logger.info(f"Moving {fail_type.lower()} files to {subdir}")
+        for file in files_to_move:
+            self.logger.info(f"Moving {self.get_holding_dir()}/{file} to {subdir}/{file}\n")
+            rename(f"{self.get_holding_dir()}/{file}",
+                   f"{subdir}/{file}")
+        self.email_subject += f"{fail_type} files "
+        self.email_message += f"{fail_type} files:\r\n{files_to_move}\r\n\r\n"
+
 
 def main():
     start_time = datetime.now().strftime("%s")
@@ -1208,19 +1229,7 @@ def main():
         for file_to_remove in blocked_files_to_remove:
             files_to_upload_dict.pop(file_to_remove)
 
-        blocked_directory = f"{gk.get_holding_dir()}/blocked"
-        if not isdir(blocked_directory):
-            mkdir(blocked_directory)
-        blocked_subdirectory = f"{blocked_directory}/{gk.cur_date}"
-        if not isdir(blocked_subdirectory):
-            mkdir(blocked_subdirectory)
-        logger.info(f"Moving blocked files to {blocked_subdirectory}")
-        for blocked_file in blocked_files_to_remove:
-            logger.info(f"Moving {gk.get_holding_dir()}/{blocked_file} to {blocked_subdirectory}/{blocked_file}\n")
-            rename(f"{gk.get_holding_dir()}/{blocked_file}",
-                   f"{blocked_subdirectory}/{blocked_file}")
-        gk.email_subject += "Blocked files "
-        gk.email_message += f"Blocked files:\r\n{blocked_files_to_remove}\r\n\r\n"
+        gk.move_files_to_subdir("Blocked", blocked_files_to_remove)
         email_flag = 1
 
     ###################################################################################################################
@@ -1456,19 +1465,7 @@ def main():
     # /holding_dir/nomatch/cur_date/
     # Move non-matching files to /holding_dir/nomatch/cur_date/
     if len(non_matching_files) > 0:
-        nomatch_directory = f"{gk.get_holding_dir()}/nomatch"
-        if not isdir(nomatch_directory):
-            mkdir(nomatch_directory)
-        nomatch_subdirectory = f"{nomatch_directory}/{gk.cur_date}"
-        if not isdir(nomatch_subdirectory):
-            mkdir(nomatch_subdirectory)
-        logger.info(f"Moving non-matching files to {nomatch_subdirectory}\n")
-        for non_matched_file in non_matching_files:
-            logger.info(f"Moving {gk.get_holding_dir()}/{non_matched_file} to {nomatch_subdirectory}/{non_matched_file}\n")
-            rename(f"{gk.get_holding_dir()}/{non_matched_file}",
-                   f"{nomatch_subdirectory}/{non_matched_file}")
-        gk.email_subject += "Non matching files "
-        gk.email_message += f"Non matching files:\r\n{non_matching_files}\r\n\r\n"
+        gk.move_files_to_subdir("Nomatch", non_matching_files)
         email_flag = 1
 
     # Upload failed files to failed dir on mirror with a timeout of 60s plus an extra 10s
@@ -1494,19 +1491,7 @@ def main():
 
         # Make failed dir in holding_dir, /holding_dir/failed/cur_date
         # Move failed files to /holding_dir/failed/cur_date/
-        failed_directory = f"{gk.get_holding_dir()}/failed"
-        if not isdir(failed_directory):
-            mkdir(failed_directory)
-        failed_subdirectory = f"{failed_directory}/{gk.cur_date}"
-        if not isdir(failed_subdirectory):
-            mkdir(failed_subdirectory)
-        logger.info(f"Moving failed files to {failed_subdirectory}\n")
-        for failed_file in failed_files:
-            logger.info(f"Moving {gk.get_holding_dir()}/{failed_file} to {failed_subdirectory}/{failed_file}\n")
-            rename(f"{gk.get_holding_dir()}/{failed_file}",
-                   f"{failed_subdirectory}/{failed_file}")
-        gk.email_subject += "Failed files "
-        gk.email_message += f"Failed files:\r\n{failed_files}\r\n\r\n"
+        gk.move_files_to_subdir("Failed", failed_files)
         email_flag = 1
 
     ###################################################################################################################
