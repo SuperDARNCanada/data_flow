@@ -142,14 +142,14 @@ class Gatekeeper(object):
         self.possible_data_types = ['raw', 'dat']
 
         # Setup logger
-        LOGDIR = "/home/dataman/logs/globus"  # Add _test for testing purposes
-        logfile = (f"{LOGDIR}/{self.cur_year:04d}/{self.cur_month:02d}/{self.cur_year:04d}{self.cur_month:02d}"
+        logdir = "/home/dataman/logs/globus"  # Add _test for testing purposes
+        logfile = (f"{logdir}/{self.cur_year:04d}/{self.cur_month:02d}/{self.cur_year:04d}{self.cur_month:02d}"
                    f"{self.cur_day:02d}.{self.cur_hour:02d}{self.cur_minute:02d}_globus_gatekeeper.log")
         # Make sure year and month directories for logfile exist
-        if not isdir(f"{LOGDIR}/{self.cur_year:04d}/"):
-            mkdir(f"{LOGDIR}/{self.cur_year:04d}/")
-        if not isdir(f"{LOGDIR}/{self.cur_year:04d}/{self.cur_month:02d}/"):
-            mkdir(f"{LOGDIR}/{self.cur_year:04d}/{self.cur_month:02d}/")
+        if not isdir(f"{logdir}/{self.cur_year:04d}/"):
+            mkdir(f"{logdir}/{self.cur_year:04d}/")
+        if not isdir(f"{logdir}/{self.cur_year:04d}/{self.cur_month:02d}/"):
+            mkdir(f"{logdir}/{self.cur_year:04d}/{self.cur_month:02d}/")
 
         self.logger = extendable_logger(logfile, "Gatekeeper")
 

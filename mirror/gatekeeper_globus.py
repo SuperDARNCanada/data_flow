@@ -158,9 +158,7 @@ def main():
     logger.info("Getting master hashes file...")
     gk.get_master_hashes()
     if not gk.wait_for_last_task():
-        msg = "get_master_hashes timeout"
-        gk.email_subject += msg
-        gk.send_email()
+        msg = "get_master_hashes timeout. Exiting."
         logger.error(msg)
         sys.exit(msg)
 
@@ -168,9 +166,7 @@ def main():
     logger.info("Getting failed files list (all_failed.txt)...")
     gk.get_failed()
     if not gk.wait_for_last_task():
-        msg = "get_failed timeout"
-        gk.email_subject += msg
-        gk.send_email()
+        msg = "get_failed timeout. Exiting."
         logger.error(msg)
         sys.exit(msg)
 
@@ -178,9 +174,7 @@ def main():
     logger.info("Getting blocklist directory...\n")
     gk.get_blocklist(dest_path=f"{gk.get_working_dir()}/blocklist/")
     if not gk.wait_for_last_task(timeout_s=120):
-        msg = "get_blocklist timeout"
-        gk.email_subject += msg
-        gk.send_email()
+        msg = "get_blocklist timeout. Exiting"
         logger.error(msg)
         sys.exit(msg)
 
@@ -257,6 +251,7 @@ def main():
     # Loop through yyyymm combos and get the yyyymm.hashes file from the mirror on each iteration
     # Perform sha1sum comparison between rawacfs in holding dir and recently acquired hashfile in working dir
     # Handle each file individually depending on the result of the sha1sum comparison
+    # Move nonmatching files to holding_dir/nomatch/
 
     # Get unique list of yyyymm combos and create dictionary
     # Keys are yyyymm and values are the files to upload dictionary items corresponding to the given yyyymm
@@ -334,6 +329,13 @@ def main():
                 sys.exit(msg)
 
     logger.info(f"No match list ({len(non_matching_files)}): {non_matching_files}\n")
+
+    # If any non-matching files were found, make nomatch dir in holding_dir
+    # /holding_dir/nomatch/cur_date/
+    # Move non-matching files to /holding_dir/nomatch/cur_date/
+    if len(non_matching_files) > 0:
+        gk.move_files_to_subdir("Nomatch", non_matching_files)
+        email_flag = 1
 
     ###################################################################################################################
     # Step 7)
@@ -434,7 +436,7 @@ def main():
     ###################################################################################################################
     # Step 8)
     # Append failed files to all_failed.txt in working dir and upload to mirror
-    # Move failed files to holding_dir/failed/ and move nonmatching files to holding_dir/nomatch/
+    # Move failed files to holding_dir/failed/
     # Transfer failed files to failed directory on mirror
 
     # Update all_failed.txt with new failed files and upload to mirror
@@ -450,13 +452,6 @@ def main():
             logger.info("Still waiting for failed files list to upload and complete...")
     except Exception as e:
         logger.warning(f"Error: {e}. Please update manually")
-
-    # If any non-matching files were found, make nomatch dir in holding_dir
-    # /holding_dir/nomatch/cur_date/
-    # Move non-matching files to /holding_dir/nomatch/cur_date/
-    if len(non_matching_files) > 0:
-        gk.move_files_to_subdir("Nomatch", non_matching_files)
-        email_flag = 1
 
     # Upload failed files to failed dir on mirror with a timeout of 60s plus an extra 10s
     # for each additional file
