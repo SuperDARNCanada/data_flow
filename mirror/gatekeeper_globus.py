@@ -214,7 +214,6 @@ def main():
             files_to_upload_dict.pop(file_to_remove)
 
         gk.move_files_to_subdir("Blocked", blocked_files_to_remove)
-        email_flag = 1
 
     ###################################################################################################################
     # Step 5)
@@ -229,9 +228,7 @@ def main():
     # Remove empty items from the sha1sum output
     sha1sum_output = [x for x in sha1sum_output if x]
     if sha1sum_process.returncode != 0 or len(sha1sum_output) == 0:
-        msg = "Error hashing files, probably no files passed"
-        gk.email_subject += msg
-        gk.send_email()
+        msg = "Error hashing files. Exiting."
         logger.error(msg)
         sys.exit(msg)
 
@@ -322,20 +319,18 @@ def main():
                 new_hash_file = True
             else:
                 # Error, previous month's hash files should exist already
-                msg = f"Hash file {ym} not found"
+                msg = f"Hash file {ym}.hashes not found. Exiting."
                 gk.email_subject += msg
                 gk.send_email()
                 logger.error(msg)
                 sys.exit(msg)
 
-    logger.info(f"No match list ({len(non_matching_files)}): {non_matching_files}\n")
-
     # If any non-matching files were found, make nomatch dir in holding_dir
     # /holding_dir/nomatch/cur_date/
     # Move non-matching files to /holding_dir/nomatch/cur_date/
     if len(non_matching_files) > 0:
+        logger.info(f"Found non-matching files ({len(non_matching_files)}): {non_matching_files}\n")
         gk.move_files_to_subdir("Nomatch", non_matching_files)
-        email_flag = 1
 
     ###################################################################################################################
     # Step 7)
@@ -429,9 +424,10 @@ def main():
                 finally:
                     remove(f"{gk.get_holding_dir()}/{unzipped_filename}")
 
-    logger.info(f"Failed files list ({len(failed_files)}): ")
-    for failed in failed_files:
-        logger.info(f"{failed_files[failed][0]}  {failed} | {failed_files[failed][1]}")
+    if len(failed_files) > 0:
+        logger.info(f"Found failed files ({len(failed_files)}): ")
+        for failed in failed_files:
+            logger.info(f"{failed_files[failed][0]}  {failed} | {failed_files[failed][1]}")
 
     ###################################################################################################################
     # Step 8)
@@ -477,7 +473,6 @@ def main():
         # Make failed dir in holding_dir, /holding_dir/failed/cur_date
         # Move failed files to /holding_dir/failed/cur_date/
         gk.move_files_to_subdir("Failed", failed_files)
-        email_flag = 1
 
     ###################################################################################################################
     # Step 9)
@@ -489,9 +484,7 @@ def main():
 
     # Exit if there are no files to upload
     if len(files_to_upload) == 0:
-        msg = "No files to upload"
-        gk.email_subject += msg
-        gk.send_email()
+        msg = "No files to upload. Exiting."
         logger.info(msg)
         sys.exit(msg)
 
@@ -549,7 +542,10 @@ def main():
             remove(f"{gk.get_holding_dir()}/{filename}")  # Comment this line for testing purposes
             yearmonth_hash_dict[ym] += f"{data_hash}  {filename}\n"
         else:
-            logger.warning(f"Transfer of {filename} listed as succeeded but not found on mirror!")
+            msg = f"Transfer of {filename} listed as succeeded but not found on mirror! File will remain in holding directory."
+            logger.warning(msg)
+            gk.email_message += msg
+            email_flag = 1
 
     ###################################################################################################################
     # Step 11)
@@ -591,7 +587,7 @@ def main():
     logger.info("Getting master hashes file...")
     gk.get_master_hashes()
     if not gk.wait_for_last_task():
-        msg = "get_master_hashes timeout"
+        msg = "get_master_hashes timeout. Master hashes not updated... Exiting."
         gk.email_subject += msg
         gk.send_email()
         logger.error(msg)
