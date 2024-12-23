@@ -218,7 +218,10 @@ class Gatekeeper(object):
     def log_email_exit(self, loglevel, email_flag, exit_flag, msg='', sub=''):
         self.email_message += msg
         self.email_subject += sub
-        loglevel(msg)
+        if msg == '':
+            loglevel(sub)
+        else:
+            loglevel(msg)
         if email_flag:
             self.send_email()
         if exit_flag:

@@ -107,11 +107,8 @@ def main():
         mkdir(gk.get_working_dir())
         logger.info(f"Clearing out working directory: {gk.get_working_dir()}")
     if not isdir(gk.get_working_dir()):
-        msg = f"Directory {gk.get_working_dir()} DNE"
-        gk.email_subject += msg
-        gk.send_email()
-        logger.error(msg)
-        sys.exit(msg)
+        sub = f"Directory {gk.get_working_dir()} DNE"
+        gk.log_email_exit(logger.error, 1, 1, sub=sub)
 
     logger.info(f"Args: {args.holding}  {args.mirror}  {args.pattern}")
 
@@ -123,18 +120,12 @@ def main():
     logger.info("Checking for holding and mirror directories...\n")
 
     if not isdir(gk.get_holding_dir()):
-        msg = f"Holding dir {gk.get_holding_dir()} DNE"
-        gk.email_subject += msg
-        gk.send_email()
-        logger.error(msg)
-        sys.exit(msg)
+        sub = f"Holding dir {gk.get_holding_dir()} DNE"
+        gk.log_email_exit(logger.error, 1, 1, sub=sub)
 
     if not gk.check_for_file_existence(gk.get_mirror_root_dir()):
-        msg = f"Mirror root dir {gk.get_mirror_root_dir()} DNE"
-        gk.email_subject += msg
-        gk.send_email()
-        logger.error(msg)
-        sys.exit(msg)
+        sub = f"Mirror root dir {gk.get_mirror_root_dir()} DNE"
+        gk.log_email_exit(logger.error, 1, 1, sub=sub)
 
     ###################################################################################################################
     # Step 3)
@@ -149,8 +140,7 @@ def main():
     files_to_upload_dict = {file: {} for file in files_to_upload}
     if len(files_to_upload) == 0:
         msg = "No files to upload. Exiting."
-        logger.error(msg)
-        sys.exit(msg)
+        gk.log_email_exit(logger.error, 0, 1, msg=msg)
     else:
         logger.info(f"Initial set of files to upload ({len(files_to_upload)}): {files_to_upload}\n")
 
@@ -159,24 +149,21 @@ def main():
     gk.get_master_hashes()
     if not gk.wait_for_last_task():
         msg = "get_master_hashes timeout. Exiting."
-        logger.error(msg)
-        sys.exit(msg)
+        gk.log_email_exit(logger.error, 0, 1, msg=msg)
 
     # Get failed files list
     logger.info("Getting failed files list (all_failed.txt)...")
     gk.get_failed()
     if not gk.wait_for_last_task():
         msg = "get_failed timeout. Exiting."
-        logger.error(msg)
-        sys.exit(msg)
+        gk.log_email_exit(logger.error, 0, 1, msg=msg)
 
     # Recursively get blocklist folder and generate list of blocked files
     logger.info("Getting blocklist directory...\n")
     gk.get_blocklist(dest_path=f"{gk.get_working_dir()}/blocklist/")
     if not gk.wait_for_last_task(timeout_s=120):
         msg = "get_blocklist timeout. Exiting"
-        logger.error(msg)
-        sys.exit(msg)
+        gk.log_email_exit(logger.error, 0, 1, msg=msg)
 
     ###################################################################################################################
     # Step 4)
@@ -229,8 +216,7 @@ def main():
     sha1sum_output = [x for x in sha1sum_output if x]
     if sha1sum_process.returncode != 0 or len(sha1sum_output) == 0:
         msg = "Error hashing files. Exiting."
-        logger.error(msg)
-        sys.exit(msg)
+        gk.log_email_exit(logger.error, 0, 1, msg=msg)
 
     # Fill files_to_upload_dict with relevant metadata
     for item in sha1sum_output:
@@ -319,11 +305,8 @@ def main():
                 new_hash_file = True
             else:
                 # Error, previous month's hash files should exist already
-                msg = f"Hash file {ym}.hashes not found. Exiting."
-                gk.email_subject += msg
-                gk.send_email()
-                logger.error(msg)
-                sys.exit(msg)
+                sub = f"Hash file {ym}.hashes not found. Exiting."
+                gk.log_email_exit(logger.error, 1, 1, sub=sub)
 
     # If any non-matching files were found, make nomatch dir in holding_dir
     # /holding_dir/nomatch/cur_date/
@@ -440,9 +423,9 @@ def main():
     try:
         result = gk.update_failed(failed_files)
         if result is None:
-            logger.warning("Error with updating failed files list on mirror")
-            gk.email_subject += "error updating all_failed.txt"
-            gk.email_message += "Error with updating failed files list on mirror, please check it manually\r\n"
+            msg = "Error with updating failed files list on mirror, please check it manually\r\n"
+            sub = "error updating all_failed.txt"
+            gk.log_email_exit(logger.warning, 0, 0, msg=msg, sub=sub)
             email_flag = 1
         while not gk.wait_for_last_task(timeout_s=300):
             logger.info("Still waiting for failed files list to upload and complete...")
@@ -458,17 +441,16 @@ def main():
 
         if not gk.sync_failed_files_from_list(list(failed_files)):
             msg = "Failed to sync failed files, sync manually."
-            gk.email_message += msg
-            gk.email_subject += "sync_failed_files_from_list failed"
-            gk.send_email()
+            sub = "sync_failed_files_from_list failed"
+            gk.log_email_exit(logger.warning, 1, 0, msg=msg, sub=sub)
+
         gk.wait_for_last_task(timeout_s=upload_timeout)
         while not gk.wait_for_last_task():
             logger.info("Still waiting for failed files to upload and complete...")
         if not gk.last_task_succeeded():
             msg = "Don't know which failed files were transferred successfully and which were not!"
-            gk.email_message += msg
-            gk.email_subject += "sync_failed_files_from_list failed to sync failed files, sync manually."
-            gk.send_email()
+            sub = "sync_failed_files_from_list failed to sync failed files, sync manually."
+            gk.log_email_exit(logger.warning, 1, 0, msg=msg, sub=sub)
 
         # Make failed dir in holding_dir, /holding_dir/failed/cur_date
         # Move failed files to /holding_dir/failed/cur_date/
@@ -485,8 +467,7 @@ def main():
     # Exit if there are no files to upload
     if len(files_to_upload) == 0:
         msg = "No files to upload. Exiting."
-        logger.info(msg)
-        sys.exit(msg)
+        gk.log_email_exit(logger.info, 0, 1, msg=msg)
 
     # Similar to failed files, timeout is 60 seconds plus an additional 10 seconds for each file
     upload_timeout = 60 + 10 * len(files_to_upload)
@@ -499,11 +480,8 @@ def main():
         logger.info("Still waiting for last task to complete...")
     if not gk.last_task_succeeded():
         msg = "Don't know which files were transferred successfully and which were not!"
-        gk.email_message += msg
-        gk.email_subject += "sync_files_from_list failed"
-        gk.send_email()
-        logger.warning(msg)
-        sys.exit(msg)
+        sub = "sync_files_from_list failed"
+        gk.log_email_exit(logger.warning, 1, 1, msg=msg, sub=sub)
 
     ###################################################################################################################
     # Step 10)
@@ -543,8 +521,7 @@ def main():
             yearmonth_hash_dict[ym] += f"{data_hash}  {filename}\n"
         else:
             msg = f"Transfer of {filename} listed as succeeded but not found on mirror! File will remain in holding directory."
-            logger.warning(msg)
-            gk.email_message += msg
+            gk.log_email_exit(logger.warning, 0, 0, msg=msg)
             email_flag = 1
 
     ###################################################################################################################
@@ -572,9 +549,8 @@ def main():
                 continue
         else:
             msg = f"{hashfile_path} update string is empty..."
-            logger.info(msg)
+            gk.log_email_exit(logger.info, 0, 0, msg=msg)
             email_flag = 1
-            gk.email_message += msg
 
     # New method to update master hashes:
     # 1) get master hashes
@@ -587,11 +563,8 @@ def main():
     logger.info("Getting master hashes file...")
     gk.get_master_hashes()
     if not gk.wait_for_last_task():
-        msg = "get_master_hashes timeout. Master hashes not updated... Exiting."
-        gk.email_subject += msg
-        gk.send_email()
-        logger.error(msg)
-        sys.exit(msg)
+        sub = "get_master_hashes timeout. Master hashes not updated... Exiting."
+        gk.log_email_exit(logger.error, 1, 1, sub=sub)
 
     # Read current master hashes file in as dictionary with filenames as keys and hashes as values
     # "Filenames" are of the form ./raw/yyyymm.hashes and ./dat/yyyymm.hashes
@@ -633,23 +606,16 @@ def main():
         # gk.update_master_hashes()
         if not gk.wait_for_last_task():
             msg = "Updating of master hashes didn't complete."
-            logger.warning(msg)
+            gk.log_email_exit(logger.warning, 0, 0, msg=msg)
             email_flag = 1
-            gk.email_message += msg
     except globus_sdk.GlobusError as error:
-        logger.error(error)
-        msg = "Updating of master hashes didn't complete."
-        logger.error(msg)
+        msg = f"Updating of master hashes didn't complete. {error}"
+        gk.log_email_exit(logger.error, 0, 0, msg=msg)
         email_flag = 1
-        gk.email_message += msg
-        gk.email_message += error
     except Exception as error:
-        logger.error(error)
-        msg = "Updating master hashes failed."
-        logger.error(msg)
+        msg = f"Updating master hashes failed. {error}"
+        gk.log_email_exit(logger.error, 0, 0, msg=msg)
         email_flag = 1
-        gk.email_message += msg
-        gk.email_message += str(error)
 
     if email_flag:
         gk.send_email()
