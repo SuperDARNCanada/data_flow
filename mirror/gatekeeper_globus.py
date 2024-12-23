@@ -467,7 +467,7 @@ def main():
         if not gk.last_task_succeeded():
             msg = "Don't know which failed files were transferred successfully and which were not!"
             gk.email_message += msg
-            gk.email_subject += "sync_files_from_list failed to sync failed files, sync manually."
+            gk.email_subject += "sync_failed_files_from_list failed to sync failed files, sync manually."
             gk.send_email()
 
         # Make failed dir in holding_dir, /holding_dir/failed/cur_date

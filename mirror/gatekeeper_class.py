@@ -215,6 +215,15 @@ class Gatekeeper(object):
         s.sendmail(from_address, recipients, email.as_string())
         s.quit()
 
+    def log_email_exit(self, loglevel, email_flag, exit_flag, msg='', sub=''):
+        self.email_message += msg
+        self.email_subject += sub
+        loglevel(msg)
+        if email_flag:
+            self.send_email()
+        if exit_flag:
+            sys.exit()
+
     def set_holding_dir(self, holding_dir):
         """ :param holding_dir: A directory where data files exist to be uploaded to mirror """
         self.holding_dir = holding_dir
