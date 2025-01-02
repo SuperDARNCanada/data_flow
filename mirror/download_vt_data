@@ -96,11 +96,9 @@ DIFFERENTHASHESDIR=${LOCALRADARDIR}/different/${DATE}/
 # Argument 2 should be the body
 ##############################################################################
 send_email () {
-# Argument 1 should be the subject
-# Argument 2 should be the body
-# What email address to send to?
-EMAILADDRESS=saif.marei@usask.ca
-echo -e "${2}" | mutt -s "${1}" ${EMAILADDRESS}
+  # What email address to send to?
+  EMAILADDRESS=saif.marei@usask.ca
+  echo -e "${2}" | mutt -s "${1}" ${EMAILADDRESS}
 }
 
 ##############################################################################
@@ -244,14 +242,14 @@ IFS="${NIFS}"
 # Loop through comparison of local and remote hashes
 for LINE in $(cat ${HASHESCHECKFILE})
 do
-        # Split line by ':' and first entry is filename
+  # Split line by ':' and first entry is filename
 	RAWFILE=$(echo ${LINE} | awk -F':' '{print $1}')
-        # File dne locally, need to download from VT
+  # File dne locally, need to download from VT
 	if [[ "${LINE}" == *"FAILED open or read" ]]
 	then
 		echo "${RAWFILE} not found locally, adding to ${FILESTODOWNLOAD}" >> ${LOGFILE}
 		echo ${RAWFILE} >> ${FILESTODOWNLOAD}
-        # Hash doesn't match, move local file to different hashes dir and download updated file from VT
+  # Hash doesn't match, move local file to different hashes dir and download updated file from VT
 	elif [[ "${LINE}" == *"FAILED" ]]
 	then
 		echo "${RAWFILE} hash doesn't match! Adding to ${UPDATEDRAWFILES}" >> ${LOGFILE}
@@ -260,16 +258,12 @@ do
 		echo ${RAWFILE} >> ${FILESTODOWNLOAD}
 		mkdir -p ${DIFFERENTHASHESDIR}	
 		mv -v ${RAWFILE} ${DIFFERENTHASHESDIR} >> ${LOGFILE}
-        # Hash matches. Do not download file from VT
+  # Hash matches. Do not download file from VT
 	elif [[ "${LINE}" == *"OK" ]]
 	then
-		EMAILFLAG=1
-		EMAILBODY="${EMAILBODY}\n${RAWFILE} hash matches. Adding to ${FILESTODELETE}"
 		echo "${RAWFILE} hash matches. Adding to ${FILESTODELETE}" >> ${LOGFILE}
 		echo ${RAWFILE} >> ${FILESTODELETE}
 	else
-		EMAILFLAG=1
-		EMAILBODY="${EMAILBODY}\nERROR! unknown! ${LINE}, adding to ${UNKNOWNLINES}"
 		echo "ERROR! unknown! ${LINE}, adding to ${UNKNOWNLINES}" >> ${LOGFILE}
 		echo ${LINE} >> ${UNKNOWNLINES}
 	fi
@@ -340,22 +334,18 @@ IFS="${NIFS}"
 # Loop through comparison of local and remote hashes
 for LINE in $(cat ${HASHESCHECKFILEDELETE})
 do
-        # Split line by ':' and first entry is filename
+  # Split line by ':' and first entry is filename
 	RAWFILE=$(echo ${LINE} | awk -F':' '{print $1}')
-        # File dne locally even after VT download... Log/email the error
+  # File dne locally even after VT download... Log the error
 	if [[ "${LINE}" == *"FAILED open or read" ]]
 	then
-		EMAILFLAG=1
-		EMAILBODY="${EMAILBODY}\n${RAWFILE} not found locally! ERROR!"
-		echo "${RAWFILE} not found locally! ERROR!" >> ${LOGFILE}
-        # Hash doesn't match after VT download... Log/email the error
+		echo "${RAWFILE} not found locally after VT download! ERROR!" >> ${LOGFILE}
+  # Hash doesn't match after VT download... Log the error
 	elif [[ "${LINE}" == *"FAILED" ]]
 	then
-		EMAILFLAG=1
-		EMAILBODY="${EMAILBODY}\n${RAWFILE} hash doesn't match! ERROR"
-		echo "${RAWFILE} hash doesn't match! ERROR" >> ${LOGFILE}
-        # Hashes match, append rawacf to files to be removed from VT
-        # Also move rawacf from /data/holding/radar/ to /data/holding/globus/
+		echo "${RAWFILE} hash doesn't match after VT download! ERROR" >> ${LOGFILE}
+    # Hashes match, append rawacf to files to be removed from VT
+    # Also move rawacf from /data/holding/radar/ to /data/holding/globus/
 	elif [[ "${LINE}" == *"OK" ]]
 	then
 		echo "${RAWFILE} hash matches. Adding to ${FILESTODELETEFINAL}" >> ${LOGFILE}
@@ -414,33 +404,28 @@ DELETETIMEEND=$(date +%s)
 ##############################################################################
 if [[ $(cat ${HASHESERRORS} 2> /dev/null) != "" ]];
 then
-	EMAILFLAG=1
-	EMAILBODY="${EMAILBODY}\n\nErrors from file hashing:\n"
-	EMAILBODY="${EMAILBODY}$(cat ${HASHESERRORS})"
+	echo -e "\n\nErrors from file hashing:\n"
+	echo "$(cat ${HASHESERRORS})"
 fi
 if [[ $(cat ${UPDATEDRAWFILES} 2> /dev/null) != "" ]];
 then
-	EMAILFLAG=1
-	EMAILBODY="${EMAILBODY}\n\nFiles that we have but don't match remote:\n"
-	EMAILBODY="${EMAILBODY}$(cat ${UPDATEDRAWFILES})"
+	echo -e "\n\nFiles that we have but don't match remote:\n"
+	echo "$(cat ${UPDATEDRAWFILES})"
 fi
 if [[ $(cat ${UNKNOWNLINES} 2> /dev/null) != "" ]];
 then
-	EMAILFLAG=1
-	EMAILBODY="${EMAILBODY}\n\nUnknown output lines of hash checking:\n"
-	EMAILBODY="${EMAILBODY}$(cat ${UNKNOWNLINES})"
+	echo -e "\n\nUnknown output lines of hash checking:\n"
+	echo "$(cat ${UNKNOWNLINES})"
 fi
 if [[ $(cat ${SFTPERRORS} 2> /dev/null) != "" ]];
 then
-	EMAILFLAG=1
-	EMAILBODY="${EMAILBODY}\n\nSFTP Downloading errors:\n"
-	EMAILBODY="${EMAILBODY}$(cat ${SFTPERRORS})"
+  echo -e "\n\nSFTP Downloading errors:\n"
+	echo "$(cat ${SFTPERRORS})"
 fi
 if [[ $(cat ${SFTPERRORSDELETE} 2> /dev/null) != "" ]];
 then
-	EMAILFLAG=1
-	EMAILBODY="${EMAILBODY}\n\nSFTP Delete errors:\n"
-	EMAILBODY="${EMAILBODY}$(cat ${SFTPERRORSDELETE})"
+  echo -e "\n\nSFTP Delete errors:\n"
+	echo "$(cat ${SFTPERRORSDELETE})"
 fi
 
 #rm -v ${HASHESFILE} 

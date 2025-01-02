@@ -124,11 +124,9 @@ mkdir -p "${LOCALFAILEDDIR}"
 # Argument 2 should be the body
 ##############################################################################
 send_email () {
-        # Argument 1 should be the subject
-        # Argument 2 should be the body
-        # What email address to send to?
-        EMAILADDRESS="saif.marei@usask.ca"
-        echo -e "${2}" | /usr/bin/mutt -s "${1}" ${EMAILADDRESS}
+  # What email address to send to?
+  EMAILADDRESS="saif.marei@usask.ca"
+  echo -e "${2}" | /usr/bin/mutt -s "${1}" ${EMAILADDRESS}
 }
 
 ##############################################################################
@@ -171,11 +169,7 @@ RETURN_VALUE=$?
 echo "rsync get hashes returned: ${RETURN_VALUE}" >> "${LOGFILE}"
 if [[ ${RETURN_VALUE} -ne 0 ]]
 then
-	echo "Rsync retrieval of hashes failed" >> "${LOGFILE}"
-	EMAILBODY="Error: Could not download hash file. Exiting\n"
-	EMAILSUBJECT="${EMAILSUBJECT} hashes error"
-	echo -e "${EMAILBODY}" >> "${LOGFILE}"
-	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
+	echo "Rsync retrieval of hashes failed. Exiting." >> "${LOGFILE}"
 	exit
 fi
 # Download blocklist directory from Cedar via rsync
@@ -184,11 +178,7 @@ RETURN_VALUE=$?
 echo "rsync get blocklist returned: ${RETURN_VALUE}" >> "${LOGFILE}"
 if [[ ${RETURN_VALUE} -ne 0 ]]
 then
-	echo "Rsync retrieval of blocklist failed" >> "${LOGFILE}"
-	EMAILBODY="Error: Could not download blocklist. Exiting\n"
-	EMAILSUBJECT="${EMAILSUBJECT} blocklist error"
-	echo -e "${EMAILBODY}" >> "${LOGFILE}"
-	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
+	echo "Rsync retrieval of blocklist failed. Exiting." >> "${LOGFILE}"
 	exit
 fi
 # Download failed files list "all_failed.txt" from Cedar via rsync
@@ -197,11 +187,7 @@ RETURN_VALUE=$?
 echo "rsync get failed returned: ${RETURN_VALUE}" >> "${LOGFILE}"
 if [[ ${RETURN_VALUE} -ne 0 ]]
 then
-	echo "Rsync retrieval of previously failed files failed" >> "${LOGFILE}"
-	EMAILBODY="Error: Could not download failed file list. Exiting\n"
-	EMAILSUBJECT="${EMAILSUBJECT} failed files error"
-	echo -e "${EMAILBODY}" >> "${LOGFILE}"
-	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
+	echo "Rsync retrieval of previously failed files failed. Exiting." >> "${LOGFILE}"
 	exit
 fi
 
@@ -222,17 +208,13 @@ if [[ -s $SFTPERRORS ]]
 then
 	ERRORS_STRING=$(cat "${SFTPERRORS}")
 	EMAILBODY="${EMAILBODY}\nSFTP errors\n$ERRORS_STRING"
-	EMAILSUBJECT="${EMAILSUBJECT} ERROR"
 	echo -e "${EMAILBODY}" >> "${LOGFILE}"
-	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
 # Check if hash file successfully transferred from server. If not: log, email, exit
 if [ ! -e "${MIRRORHASHDIR}/${YYYYMM}.hashes" ];
 then
 	EMAILBODY="Error: ${MIRROR} hash file error. Exiting\n"
-	EMAILSUBJECT="${EMAILSUBJECT} ${MIRROR} hash file error"
  	echo -e "${EMAILBODY}" >> "${LOGFILE}"
-  send_email "${EMAILSUBJECT}" "${EMAILBODY}"
   exit
 fi
 
@@ -333,9 +315,7 @@ then
 	if [[ ${totalOldMissingFiles} -gt 0 ]]
 	then
 		EMAILBODY="${MIRROR} is missing files older than $day_threshold days:\n${missing_files_string}"
-		EMAILSUBJECT2="${EMAILSUBJECT} ${mirror} missing files older than $day_threshold days"
 		echo -e ${EMAILBODY} >> ${LOGFILE}
-		send_email "${EMAILSUBJECT2}" "${EMAILBODY}"
 	fi
 fi
 # Log and send an email if mirror has any different files
@@ -369,9 +349,7 @@ fi
 if [[ ${totalToDownload} -eq 0 ]]
 then
 	EMAILBODY="No files to download. Exiting\n"
-	EMAILSUBJECT="${EMAILSUBJECT} no files to download"
 	echo -e ${EMAILBODY} >> ${LOGFILE}
-	#send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 	exit
 fi
 
@@ -414,19 +392,15 @@ then
 else
 	# The script already checked and exited if totalToDownload -eq 0
 	# Should never hit this condition
-	EMAILBODY="${EMAILBODY}\n NO NEW FILES - YOU SHOULD NEVER SEE THIS"
-	EMAILSUBJECT="${EMAILSUBJECT} ERROR"
+	EMAILBODY="NO NEW FILES - YOU SHOULD NEVER SEE THIS"
 	echo -e "${EMAILBODY}" >> "${LOGFILE}"
-	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 	exit
 fi
 if [[ -s $SFTPERRORS ]]
 then
 	ERRORS_STRING=$(cat "${SFTPERRORS}")
 	EMAILBODY="${EMAILBODY}\nSFTP errors\n$ERRORS_STRING"
-	EMAILSUBJECT="${EMAILSUBJECT} ERROR"
 	echo -e "${EMAILBODY}" >> "${LOGFILE}"
-	send_email "${EMAILSUBJECT}" "${EMAILBODY}"
 fi
 SYNCTIMEEND=$(date +%s)
 
