@@ -404,28 +404,28 @@ DELETETIMEEND=$(date +%s)
 ##############################################################################
 if [[ $(cat ${HASHESERRORS} 2> /dev/null) != "" ]];
 then
-	echo -e "\n\nErrors from file hashing:\n"
-	echo "$(cat ${HASHESERRORS})"
+  echo -e "\n\nErrors from file hashing:\n"
+  echo "$(cat ${HASHESERRORS})"
 fi
 if [[ $(cat ${UPDATEDRAWFILES} 2> /dev/null) != "" ]];
 then
-	echo -e "\n\nFiles that we have but don't match remote:\n"
-	echo "$(cat ${UPDATEDRAWFILES})"
+  echo -e "\n\nFiles that we have but don't match remote:\n"
+  echo "$(cat ${UPDATEDRAWFILES})"
 fi
 if [[ $(cat ${UNKNOWNLINES} 2> /dev/null) != "" ]];
 then
-	echo -e "\n\nUnknown output lines of hash checking:\n"
-	echo "$(cat ${UNKNOWNLINES})"
+  echo -e "\n\nUnknown output lines of hash checking:\n"
+  echo "$(cat ${UNKNOWNLINES})"
 fi
 if [[ $(cat ${SFTPERRORS} 2> /dev/null) != "" ]];
 then
   echo -e "\n\nSFTP Downloading errors:\n"
-	echo "$(cat ${SFTPERRORS})"
+  echo "$(cat ${SFTPERRORS})"
 fi
 if [[ $(cat ${SFTPERRORSDELETE} 2> /dev/null) != "" ]];
 then
   echo -e "\n\nSFTP Delete errors:\n"
-	echo "$(cat ${SFTPERRORSDELETE})"
+  echo "$(cat ${SFTPERRORSDELETE})"
 fi
 
 #rm -v ${HASHESFILE} 

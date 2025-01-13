@@ -216,6 +216,14 @@ class Gatekeeper(object):
         s.quit()
 
     def log_email_exit(self, loglevel, email_flag, exit_flag, msg='', sub=''):
+        """ Will log a message with a given log level and optionally email the message and exit the script.
+
+            :param loglevel: The log level method of the specified logger (logger.info, logger.warning, logger.error)
+            :param email_flag: Email flag (1 -> email, 0 -> no email)
+            :param exit_flag: Exit flag (1 -> exit, 0 -> no exit)
+            :param msg: Message to be logged/sent as the email body
+            :param sub: Subject line of email. If no message was provided, log the subject instead.
+            """
         self.email_message += msg
         self.email_subject += sub
         if msg == '':
@@ -226,6 +234,10 @@ class Gatekeeper(object):
             self.send_email()
         if exit_flag:
             sys.exit()
+
+        # Reset subject and message for future emails
+        self.email_subject = '[Gatekeeper Globus] ' + self.current_time.strftime("%Y%m%d.%H%M : ")
+        self.email_message = ''
 
     def set_holding_dir(self, holding_dir):
         """ :param holding_dir: A directory where data files exist to be uploaded to mirror """
@@ -263,8 +275,8 @@ class Gatekeeper(object):
         response = self.transfer_client.task_list()
         for task in response:
             if 'ACTIVE' in task['status'] and uuid in task['destination_endpoint_id']:
-                print(f"Task label: {task['label']}")
-                print(f"Task dest EP name: {task['destination_endpoint_display_name']}")
+                self.logger.info(f"Task label: {task['label']}")
+                self.logger.info(f"Task dest EP name: {task['destination_endpoint_display_name']}")
                 return True
         return False
 
@@ -499,7 +511,7 @@ class Gatekeeper(object):
         :param path: Path to list directory contents of. Defaults to None, or the root directory.
         """
         for entry in self.transfer_client.operation_ls(ep_uuid, path=path):
-            print(
+            self.logger.info(
                 f"{entry['permissions']} {entry['user']}:{entry['group']} {entry['name']} {entry['type']} {entry['last_modified']}")
 
     def get_file_list(self, year, month, data_type="raw", source_uuid=None):
@@ -522,7 +534,7 @@ class Gatekeeper(object):
         :param ep_uuid: UUID of the endpoint to print information about
         """
         for ep in self.transfer_client.endpoint_search(ep_uuid, filter_scope="my-endpoints"):
-            print(f"[{ep['id']}] {ep['display_name']}")
+            self.logger.info(f"[{ep['id']}] {ep['display_name']}")
 
     def get_hashes(self, year, month, data_type="raw",
                    dest_path=None, source_uuid=None,
@@ -600,11 +612,11 @@ class Gatekeeper(object):
             try:
                 mkdir(data_type_path)
             except OSError as error:
-                print(f"Error trying to make directory {data_type_path}: {error}")
+                self.logger.warning(f"update_master_hashes() error. Failed to make directory {data_type_path}: {error}")
             self.get_hashes_all(data_type=data_type,
                                 dest_path=data_type_path)
             while not self.wait_for_last_task(timeout_s=600):
-                print("Still waiting for last task...")
+                self.logger.info("Still waiting for last task...")
             hash_process = subprocess.Popen(f"cd {self.get_working_dir()}; sha1sum ./{data_type}/*hashes",
                                             shell=True, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE)
@@ -617,13 +629,13 @@ class Gatekeeper(object):
     def print_last_tasks(self):
         """ Convenience function. Prints out the last few tasks for the class transfer client"""
         for task in self.transfer_client.task_list(num_results=5, filter="type:TRANSFER,DELETE"):
-            print(task["label"], task["task_id"], task["type"], task["status"])
+            self.logger.info(task["label"], task["task_id"], task["type"], task["status"])
 
     def print_endpoints(self):
         """Convenience function. Prints out information about the user's endpoints"""
-        print("My endpoints:")
+        self.logger.info("My endpoints:")
         for ep in self.transfer_client.endpoint_search(filter_scope="my-endpoints"):
-            print(f"[{ep['id']}] {ep['display_name']}")
+            self.logger.info(f"[{ep['id']}] {ep['display_name']}")
 
     def get_hashes_range(self, start_year, start_month, end_year,
                          end_month, data_type="raw", dest_path=None,
@@ -664,10 +676,10 @@ class Gatekeeper(object):
         if at_least_one_file:
             transfer_result = self.transfer_client.submit_transfer(transfer_data)
             self.last_transfer_result = transfer_result
-            print(f"Getting at least one file. Transfer result: {transfer_result}")
+            self.logger.info(f"Getting at least one file. Transfer result: {transfer_result}")
             return transfer_result
         else:
-            print(f"No hashes files for data type: {data_type}")
+            self.logger.info(f"No hashes files for data type: {data_type}")
             return
 
     def get_hashes_all(self, data_type="raw", dest_path=None,
@@ -753,10 +765,10 @@ class Gatekeeper(object):
         # Make sure that the failed_files file exists, or if None, then move on
         if failed_update_files:
             if not isfile(failed_update_files):
-                print(f"Error: {failed_update_files} is not a file, cannot update failed files list")
+                self.logger.error(f"Error: {failed_update_files} is not a file, cannot update failed files list")
                 return None
             if stat(failed_update_files).st_size == 0:  # The file should never be empty
-                print(f"Error: {failed_update_files} is empty, cannot update failed files list")
+                self.logger.error(f"Error: {failed_update_files} is empty, cannot update failed files list")
                 return None
             # Add the list of failed files to the current list
             with open(failed_update_files) as file_of_failed_updates:
@@ -766,7 +778,7 @@ class Gatekeeper(object):
                 for filename_key in add_failed_files:
                     for line in filetext:
                         if add_failed_files[filename_key][0] in line and filename_key in line:
-                            print(f"'{line}' already in all_failed.txt file, moving on")
+                            self.logger.info(f"'{line}' already in all_failed.txt file, moving on")
                             break
                     else:
                         file_of_failed_updates.write(
@@ -820,7 +832,7 @@ class Gatekeeper(object):
         :return: True if the task completed within the timeout, False otherwise
         """
         if self.last_transfer_result is None:
-            print("Error. No last transfer, returning.")
+            self.logger.info("Error. No last transfer, returning.")
             return
         task_id = self.last_transfer_result["task_id"]
         return self.transfer_client.task_wait(task_id, timeout=timeout_s, polling_interval=poll_s)
@@ -857,7 +869,7 @@ class Gatekeeper(object):
                 self.transfer_client.operation_ls(uuid, path=file_path)
                 return True  # This means it was not a file and it did exist
             except globus_sdk.TransferAPIError as error:
-                print(error)
+                self.logger.error(error)
                 if error.message.find("not found on endpoint") != -1:
                     return False  # This means it doesn't exist
                 elif error.message.find("is a file") != -1:
@@ -916,9 +928,9 @@ class Gatekeeper(object):
         except globus_sdk.GlobusAPIError as error:
             if error.http_status == 502:
                 # This means that the directory already exists
-                print(f"Directory {path} already existed.")
+                self.logger.info(f"Directory {path} already existed.")
             else:
-                print(f"Failed to create {path} directory.")
+                self.logger.error(f"Failed to create {path} directory.")
                 return False
         return True
 
@@ -940,18 +952,18 @@ class Gatekeeper(object):
         except globus_sdk.GlobusAPIError as error:
             if error.http_status == 502:
                 # This means that the directory already exists
-                print(f"Directory {year_path} already existed.")
+                self.logger.info(f"Directory {year_path} already existed.")
             else:
-                print(f"Failed to create {year_path} directory.")
+                self.logger.error(f"Failed to create {year_path} directory.")
                 return False
         try:
             self.transfer_client.operation_mkdir(uuid, month_path)
         except globus_sdk.GlobusAPIError as error:
             if error.http_status == 502:
                 # This means the directory already exists
-                print(f"Directory {month_path} already existed.")
+                self.logger.info(f"Directory {month_path} already existed.")
             else:
-                print(f"Failed to create {month_path} directory.")
+                self.logger.error(f"Failed to create {month_path} directory.")
                 return False
         return True
 
@@ -961,7 +973,7 @@ class Gatekeeper(object):
         :returns: UUID of SuperDARN mirror endpoint """
         for ep in self.transfer_client.endpoint_search('Digital Research Alliance of Canada Cedar GCSv5'):
             if 'globus@tech.alliancecan.ca' in ep['contact_email']:
-                print(f"Mirror UUID: {ep['id']}")
+                self.logger.info(f"Mirror UUID: {ep['id']}")
                 return ep['id']
 
         email_msg = "Mirror endpoint not found"
@@ -1029,7 +1041,7 @@ class Gatekeeper(object):
         delete_result = self.transfer_client.submit_delete(delete_data)
         self.last_transfer_result = delete_result
         while not self.wait_for_last_task(timeout_s=30 * len(files_to_move)):
-            print("Still waiting to delete files from origin.")
+            self.logger.info("Still waiting to delete files from origin.")
             continue
 
     def move_files_to_subdir(self, fail_type, files_to_move):
@@ -1050,5 +1062,6 @@ class Gatekeeper(object):
             self.logger.info(f"Moving {self.get_holding_dir()}/{file} to {subdir}/{file}\n")
             rename(f"{self.get_holding_dir()}/{file}",
                    f"{subdir}/{file}")
-        self.email_subject += f"{fail_type} files "
-        self.email_message += f"{fail_type} files:\r\n{files_to_move}\r\n\r\n"
+        msg = f"{fail_type} files:\r\n{files_to_move}\r\n\r\n"
+        sub = f"{fail_type} files"
+        self.log_email_exit(logger.info, 1, 0, msg=msg, sub=sub)
