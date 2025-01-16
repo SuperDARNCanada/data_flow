@@ -1,15 +1,15 @@
 # Copyright 2021 SuperDARN Canada, University of Saskatchewan
 # Author: Remington Rohel
 """
+This file is only needed for iq_plotting if a .site file is being used.
+
 This file contains functions for "restructuring" site to array Borealis HDF5 files on memory-limited systems,
 for the express purpose of plotting with hdf5_rtplot_utils.py.
 
 Functions
 ---------
 """
-import copy
 import numpy as np
-import os
 import deepdish as dd
 
 
