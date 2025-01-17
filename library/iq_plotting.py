@@ -27,8 +27,6 @@ import os
 
 from pydarnio import BorealisRead
 
-from minimal_restructuring import antennas_iq_site_to_array
-
 matplotlib.use('Agg')
 
 def usage_msg():
@@ -246,24 +244,21 @@ def plot_antennas_range_time(antennas_iq_file, antenna_nums=None, vmax=40.0, vmi
     basename = os.path.basename(antennas_iq_file)
     is_site_file = 'site' in basename
 
-    if is_site_file:
-        arrays, antenna_names, antenna_indices = antennas_iq_site_to_array(antennas_iq_file, antenna_nums)
+    reader = BorealisRead(antennas_iq_file, 'antennas_iq', 'array')
+    arrays = reader.arrays
+
+    (num_records, num_antennas, max_num_sequences, num_samps) = arrays['data'].shape
+
+    # typically, antenna names and antenna indices are the same except
+    # where certain antennas were skipped in data writing for any reason.
+    if antenna_nums is None or len(antenna_nums) == 0:
+        antenna_indices = list(range(0, num_antennas))
+        antenna_names = list(arrays['antenna_arrays_order'])
     else:
-        reader = BorealisRead(antennas_iq_file, 'antennas_iq', 'array')
-        arrays = reader.arrays
-
-        (num_records, num_antennas, max_num_sequences, num_samps) = arrays['data'].shape
-
-        # typically, antenna names and antenna indices are the same except
-        # where certain antennas were skipped in data writing for any reason.
-        if antenna_nums is None or len(antenna_nums) == 0:
-            antenna_indices = list(range(0, num_antennas))
-            antenna_names = list(arrays['antenna_arrays_order'])
-        else:
-            antenna_indices = []
-            antenna_names = [f'antenna_{a}' for a in antenna_nums]
-            for antenna_num in antenna_nums:
-                antenna_indices.append(list(arrays['antenna_arrays_order']).index('antenna_' + str(antenna_num)))
+        antenna_indices = []
+        antenna_names = [f'antenna_{a}' for a in antenna_nums]
+        for antenna_num in antenna_nums:
+            antenna_indices.append(list(arrays['antenna_arrays_order']).index('antenna_' + str(antenna_num)))
 
     sequences_data = arrays['num_sequences']
     timestamps_data = arrays['sqn_timestamps']
