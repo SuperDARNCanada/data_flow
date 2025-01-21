@@ -178,10 +178,8 @@ class Gatekeeper(object):
 
         # Check if there is a current transfer, that could be bad
         if self.check_for_transfer_to_endpoint(self.mirror_uuid):
-            email_msg = "Error: current active transfer to mirror"
-            self.email_subject += email_msg
-            self.send_email()
-            sys.exit(email_msg)
+            sub = "Error: current active transfer to mirror"
+            self.log_email_exit(self.logger.error, 1, 1, sub=sub)
 
     def get_mirror_uuid(self):
         """ :return: The UUID of the mirror Globus endpoint """
@@ -218,12 +216,12 @@ class Gatekeeper(object):
     def log_email_exit(self, loglevel, email_flag, exit_flag, msg='', sub=''):
         """ Will log a message with a given log level and optionally email the message and exit the script.
 
-            :param loglevel: The log level method of the specified logger (logger.info, logger.warning, logger.error)
-            :param email_flag: Email flag (1 -> email, 0 -> no email)
-            :param exit_flag: Exit flag (1 -> exit, 0 -> no exit)
-            :param msg: Message to be logged/sent as the email body
-            :param sub: Subject line of email. If no message was provided, log the subject instead.
-            """
+        :param loglevel: The log level method of the specified logger (logger.info, logger.warning, logger.error)
+        :param email_flag: Email flag (1 -> email, 0 -> no email)
+        :param exit_flag: Exit flag (1 -> exit, 0 -> no exit)
+        :param msg: Message to be logged/sent as the email body
+        :param sub: Subject line of email. If no message was provided, log the subject instead.
+        """
         self.email_message += msg
         self.email_subject += sub
         if msg == '':
@@ -711,10 +709,8 @@ class Gatekeeper(object):
             end_year = 2006
             end_month = 7
         else:
-            email_msg = f"Invalid data type: {data_type}"
-            self.email_subject += email_msg
-            self.send_email()
-            sys.exit(email_msg)
+            sub = f"Invalid data type: {data_type}"
+            self.log_email_exit(self.logger.error, 1, 1, sub=sub)
         transfer_result = self.get_hashes_range(start_year, start_month, end_year, end_month,
                                                 data_type, dest_path, source_uuid, dest_uuid)
         self.last_transfer_result = transfer_result
@@ -861,7 +857,7 @@ class Gatekeeper(object):
         """
         maximum_retries = 5
         retries = 0
-        errormsg = None
+        msg = None
         while retries < maximum_retries:
             if uuid is None:
                 uuid = self.mirror_uuid
@@ -886,13 +882,11 @@ class Gatekeeper(object):
                 # Retry a few times, then fail hard.
                 time.sleep(5)
                 retries += 1
-        email_msg = f"Checking for file existence failed after {retries} retries. Exiting!"
-        if errormsg is not None:
-            email_msg = f"{email_msg}\n{errormsg}"
-        self.email_subject += "Check for file existence failed"
-        self.email_message += email_msg
-        self.send_email()
-        sys.exit(email_msg)
+        msg = f"Checking for file existence failed after {retries} retries. Exiting!"
+        if msg is not None:
+            msg = f"{msg}\n{errormsg}"
+        sub = "Check for file existence failed"
+        self.log_email_exit(self.logger.error, 1, 1, msg=msg, sub=sub)
 
     def get_task_successful_transfers(self):
         """ Get the last transfer's successfully transferred files list. Will not contain files
@@ -976,10 +970,8 @@ class Gatekeeper(object):
                 self.logger.info(f"Mirror UUID: {ep['id']}")
                 return ep['id']
 
-        email_msg = "Mirror endpoint not found"
-        self.email_subject += email_msg
-        self.send_email()
-        sys.exit(email_msg)
+        sub = "Mirror endpoint not found"
+        self.log_email_exit(self.logger.error, 1, 1, sub=sub)
 
     def get_num_files_skipped(self):
         """ :returns: The number of files that were skipped as a result of checksums matching
@@ -1009,10 +1001,8 @@ class Gatekeeper(object):
                 # This means that the directory already exists
                 pass
             else:
-                email_msg = f"Failed to create {destination_directory}"
-                self.email_subject += email_msg
-                self.send_email()
-                sys.exit(email_msg)
+                sub = f"Failed to create {destination_directory}"
+                self.log_email_exit(self.logger.error, 1, 1, sub=sub)
         transfer_data = globus_sdk.TransferData(self.transfer_client, uuid, uuid,
                                                 label=inspect.currentframe().f_code.co_name,
                                                 sync_level="checksum", notify_on_succeeded=False,
@@ -1025,10 +1015,8 @@ class Gatekeeper(object):
         transfer_result = self.transfer_client.submit_transfer(transfer_data)
         self.last_transfer_result = transfer_result
         if not self.wait_for_last_task(timeout_s=60 * len(files_to_move)):
-            email_msg = "Copy failed before removing from origin"
-            self.email_subject += email_msg
-            self.send_email()
-            sys.exit(email_msg)
+            sub = "Copy failed before removing from origin"
+            self.log_email_exit(self.logger.error, 1, 1, sub=sub)
         # Now that all the files are copied, remove them from origin
         delete_data = globus_sdk.DeleteData(self.transfer_client, uuid,
                                             label=inspect.currentframe().f_code.co_name,
