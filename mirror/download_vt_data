@@ -4,18 +4,6 @@
 # Modified to add radar ID in search for files to download,
 # so incorrectly posted files do not get downloaded.
 # Modified from Kevin Sterne's script
-# 
-# Downloads any available radar rawacf data from Virginia Tech's server's 
-# holding area.
-#
-# The script should generally be called like so:
-# /path/to/script /path/to/local/holding/area RADAR
-# 
-# The arguments are as follows:
-# Argument 1: /path/to/local/holding/area - This should point to a holding
-# area where this radar's rawacf data is held before being processed.
-# Argument 2: RADAR - this is the three letter radar code to download
-# data for.
 #
 # Directory structure of the VT server's holding area is:
 # /home/usask/outgoing/sas
@@ -34,46 +22,44 @@
 # For /home/usask/ The permissions must be 755
 # For /home/usask/.ssh the permissions must be 700
 # For /home/usask/authorized_keys the permissions must be 644
-
+#
+# This script downloads any available radar rawacf data from Virginia
+# Tech's server's holding area.
+# Call the script like so with the following arguments:
+# /path/to/script /path/to/local/holding/area RADAR
+# Argument 1: Holding directory (/data/holding/)
+# Argument 2: RADAR - 3 letter radar code to download data for (Ex: sas)
+#
 # Logical flow of the script:
 #  0) Do any error checking required.
 #  1) Try to remotely hash all radar files in the remote directory, and store
-# the hashes file locally in the holding directory for the radar.
+#     the hashes file locally in the holding directory for the radar.
 #  2) Compare hashes with local files.
-#	a) If the file exists in the local holding area and they have the same
-# hash value, do nothing (delete remote file later after all downloads).
-#	b) If the file exists in the local holding area and they have different
-# hash values, make an email alert, place local file in separate area. 
-#	c) If the file doesn't exist in the local holding area, download it.
-#	d) After downloads, check the hashes again, and delete those that
-# are good, send email alert for those that are not.
+#	   a) If the file exists in the local holding area and they have the same
+#       hash value, do nothing (delete remote file later after all downloads).
+#	   b) If the file exists in the local holding area and they have different
+#       hash values, make an email alert, place local file in separate area.
+#	   c) If the file doesn't exist in the local holding area, download it.
+#	   d) After downloads, check the hashes again, and delete those that
+#       are good, send email alert for those that are not.
 ##############################################################################
 # Initialize Some Variables
 ##############################################################################
-# What is the local holding area directory? (Should be /data/holding/)
-LOCALHOLDINGDIR=$1
-# What is the local holding area for globus? (/data/holding/globus/)
-LOCALGLOBUSDIR=${LOCALHOLDINGDIR}/globus/  # Add /test/ for testing purposes
-# How much are we willing to fill up the holding directory partition to? (percent)
-HOLDINGDIR_USAGE_THRESHOLD=98
-# What is the radar? (3 letter radar code)
-RADAR=$2
-# What is the holding directory for the radar? (e.g., /data/holding/sas)
+# Setup holding directories: /data/holding/globus/ & /data/holding/radar/
+LOCALHOLDINGDIR=$1                          # /data/holding/
+RADAR=$2                                    # 3-letter radar code (Ex: sas)
+LOCALGLOBUSDIR=${LOCALHOLDINGDIR}/globus/   # Add /test/ for testing purposes
 LOCALRADARDIR=${LOCALHOLDINGDIR}/${RADAR}/  # Add /test/ for testing purposes
+# Max partition usage
+HOLDINGDIR_USAGE_THRESHOLD=98
 # Create shortcut for sha1sum
 HASHPROG=/usr/bin/sha1sum
-# Date/time variables (figure out which aren't being used)
+# Date/time variables
 STARTTIME=$(date +%s)
 DATE=$(date +%Y%m%d)
-DATE_TIME=$(date +%Y%m%d.%H%M)
 DATE_UTC=$(date -u)
-CURDAY=$(date +%d)
-CURHOUR=$(date +%H)
-CURMIN=$(date +%M)
 CURYEAR=$(date +%Y)
-CURMONTHNAME=$(date +%B)
 CURMONTH=$(date +%m)
-MONTHNAME=$(date --date=${YEAR}${MONTH}01 +%B)
 
 # Setup logfile
 LOGGINGDIR=/home/dataman/logs/vt/${CURYEAR}/${CURMONTH} # Add _test for testing purposes
@@ -167,7 +153,7 @@ HASHESFILE=hashes.remote
 HASHESERRORS=hashes.errors
 
 ##############################################################################
-# Step 1) Get a hash file for all files in remotedir.
+# Get a hash file for all files in remotedir.
 # Do a hashes check on local files.
 ##############################################################################
 echo "Getting hashes for remote files..."
@@ -227,10 +213,6 @@ echo -n > ${FILESTODOWNLOAD}
 echo -n > ${FILESTODELETE}
 echo -n > ${UPDATEDRAWFILES}
 echo -n > ${UNKNOWNLINES}
-# *** WE CANNOT USE THIS PIPE METHOD - IT SPAWNS SUBSHELL WITH DIFFERENT ENVIRONMENT ***
-# Instead, we must change the separator temporarily so we can
-# use the 'for LINE in $TEXT' method that will separate on newlines.
-#cat ${HASHESCHECKFILE} | while read LINE;
 # Store default IFS before changing IFS to separate on new lines
 OIFS="${IFS}"
 NIFS=$'\n'
@@ -291,8 +273,8 @@ echo "Total files to download: ${totalFiles}"
 
 ##############################################################################
 # Finally we are ready to execute the sftp batch file and download the
-# required files. Redirect errors to a file ".errors". Do not execute
-# if there were zero files that required downloading.
+# required files. Redirect output to logfile and errors to a file ".errors".
+# Do not execute if there were zero files that required downloading.
 ##############################################################################
 DOWNLOADTIMESTART=$(date +%s)
 SFTPERRORS=${HASHESFILE}.errors
@@ -394,42 +376,29 @@ DELETETIMEEND=$(date +%s)
 if [[ $(cat ${HASHESERRORS} 2> /dev/null) != "" ]];
 then
   echo -e "\n\nErrors from file hashing:\n"
-  echo "$(cat ${HASHESERRORS})"
+  cat ${HASHESERRORS}
 fi
 if [[ $(cat ${UPDATEDRAWFILES} 2> /dev/null) != "" ]];
 then
   echo -e "\n\nFiles that we have but don't match remote:\n"
-  echo "$(cat ${UPDATEDRAWFILES})"
+  cat ${UPDATEDRAWFILES}
 fi
 if [[ $(cat ${UNKNOWNLINES} 2> /dev/null) != "" ]];
 then
   echo -e "\n\nUnknown output lines of hash checking:\n"
-  echo "$(cat ${UNKNOWNLINES})"
+  cat ${UNKNOWNLINES}
 fi
 if [[ $(cat ${SFTPERRORS} 2> /dev/null) != "" ]];
 then
   echo -e "\n\nSFTP Downloading errors:\n"
-  echo "$(cat ${SFTPERRORS})"
+  cat ${SFTPERRORS}
 fi
 if [[ $(cat ${SFTPERRORSDELETE} 2> /dev/null) != "" ]];
 then
   echo -e "\n\nSFTP Delete errors:\n"
-  echo "$(cat ${SFTPERRORSDELETE})"
+  cat ${SFTPERRORSDELETE}
 fi
 
-#rm -v ${HASHESFILE} 
-#rm -v ${HASHESERRORS}
-#rm -v ${HASHESCHECKFILE} 
-#rm -v ${FILESTODOWNLOAD} 
-#rm -v ${FILESTODELETE} 
-#rm -v ${UPDATEDRAWFILES} 
-#rm -v ${UNKNOWNLINES}
-#rm -v ${SFTPBATCH} 
-#rm -v ${SFTPERRORS} 
-#rm -v ${HASHESCHECKFILEDELETE} 
-#rm -v ${FILESTODELETEFINAL} 
-#rm -v ${SFTPBATCHDELETE} 
-#rm -v ${SFTPERRORSDELETE} 
 REMOTEHASHESTIME=$((REMOTEHASHESEND - REMOTEHASHESSTART))
 HASHESTIME=$((HASHESTIMEEND - HASHESTIMESTART))
 DOWNLOADTIME=$((DOWNLOADTIMEEND - DOWNLOADTIMESTART))

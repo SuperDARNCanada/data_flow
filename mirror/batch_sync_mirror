@@ -12,13 +12,14 @@
 
 MIRROR=$1
 SYNC_TYPE=$2
-HOLDING_DIR=/data/holing/${MIRROR}
+HOLDING_DIR=/data/holing/${MIRROR}  # Add /test/ for testing purposes
 
 DATE_UTC=$(date -u)
 
 if [[ "${SYNC_TYPE}" == "weekly" ]]
 then
-  startdate=$(date -d "$curdate - 1 year" +%Y%m)
+  today=$(date +%Y%m%d)
+  startdate=$(date -d "$today - 1 year" +%Y%m)
   # Start date is the 1st of the month, 1 year ago
   startdate="${startdate}01"
   d=${startdate}
@@ -35,6 +36,7 @@ then
     /home/dataman/data_flow/mirror/sync_mirror_data.sh ${HOLDING_DIR} ${MIRROR} ${yearmonth}
     d=$(date -d "$d + 1 month" +%Y%m%d)
   done
+
 elif [[ "${SYNC_TYPE}" == "monthly" ]]
 then
   # Check if mirror was provided

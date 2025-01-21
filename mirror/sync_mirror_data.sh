@@ -1,22 +1,18 @@
 #!/bin/bash
 
-# This script was created by combining sync_bas_data.sh and sync_nssc_data.sh.
-# Aside from some initial variable setup to connect to the specified mirror,
-# the two scripts are essentially identical.
-#
 # This script is designed to log on to the BAS/NSSC
 # SuperDARN mirror in order to sync to the usask mirror
 #
 # Call the script like so with the following arguments:
 # /path/to/script/sync_from_mirror /path/to/holding/directory MIRROR YYYYMM
-# Argument 1 is the data holding directory. (/data/holding/BAS or /data/holding/NSSC)
-# Argument 2 is the specified mirror (BAS or NSSC)
-# Argument 3 is Year and Month (YYYYMM) to get data for, default current YYYYMM
+# Argument 1: Holding directory. (/data/holding/BAS or /data/holding/NSSC)
+# Argument 2: Specified mirror (BAS or NSSC)
+# Argument 3: Year and Month (YYYYMM) to get data for, default current YYYYMM
 #
 # The script will check the arguments and if there are errors with the
 # arguments then it will fail with an email sent out.
 #
-# The logic is as follows:
+# Logical flow of the script
 # 1) Download the hashes files from the usask mirror for the specified dates
 #        also download the blocklist and previously failed files
 # 2) Compare with bas/nssc versions of hashes files
