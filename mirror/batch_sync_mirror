@@ -11,12 +11,12 @@
 #   Download any rawacf files that we are missing. Runs monthly.
 
 MIRROR=$1
-SYNC_TYPE=$2
+MODE=$2
 HOLDING_DIR=/data/holing/${MIRROR}  # Add /test/ for testing purposes
 
 DATE_UTC=$(date -u)
 
-if [[ "${SYNC_TYPE}" == "weekly" ]]
+if [[ "${MODE}" == "weekly" ]]
 then
   today=$(date +%Y%m%d)
   startdate=$(date -d "$today - 1 year" +%Y%m)
@@ -37,7 +37,7 @@ then
     d=$(date -d "$d + 1 month" +%Y%m%d)
   done
 
-elif [[ "${SYNC_TYPE}" == "monthly" ]]
+elif [[ "${MODE}" == "monthly" ]]
 then
   # Check if mirror was provided
   if [[ "${MIRROR}" == "BAS" ]]
@@ -69,22 +69,12 @@ then
   done
 
   # Update mirror comparison
+  HASHES_DIRS="/home/dataman/tmp_hashes_usask_${mirror}_cmp/${today}.*"
   CMP_DIR=/home/dataman/Documents/mirror_comparison_${today}/
   mkdir -p ${CMP_DIR}
 
-  if [[ "${MIRROR}" == "BAS" ]]
-  then
-    HASHES_DIRS=/home/dataman/tmp_hashes_usask/${today}.*
-    # Try to figure out how to execute the following line with mirror variable
-    find ${HASHES_DIRS} -name '*data.not_at_bas' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.not_at_${mirror}
-  elif [[ "${MIRROR}" == "NSSC" ]]
-  then
-    HASHES_DIRS=/home/dataman/tmp_hashes_usask_nssc_cmp/${today}.*
-    find ${HASHES_DIRS} -name '*data.not_at_nssc' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.not_at_${mirror}
-  fi
-
   find ${HASHES_DIRS} -name '*data.different' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.different
-  # find ${HASHES_DIRS} -name '*data.not_at_bas' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.not_at_${mirror}
+  find ${HASHES_DIRS} -name "*data.not_at_${mirror}" -exec cat '{}' \; > ${CMP_DIR}/${mirror}.not_at_${mirror}
   find ${HASHES_DIRS} -name '*data.not_at_usask' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.not_at_usask
   find ${HASHES_DIRS} -name '*data.failed' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.failed
   find ${HASHES_DIRS} -name '*data.blocked' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.blocked
@@ -97,6 +87,6 @@ then
   sort ${CMP_DIR}/${mirror}.blocked > ${CMP_DIR}/sorted/${mirror}_blocked
 
 else
-  echo -e "\n${DATE_UTC}\nPlease provide sync type (weekly or monthly)...exiting"
+  echo -e "\n${DATE_UTC}\nPlease provide mode (weekly or monthly)...exiting"
   exit
 fi
