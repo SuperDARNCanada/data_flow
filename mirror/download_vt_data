@@ -70,7 +70,7 @@ mkdir -p ${LOGGINGDIR}
 exec &>> ${LOGFILE}
 EMAILBODY=
 EMAILSUBJECT="VT Download: [${DATE} ${RADAR}]"
-# Where will we store files that have different hashes?
+# Path to store local files that have different hashes
 DIFFERENTHASHESDIR=${LOCALRADARDIR}/different/${DATE}/
 
 ##############################################################################
@@ -195,13 +195,12 @@ HASHESTIMEEND=$(date +%s)
 # Now go through each line of the .check file
 # and see if:
 #	1) The local files don't exist or couldn't be read: "FAILED open or read"
+#      Add to .download file.
 #	2) The local files' hashes don't match the remote files' hashes
+#      Add to .updated file.
 #	3) The local files match the remote files: "OK" message
+#      Add to .delete file.
 # 4) If not 1), 2) or 3) then we don't know how to deal with the line.
-# When the files match, add to a file .delete, make a note to email.
-# When we find these files that need to be downloaded, write them to a file
-# ".download" for downloading. When we find files that don't match local
-# and remote hashes, then add them to a ".updated" file for processing.
 ##############################################################################
 echo "Parsing check file for downloads, deletions and different files..."
 FILESTODOWNLOAD=${HASHESFILE}.download
