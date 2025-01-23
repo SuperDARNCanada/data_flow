@@ -1052,4 +1052,4 @@ class Gatekeeper(object):
                    f"{subdir}/{file}")
         msg = f"{fail_type} files:\r\n{files_to_move}\r\n\r\n"
         sub = f"{fail_type} files"
-        self.log_email_exit(logger.info, 1, 0, msg=msg, sub=sub)
+        self.log_email_exit(self.logger.info, 1, 0, msg=msg, sub=sub)
