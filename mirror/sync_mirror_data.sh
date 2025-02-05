@@ -28,10 +28,31 @@
 ##############################################################################
 # Initialize some variables
 ##############################################################################
+
+# Valid HOLDINGDIR and MIRROR values
+readonly VALID_DIRS=("/data/holding/BAS" "/data/holding/NSSC")
+readonly VALID_MIRRORS=("BAS" "NSSC")
+
 # Assign input arguments
 HOLDINGDIR=$1
 MIRROR=$2
 YYYYMM=$3
+
+# Check validity of input arguments
+if [[ $# -ne 2 ]] && [[ $# -ne 3 ]]; then
+    printf "Usage: sync_mirror_data.sh HOLDINGDIR MIRROR YYYYMM\n"
+    exit 1
+fi
+
+if [[ ! " ${VALID_DIRS[*]} " =~ " ${HOLDINGDIR} " ]]; then
+    printf "\"$HOLDINGDIR\" is not a valid holding directory\n"
+    exit 1
+fi
+
+if [[ ! " ${VALID_MIRRORS[*]} " =~ " ${MIRROR} " ]]; then
+    printf "\"$MIRROR\" is not a valid mirror\n"
+    exit 1
+fi
 
 # Variables for Cedar user and paths
 readonly CEDAR_USER=saifm@robot.cedar.alliancecan.ca
@@ -47,22 +68,20 @@ DATE_UTC=$(date -u)
 CURYEAR=$(date +%Y)
 CURMONTH=$(date +%m)
 
-# Check if mirror was provided and set username, hostname, and path for sftp usage
+# Get lowercase MIRROR
+mirror="${MIRROR,,}"
+
+# Set username, hostname, and path for sftp usage given the provided mirror
 if [[ "${MIRROR}" == "BAS" ]]
 then
-  mirror="bas"
   USER=superdarn
   REMOTEHOST=bslsuperdarnb.nerc-bas.ac.uk
   REMOTEDIR=/data/superdarn/data/raw
 elif [[ "${MIRROR}" == "NSSC" ]]
 then
-  mirror="nssc"
   USER=dataman
   REMOTEHOST=superdarn.mirror.nssdc.ac.cn
   REMOTEDIR=/sddata/raw
-else
-  echo -e "\n${DATE_UTC}\nPlease provide mirror (BAS or NSSC)...exiting"
-  exit
 fi
 
 # Create shortcuts for sha1sum and sftp programs
@@ -94,10 +113,7 @@ LOCALBLDIR=/home/dataman/tmp_blocklist/$DATE_TIME
 # What is our holding directory for previously failed files?
 LOCALFAILEDDIR=/home/dataman/tmp_failed/$DATE_TIME
 # Make sure above paths exist
-mkdir -p "${LOCALHASHDIR}"
-mkdir -p "${MIRRORHASHDIR}"
-mkdir -p "${LOCALBLDIR}"
-mkdir -p "${LOCALFAILEDDIR}"
+mkdir -p "${LOCALHASHDIR}" "${MIRRORHASHDIR}" "${LOCALBLDIR}" "${LOCALFAILEDDIR}"
 
 ##############################################################################
 # Email function. Called before any abnormal exit.

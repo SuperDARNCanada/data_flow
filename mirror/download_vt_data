@@ -45,9 +45,26 @@
 ##############################################################################
 # Initialize Some Variables
 ##############################################################################
+# Valid 3-letter RADAR values
+readonly VALID_RADARS=("ade" "adw" "bks" "bpk" "cly" "cve" "cvw" "dce" "dcn" "fhe" "fhw" "fir" "gbr" "hal"
+                       "han" "hkw" "hok" "ice" "icw" "inv" "jme" "kap" "ker" "kod" "ksr" "lyr" "mcm" "pgr"
+                       "pyk" "rkn" "san" "sas" "sch" "sps" "sto" "sye" "sys" "tig" "unw" "wal" "zho")
+
 # Setup holding directories: /data/holding/globus/ & /data/holding/radar/
 LOCALHOLDINGDIR=$1                          # /data/holding/
 RADAR=$2                                    # 3-letter radar code (Ex: sas)
+
+# Check validity of input arguments
+if [[ $# -ne 2 ]]; then
+    printf "Usage: download_vt_data LOCALHOLDINGDIR RADAR\n"
+    exit 1
+fi
+
+if [[ ! " ${VALID_RADARS[*]} " =~ " ${RADAR} " ]]; then
+    printf "\"$RADAR\" is not a valid RADAR ID\n"
+    exit 1
+fi
+
 LOCALGLOBUSDIR=${LOCALHOLDINGDIR}/globus/   # Add /test/ for testing purposes
 LOCALRADARDIR=${LOCALHOLDINGDIR}/${RADAR}/  # Add /test/ for testing purposes
 # Max partition usage
