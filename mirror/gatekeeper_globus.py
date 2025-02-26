@@ -285,10 +285,10 @@ def main():
                         logger.info(f"{hashed_file} already exists on mirror and hash matches. Removing from files to upload.")
                         files_to_upload_dict.pop(hashed_file)
                         # Comment out removal of matching files from holding dir for testing purposes
-                        try:
-                            remove(f"{gk.get_holding_dir()}/{hashed_file}")
-                        except OSError as error:
-                            logger.error(f"Error trying to remove file: {error}.")
+                        ##try:
+                        ##    remove(f"{gk.get_holding_dir()}/{hashed_file}")
+                        ##except OSError as error:
+                        ##    logger.error(f"Error trying to remove file: {error}.")
                     elif sha1sum_result is "":
                         pass
                     else:
@@ -517,7 +517,7 @@ def main():
         # If not, leave file in holding_dir for next script run and do not update yyyymm.hashes for this file
         if gk.check_for_file_existence(f"{gk.mirror_root_dir}/{data_type}/{int(year):04d}/{int(month):02d}/{filename}"):
             data_hash = files_to_upload_dict[filename]['hash']
-            remove(f"{gk.get_holding_dir()}/{filename}")  # Comment this line for testing purposes
+            #remove(f"{gk.get_holding_dir()}/{filename}")  # Comment this line for testing purposes
             yearmonth_hash_dict[ym] += f"{data_hash}  {filename}\n"
         else:
             msg = f"Transfer of {filename} listed as succeeded but not found on mirror! File will remain in holding directory."

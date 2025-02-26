@@ -109,7 +109,7 @@ class Gatekeeper(object):
     control data flow onto the mirror """
 
     # Add _test to 3rd argument in constructor below for testing purposes
-    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=f"{HOME}/tmp/"):
+    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=f"{HOME}/tmp_test/"):
         """ Initialize member variables, check arguments, etc..
 
         :param client_id: retrieved from "Manage Apps" section of
@@ -131,7 +131,7 @@ class Gatekeeper(object):
         self.mirror_root_dir = None
         self.sync_pattern = None
         # Add _test for testing purposes
-        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed/'  # TODO: This is hacky, should be handled better, using the input args or something
+        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed_test/'  # TODO: This is hacky, should be handled better, using the input args or something
 
         self.cur_year = datetime.now().year
         self.cur_month = datetime.now().month
@@ -142,7 +142,7 @@ class Gatekeeper(object):
         self.possible_data_types = ['raw', 'dat']
 
         # Setup logger
-        logdir = "/home/dataman/logs/globus"  # Add _test for testing purposes
+        logdir = "/home/dataman/logs_test/globus"  # Add _test for testing purposes
         logfile = (f"{logdir}/{self.cur_year:04d}/{self.cur_month:02d}/{self.cur_year:04d}{self.cur_month:02d}"
                    f"{self.cur_day:02d}.{self.cur_hour:02d}{self.cur_minute:02d}_globus_gatekeeper.log")
         # Make sure year and month directories for logfile exist
@@ -170,7 +170,7 @@ class Gatekeeper(object):
         # emailMessage is initialized to nothing here, and filled in with an
         #       appropriate message depending upon the reason for the email.
         self.email_recipients = ['saif.marei@usask.ca']
-        self.email_from = 'superdarn-cssdp'
+        self.email_from = 'dataman'
         self.current_time = datetime.now()
         self.email_subject = '[Gatekeeper Globus] ' + self.current_time.strftime("%Y%m%d.%H%M : ")
         self.smtp_server = 'localhost'

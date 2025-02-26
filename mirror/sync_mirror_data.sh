@@ -30,7 +30,7 @@
 ##############################################################################
 
 # Valid HOLDINGDIR and MIRROR values
-readonly VALID_DIRS=("/data/holding/BAS" "/data/holding/NSSC")
+readonly VALID_DIRS=("/data/holding/test/BAS" "/data/holding/test/NSSC")  # Add /test/ for testing purposes
 readonly VALID_MIRRORS=("BAS" "NSSC")
 
 # Assign input arguments
@@ -57,9 +57,9 @@ fi
 # Variables for Cedar user and paths
 readonly CEDAR_USER=saifm@robot.cedar.alliancecan.ca
 # Add _test to Cedar paths for testing purposes
-readonly CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/raw/
-readonly CEDAR_BLOCKLIST=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/
-readonly CEDAR_FAILED=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt
+readonly CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata_test/raw/
+readonly CEDAR_BLOCKLIST=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata_test/.config/blocklist/
+readonly CEDAR_FAILED=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata_test/.config/all_failed.txt
 
 # Date/time variables
 STARTTIME=$(date +%s)
@@ -89,7 +89,7 @@ HASHPROG=/usr/bin/sha1sum
 SFTP=/usr/bin/sftp
 
 # Setup logfile
-LOGDIR=/home/dataman/logs/${mirror}/${CURYEAR}/${CURMONTH}/  # Add _test for testing purposes
+LOGDIR=/home/dataman/logs_test/${mirror}/${CURYEAR}/${CURMONTH}/  # Add _test for testing purposes
 LOGFILE=${LOGDIR}${DATE_TIME}_${mirror}.log
 # Make the log file directory if it doesn't exist
 mkdir -p "${LOGDIR}"
@@ -106,12 +106,12 @@ EMAILSUBJECT="sync_${mirror}_data - [${YYYYMM}]"
 # What is our holding directory for hashes files?
 # Double check that these directories are consistent between sync_mirror_data.sh and monthly batch_sync_mirror (for bas)
 # Add /test_mirror/ in all 4 of the below paths for testing purposes
-LOCALHASHDIR=/home/dataman/tmp_hashes_usask_${mirror}_cmp/$DATE_TIME
-MIRRORHASHDIR=/home/dataman/tmp_hashes_${mirror}/$DATE_TIME
+LOCALHASHDIR=/home/dataman/test_mirror/tmp_hashes_usask_${mirror}_cmp/$DATE_TIME
+MIRRORHASHDIR=/home/dataman/test_mirror/tmp_hashes_${mirror}/$DATE_TIME
 # What is our holding directory for blocked files?
-LOCALBLDIR=/home/dataman/tmp_blocklist/$DATE_TIME
+LOCALBLDIR=/home/dataman/test_mirror/tmp_blocklist/$DATE_TIME
 # What is our holding directory for previously failed files?
-LOCALFAILEDDIR=/home/dataman/tmp_failed/$DATE_TIME
+LOCALFAILEDDIR=/home/dataman/test_mirror/tmp_failed/$DATE_TIME
 # Make sure above paths exist
 mkdir -p "${LOCALHASHDIR}" "${MIRRORHASHDIR}" "${LOCALBLDIR}" "${LOCALFAILEDDIR}"
 
