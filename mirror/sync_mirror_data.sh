@@ -193,12 +193,18 @@ SFTPBATCH=${MIRRORHASHDIR}/sftp.batch
 SFTPERRORS=${MIRRORHASHDIR}/sftp.errors
 # Ensure file is empty
 echo -n > "${SFTPBATCH}"
+
 cd "${MIRRORHASHDIR}" || exit
 # Write commands to get hashes from mirror and exit to sftp batch file
 echo "-get ${REMOTEDIR}/${yyyy}/${mm}/${YYYYMM}.hashes ${MIRRORHASHDIR}" >> "${SFTPBATCH}"
 echo "exit" >> "${SFTPBATCH}"
 # Execute sftp batch file, logging errors to sftp error file
-${SFTP} -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} 2> "${SFTPERRORS}"
+# Add use of key for NSSC connection for migration
+if [[ "${MIRROR}" == "BAS" ]]; then
+  ${SFTP} -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
+elif [[ "${MIRROR}" == "NSSC" ]]; then
+  ${SFTP} -i "~/.ssh/id_NSSC" -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
+fi
 
 if [[ -s $SFTPERRORS ]]
 then
@@ -207,8 +213,7 @@ then
   echo -e "${EMAILBODY}"
 fi
 # Check if hash file successfully transferred from server. If not: log, email, exit
-if [ ! -e "${MIRRORHASHDIR}/${YYYYMM}.hashes" ];
-then
+if [ ! -e "${MIRRORHASHDIR}/${YYYYMM}.hashes" ]; then
   EMAILBODY="Error: ${MIRROR} hash file error. Exiting\n"
   echo -e "${EMAILBODY}"
   exit
@@ -384,7 +389,12 @@ echo -n > "$SFTPERRORS"
 if [[ ${totalFiles} -gt 0 ]]
 then
   echo "Getting files..."
-  ${SFTP} -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} 2> "${SFTPERRORS}"
+  # Add use of key for NSSC connection for migration
+  if [[ "${MIRROR}" == "BAS" ]]; then
+    ${SFTP} -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
+  elif [[ "${MIRROR}" == "NSSC" ]]; then
+    ${SFTP} -i "~/.ssh/id_NSSC" -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
+  fi
 else
   # The script already checked and exited if totalToDownload -eq 0
   # Should never hit this condition
