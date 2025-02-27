@@ -865,8 +865,8 @@ class Gatekeeper(object):
                 self.transfer_client.operation_ls(uuid, path=file_path)
                 return True  # This means it was not a file and it did exist
             except globus_sdk.TransferAPIError as error:
-                self.logger.error(error)
                 if error.message.find("not found on endpoint") != -1:
+                    self.logger.error(error)
                     return False  # This means it doesn't exist
                 elif error.message.find("is a file") != -1:
                     return True  # Means it raised an exception, but msg said it is a single file

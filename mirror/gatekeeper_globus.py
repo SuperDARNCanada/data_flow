@@ -222,6 +222,8 @@ def main():
         filename = item.split()[1]
         data_hash = item.split()[0]
         elements = parse_data_filename(filename)
+        if elements[7] == "rawacf":
+            elements[7] = "raw"
         metadata = {'year': f'{elements[0]}', 'month': f'{elements[1]}', 'day': f'{elements[2]}',
                     'yearmonth': filename[0:6], 'hash': data_hash, 'type': elements[7]}
         files_to_upload_dict[filename].update(metadata)
