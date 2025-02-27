@@ -222,10 +222,11 @@ def main():
         filename = item.split()[1]
         data_hash = item.split()[0]
         elements = parse_data_filename(filename)
-        if elements[7] == "rawacf":
-            elements[7] = "raw"
+        data_type = elements[7]
+        if data_type == "rawacf":
+            data_type = "raw"
         metadata = {'year': f'{elements[0]}', 'month': f'{elements[1]}', 'day': f'{elements[2]}',
-                    'yearmonth': filename[0:6], 'hash': data_hash, 'type': elements[7]}
+                    'yearmonth': filename[0:6], 'hash': data_hash, 'type': data_type}
         files_to_upload_dict[filename].update(metadata)
 
     ###################################################################################################################
@@ -291,7 +292,7 @@ def main():
                         ##    remove(f"{gk.get_holding_dir()}/{hashed_file}")
                         ##except OSError as error:
                         ##    logger.error(f"Error trying to remove file: {error}.")
-                    elif sha1sum_result is "":
+                    elif sha1sum_result == "":
                         pass
                     else:
                         logger.warning(f"Error, I don't know how to deal with: {sha1sum_result}.")
@@ -541,7 +542,7 @@ def main():
         hash_string = yearmonth_hash_dict[ym]
         hashfile_path = f"{gk.get_working_dir()}/{ym}.hashes"
         # If string is not empty, append it to hashfile
-        if hash_string is not "":
+        if hash_string != "":
             hash_string.strip("\n")
             with open(hashfile_path, 'a') as f:
                 f.write(f"{hash_string}")
