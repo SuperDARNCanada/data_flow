@@ -527,8 +527,9 @@ def main():
             files_not_found.append(filename)
 
     # log and email list of files that appeared to succeed transfer but are not found on mirror
-    if files_not_found:
-        msg = f"Transfer of {files_not_found} listed as succeeded but not found on mirror! Files will remain in holding directory."
+    if len(files_not_found) > 0:
+        msg = (f"Transfer of {files_not_found} listed as succeeded but not found on mirror! "
+               f"Files will remain in holding directory.")
         gk.log_email_exit(logger.warning, 1, 0, msg=msg)
 
     ###################################################################################################################
