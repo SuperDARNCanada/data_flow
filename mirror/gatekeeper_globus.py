@@ -508,6 +508,7 @@ def main():
 
     # All the metadata of interest below is stored in files_to_upload_dict
     # Remove each succeeded file from the holding dir and append "<hash> <filename> \n" to dictionary for yyyymm
+    files_not_found = []
     for filename in sorted(list(succeeded_files)):
         file_data = files_to_upload_dict[filename]
         ym = file_data['yearmonth']
@@ -522,8 +523,12 @@ def main():
             #remove(f"{gk.get_holding_dir()}/{filename}")  # Comment this line for testing purposes
             yearmonth_hash_dict[ym] += f"{data_hash}  {filename}\n"
         else:
-            msg = f"Transfer of {filename} listed as succeeded but not found on mirror! File will remain in holding directory."
-            gk.log_email_exit(logger.warning, 1, 0, msg=msg)
+            files_not_found.append(filename)
+
+    # log and email list of files that appeared to succeed transfer but are not found on mirror
+    if files_not_found:
+        msg = f"Transfer of {files_not_found} listed as succeeded but not found on mirror! Files will remain in holding directory."
+        gk.log_email_exit(logger.warning, 1, 0, msg=msg)
 
     ###################################################################################################################
     # Step 11)
