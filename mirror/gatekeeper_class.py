@@ -131,7 +131,7 @@ class Gatekeeper(object):
         self.mirror_root_dir = None
         self.sync_pattern = None
         # Add _test for testing purposes
-        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed/'  # TODO: This is hacky, should be handled better, using the input args or something
+        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed/'
 
         self.cur_year = datetime.now().year
         self.cur_month = datetime.now().month
