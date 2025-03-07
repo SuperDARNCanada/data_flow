@@ -632,6 +632,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# TODO: go through all "print" statements and either remove them or add them to logger
