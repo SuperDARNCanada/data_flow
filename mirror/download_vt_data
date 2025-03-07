@@ -65,8 +65,8 @@ if [[ ! " ${VALID_RADARS[*]} " =~ " ${RADAR} " ]]; then
     exit 1
 fi
 
-LOCALGLOBUSDIR=${LOCALHOLDINGDIR}/test/globus/   # Add /test/ for testing purposes
-LOCALRADARDIR=${LOCALHOLDINGDIR}/test/${RADAR}/  # Add /test/ for testing purposes
+LOCALGLOBUSDIR=${LOCALHOLDINGDIR}/globus/   # Add /test/ for testing purposes
+LOCALRADARDIR=${LOCALHOLDINGDIR}/${RADAR}/  # Add /test/ for testing purposes
 # Max partition usage
 HOLDINGDIR_USAGE_THRESHOLD=98
 # Create shortcut for sha1sum
@@ -79,7 +79,7 @@ CURYEAR=$(date +%Y)
 CURMONTH=$(date +%m)
 
 # Setup logfile
-LOGGINGDIR=/home/dataman/logs_test/vt/${CURYEAR}/${CURMONTH} # Add _test for testing purposes
+LOGGINGDIR=/home/dataman/logs/vt/${CURYEAR}/${CURMONTH} # Add _test for testing purposes
 LOGFILE=${LOGGINGDIR}/${DATE}.${RADAR}.log
 # Make the log file directory if it doesn't exist
 mkdir -p ${LOGGINGDIR}
@@ -379,10 +379,10 @@ SFTPERRORSDELETE=${HASHESFILE}.errors.del
 echo "Deleting files..."
 # Comment deletion of transferred files for testing purposes
 # Only execute sftp batch file if there is at least one file to remove from VT 
-##if [[ ${totalFilesDelete} -gt 0 ]]
-##then
-##  ${SFTP} -p -b ${SFTPBATCHDELETE} ${USER}@${REMOTEHOST} 2> ${SFTPERRORSDELETE}
-##fi
+if [[ ${totalFilesDelete} -gt 0 ]]
+then
+  ${SFTP} -p -b ${SFTPBATCHDELETE} ${USER}@${REMOTEHOST} 2> ${SFTPERRORSDELETE}
+fi
 DELETETIMEEND=$(date +%s)
 
 ##############################################################################

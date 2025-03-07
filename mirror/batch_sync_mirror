@@ -34,7 +34,7 @@ if [[ ! " ${VALID_MODES[*]} " =~ " ${MODE} " ]]; then
 fi
 
 # Update holding dir with provided mirror and get lowercase MIRROR
-HOLDING_DIR=/data/holding/test/${MIRROR}  # Add /test/ for testing purposes
+HOLDING_DIR=/data/holding/${MIRROR}  # Add /test/ for testing purposes
 mirror="${MIRROR,,}"
 
 DATE_UTC=$(date -u)
