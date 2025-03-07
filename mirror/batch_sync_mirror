@@ -42,13 +42,11 @@ DATE_UTC=$(date -u)
 if [[ "${MODE}" == "weekly" ]]
 then
   today=$(date +%Y%m%d)
-  startdate=$(date -d "$today - 1 year" +%Y%m)
   # Start date is the 1st of the month, 1 year ago
-  startdate="${startdate}01"
+  startdate="$(date -d "$today - 1 year" +%Y%m)01"
   d=${startdate}
   # End date is the 1st of the month, now
-  enddate=$(date +%Y%m)
-  enddate="${enddate}01"
+  enddate="$(date +%Y%m)01"
   echo "Date range: ${startdate} - ${enddate}"
 
   # Loop will end before we get to the current month
