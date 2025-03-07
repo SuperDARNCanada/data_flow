@@ -1,0 +1,432 @@
+#!/bin/bash
+# Last modified August 8th 2016
+# Added check for full hard drive 
+# Modified to add radar ID in search for files to download,
+# so incorrectly posted files do not get downloaded.
+# Modified from Kevin Sterne's script
+#
+# Directory structure of the VT server's holding area is:
+# /home/usask/outgoing/sas
+#		      /rkn
+#		      /hal
+#		      /bks
+#		      /...
+#
+# Within each radar's directory are the rawacf files to be downloaded.
+# They should be owned by user sd-data and the group should be sd-data
+# The permissions need to have read and write access for the group
+# or the usask user cannot remove the files when finished.
+# 
+# In order for public keys to work properly, permissions and owners must be
+# set up correctly.
+# For /home/usask/ The permissions must be 755
+# For /home/usask/.ssh the permissions must be 700
+# For /home/usask/authorized_keys the permissions must be 644
+#
+# This script downloads any available radar rawacf data from Virginia
+# Tech's server's holding area.
+# Call the script like so with the following arguments:
+# /path/to/script /path/to/local/holding/area RADAR
+# Argument 1: Holding directory (/data/holding/)
+# Argument 2: RADAR - 3 letter radar code to download data for (Ex: sas)
+#
+# Logical flow of the script:
+#  0) Do any error checking required.
+#  1) Try to remotely hash all radar files in the remote directory, and store
+#     the hashes file locally in the holding directory for the radar.
+#  2) Compare hashes with local files.
+#	   a) If the file exists in the local holding area and they have the same
+#       hash value, do nothing (delete remote file later after all downloads).
+#	   b) If the file exists in the local holding area and they have different
+#       hash values, make an email alert, place local file in separate area.
+#	   c) If the file doesn't exist in the local holding area, download it.
+#	   d) After downloads, check the hashes again, and delete those that
+#       are good, send email alert for those that are not.
+##############################################################################
+# Initialize Some Variables
+##############################################################################
+# Valid 3-letter RADAR values
+readonly VALID_RADARS=("ade" "adw" "bks" "bpk" "cly" "cve" "cvw" "dce" "dcn" "fhe" "fhw" "fir" "gbr" "hal"
+                       "han" "hkw" "hok" "ice" "icw" "inv" "jme" "kap" "ker" "kod" "ksr" "lyr" "mcm" "pgr"
+                       "pyk" "rkn" "san" "sas" "sch" "sps" "sto" "sye" "sys" "tig" "unw" "wal" "zho")
+
+# Setup holding directories: /data/holding/globus/ & /data/holding/radar/
+LOCALHOLDINGDIR=$1                          # /data/holding/
+RADAR=$2                                    # 3-letter radar code (Ex: sas)
+
+# Check validity of input arguments
+if [[ $# -ne 2 ]]; then
+    printf "Usage: download_vt_data LOCALHOLDINGDIR RADAR\n"
+    exit 1
+fi
+
+if [[ ! " ${VALID_RADARS[*]} " =~ " ${RADAR} " ]]; then
+    printf "\"$RADAR\" is not a valid RADAR ID\n"
+    exit 1
+fi
+
+LOCALGLOBUSDIR=${LOCALHOLDINGDIR}/globus/   # Add /test/ for testing purposes
+LOCALRADARDIR=${LOCALHOLDINGDIR}/${RADAR}/  # Add /test/ for testing purposes
+# Max partition usage
+HOLDINGDIR_USAGE_THRESHOLD=98
+# Create shortcut for sha1sum
+HASHPROG=/usr/bin/sha1sum
+# Date/time variables
+STARTTIME=$(date +%s)
+DATE=$(date +%Y%m%d)
+DATE_UTC=$(date -u)
+CURYEAR=$(date +%Y)
+CURMONTH=$(date +%m)
+
+# Setup logfile
+LOGGINGDIR=/home/dataman/logs/vt/${CURYEAR}/${CURMONTH} # Add _test for testing purposes
+LOGFILE=${LOGGINGDIR}/${DATE}.${RADAR}.log
+# Make the log file directory if it doesn't exist
+mkdir -p ${LOGGINGDIR}
+# Redirect STDOUT and STDERR to $LOGFILE
+exec &>> ${LOGFILE}
+EMAILBODY=
+EMAILSUBJECT="VT Download: [${DATE} ${RADAR}]"
+# Path to store local files that have different hashes
+DIFFERENTHASHESDIR=${LOCALRADARDIR}/different/${DATE}/
+
+##############################################################################
+# Email function. Called before any abnormal exit, or at the end of the 
+# script if the email flag was set. 
+# Argument 1 should be the subject
+# Argument 2 should be the body
+##############################################################################
+send_email () {
+  # What email address to send to?
+  EMAILADDRESS=saif.marei@usask.ca
+  echo -e "${2}" | mutt -s "${1}" ${EMAILADDRESS}
+}
+
+##############################################################################
+# Do some error checking on the arguments
+##############################################################################
+echo ""
+echo ${DATE_UTC}
+echo "Checking arguments..."
+# Check to make sure the local holding directory exists
+# If it doesn't exist: log, email, exit
+if [ ! -d ${LOCALHOLDINGDIR} ];
+then
+  EMAILBODY="Error: Local directory ${LOCALHOLDINGDIR} doesn't exist! Exiting\n"
+  echo -e ${EMAILBODY}
+  EMAILSUBJECT="${EMAILSUBJECT} Holding directory error"
+  send_email "${EMAILSUBJECT}" "${EMAILBODY}"
+  exit
+fi
+
+# Check to make sure the local globus holding directory exists
+# If it doesn't exist: log, email, exit
+if [ ! -d ${LOCALGLOBUSDIR} ];
+then
+  EMAILBODY="Error: Local directory ${LOCALGLOBUSDIR} doesn't exist! Exiting\n"
+  echo -e ${EMAILBODY}
+  EMAILSUBJECT="${EMAILSUBJECT} Globus holding directory error"
+  send_email "${EMAILSUBJECT}" "${EMAILBODY}"
+  exit
+fi
+
+# Check to make sure the radar code is valid by checking to see if the
+# radar's local data holding directory exists
+# If it doesn't exist: log, email, exit
+if [ ! -d ${LOCALRADARDIR} ];
+then
+  EMAILBODY="Error: Local radar directory ${LOCALRADARDIR} doesn't exist! Exiting\n"
+  echo -e ${EMAILBODY}
+  EMAILSUBJECT="${EMAILSUBJECT} Radar directory error"
+  send_email "${EMAILSUBJECT}" "${EMAILBODY}"
+  exit
+fi
+
+# Check to see that we aren't about to fill up the partition
+HOLDINGDIR_USAGE=$(df ${LOCALHOLDINGDIR} | grep -v "Filesystem" | awk -F' ' '{print $5}' | cut -c -2)
+# If we are above 98 percent usage in holding dir: log, email, exit
+if [ ${HOLDINGDIR_USAGE} -gt ${HOLDINGDIR_USAGE_THRESHOLD} ];
+then
+  EMAILBODY="Error: Holding directory partition overutilized at ${HOLDINGDIR_USAGE}% ! Exiting\n"
+  EMAILSUBJECT="${EMAILSUBJECT} Holding directory overutilized"
+  echo -e ${EMAILBODY}
+  send_email "${EMAILSUBJECT}" "${EMAILBODY}"
+  exit
+fi
+
+##############################################################################
+# Now that we know the arguments are likely correct, initialize some more
+# variables.
+##############################################################################
+# Create shortcut for sftp command
+SFTP=/usr/bin/sftp
+# User, hostname and directory to connect to on VT server
+USER=usask
+REMOTEHOST=sd-data1.ece.vt.edu
+REMOTEDIRBASE=/home/usask/outgoing
+REMOTEDIR=${REMOTEDIRBASE}/${RADAR}
+# Path to hashfile for files on VT server (e.g., /data/holding/sas/hashes.remote)
+HASHESFILE=hashes.remote
+HASHESERRORS=hashes.errors
+
+##############################################################################
+# Get a hash file for all files in remotedir.
+# Do a hashes check on local files.
+##############################################################################
+echo "Getting hashes for remote files..."
+REMOTEHASHESSTART=$(date +%s)
+cd ${LOCALRADARDIR} || exit
+# This will write message to stderr if sha1sum fails
+# ssh into VT and hash the rawacf files for the given radar, output to hashes.remote
+ssh ${USER}@${REMOTEHOST} "cd ${REMOTEDIR}; ${HASHPROG} *${RADAR}*rawacf.bz2" > ${HASHESFILE} 2> ${HASHESERRORS}
+# Capture return value from the above sha1sum
+RETURNVALUE=$?
+REMOTEHASHESEND=$(date +%s)
+# Check if both the sha1sum failed and the hash file is still empty
+if [[ ${RETURNVALUE} != 0 && $(cat ${HASHESFILE}) == "" ]];
+then
+  NOW=$(date -u)
+  EMAILBODY="Error: Hashing ${REMOTEHOST}:${REMOTEDIR}/*rawacf.bz2 failed!"
+  EMAILBODY="${EMAILBODY}\nProbably no files passed. Exiting: ${NOW}"
+  EMAILBODY="${EMAILBODY}\n\nErrors from hashing:\n"
+  EMAILBODY="${EMAILBODY}\n$(cat ${HASHESERRORS})"
+  # Only send email if there were ACTUAL errors, if there were no files,
+  # that's not really an error and I don't want spam about it.
+  if [[ $(cat ${HASHESERRORS} 2> /dev/null | grep -v "No such file" 2> /dev/null) != "" ]];
+  then
+    send_email "${EMAILSUBJECT}" "${EMAILBODY}"
+  fi
+  echo -e ${EMAILBODY}
+  exit
+fi
+# Now do a check on the local and remote hashes using sha1sum
+echo "Comparing local and remote hashes..."
+HASHESCHECKFILE=${HASHESFILE}.check
+HASHESTIMESTART=$(date +%s)
+# Compare local and remote hashes and store output in /data/holding/radar/hashes.remote.check
+# hashes.remote (from VT) is compared to rawacfs in local holding dir /data/holding/radar/
+${HASHPROG} -c ${HASHESFILE} 1> ${HASHESCHECKFILE} 2> /dev/null
+HASHESTIMEEND=$(date +%s)
+
+##############################################################################
+# Now go through each line of the .check file
+# and see if:
+#	1) The local files don't exist or couldn't be read: "FAILED open or read"
+#      Add to .download file.
+#	2) The local files' hashes don't match the remote files' hashes
+#      Add to .updated file.
+#	3) The local files match the remote files: "OK" message
+#      Add to .delete file.
+# 4) If not 1), 2) or 3) then we don't know how to deal with the line.
+##############################################################################
+echo "Parsing check file for downloads, deletions and different files..."
+FILESTODOWNLOAD=${HASHESFILE}.download
+UPDATEDRAWFILES=${HASHESFILE}.updated
+FILESTODELETE=${HASHESFILE}.delete
+UNKNOWNLINES=${HASHESFILE}.unknown
+# Empty any previous files first.
+echo -n > ${FILESTODOWNLOAD}
+echo -n > ${FILESTODELETE}
+echo -n > ${UPDATEDRAWFILES}
+echo -n > ${UNKNOWNLINES}
+# Store default IFS before changing IFS to separate on new lines
+OIFS="${IFS}"
+NIFS=$'\n'
+IFS="${NIFS}"
+# Loop through comparison of local and remote hashes
+for LINE in $(cat ${HASHESCHECKFILE})
+do
+  # Split line by ':' and first entry is filename
+  RAWFILE=$(echo ${LINE} | awk -F':' '{print $1}')
+  # File dne locally, need to download from VT
+  if [[ "${LINE}" == *"FAILED open or read" ]]
+  then
+    echo "${RAWFILE} not found locally, adding to ${FILESTODOWNLOAD}"
+    echo ${RAWFILE} >> ${FILESTODOWNLOAD}
+  # Hash doesn't match, move local file to different hashes dir and download updated file from VT
+  elif [[ "${LINE}" == *"FAILED" ]]
+  then
+    echo "${RAWFILE} hash doesn't match! Adding to ${UPDATEDRAWFILES}"
+    echo "moving ${RAWFILE} to ${DIFFERENTHASHESDIR} and adding to ${FILESTODOWNLOAD}"
+    echo ${RAWFILE} >> ${UPDATEDRAWFILES}
+    echo ${RAWFILE} >> ${FILESTODOWNLOAD}
+    mkdir -p ${DIFFERENTHASHESDIR}
+    mv -v ${RAWFILE} ${DIFFERENTHASHESDIR}
+  # Hash matches. Do not download file from VT
+  elif [[ "${LINE}" == *"OK" ]]
+  then
+    echo "${RAWFILE} hash matches. Adding to ${FILESTODELETE}"
+    echo ${RAWFILE} >> ${FILESTODELETE}
+  else
+    echo "ERROR! unknown! ${LINE}, adding to ${UNKNOWNLINES}"
+    echo ${LINE} >> ${UNKNOWNLINES}
+  fi
+done
+# Reset IFS to default IFS
+IFS="${OIFS}"
+
+##############################################################################
+# Now that we have the required files to download, put together an sftp batch
+# command file, ".batch".
+##############################################################################
+SFTPBATCH=${HASHESFILE}.batch
+echo "Building sftp batch file for downloads..."
+# Empty any previous batch file first.
+echo -n > ${SFTPBATCH}
+# First we need to change to proper directory
+echo "cd ${REMOTEDIR}" >> ${SFTPBATCH}
+# Next we need to place get commands for each file required
+totalFiles=0
+for ITEM in $(cat ${FILESTODOWNLOAD})
+do
+  echo "-get ${ITEM}" >> ${SFTPBATCH}
+  # Increment count of total # of files to download from VT
+  totalFiles=$((totalFiles + 1))
+done
+# Finally we exit from sftp
+echo "exit" >> ${SFTPBATCH}
+echo "Total files to download: ${totalFiles}"
+
+##############################################################################
+# Finally we are ready to execute the sftp batch file and download the
+# required files. Redirect output to logfile and errors to a file ".errors".
+# Do not execute if there were zero files that required downloading.
+##############################################################################
+DOWNLOADTIMESTART=$(date +%s)
+SFTPERRORS=${HASHESFILE}.errors
+echo "Downloading files..."
+# Only execute sftp batch file if there is at least one file to download from VT
+if [[ ${totalFiles} -gt 0 ]]
+then
+  ${SFTP} -p -b ${SFTPBATCH} ${USER}@${REMOTEHOST} 2> ${SFTPERRORS}
+fi
+DOWNLOADTIMEEND=$(date +%s)
+
+##############################################################################
+# Now that we've downloaded files, we can check the downloaded
+# files hashes against the remote hashes and remove them from the server
+# along with any that we already had that matched.
+##############################################################################
+# Now do a check on the local and remote hashes using sha1sum a second time
+HASHESCHECKFILEDELETE=${HASHESFILE}.check.del
+HASHESTIMESTARTDELETE=$(date +%s)
+echo "Comparing hashes once again after downloading files..."
+# Compare remote hashes to rawacfs in /data/holding/radar/ again
+${HASHPROG} -c ${HASHESFILE} 1> ${HASHESCHECKFILEDELETE} 2> /dev/null
+HASHESTIMEENDDELETE=$(date +%s)
+# File to store successfully transferred rawacfs to remove from VT
+FILESTODELETEFINAL=${HASHESFILE}.delete.final
+# Empty any previous files first.
+echo -n > ${FILESTODELETEFINAL}
+echo "Parsing final check file for deletions, or differences in files..."
+# Store default IFS before changing IFS to separate on new lines
+OIFS="${IFS}"
+NIFS=$'\n'
+IFS="${NIFS}"
+# Loop through comparison of local and remote hashes
+for LINE in $(cat ${HASHESCHECKFILEDELETE})
+do
+  # Split line by ':' and first entry is filename
+  RAWFILE=$(echo ${LINE} | awk -F':' '{print $1}')
+  if [[ "${LINE}" == *"FAILED open or read" ]]
+  then
+    echo "${RAWFILE} not found locally after VT download! ERROR!"
+  elif [[ "${LINE}" == *"FAILED" ]]
+  then
+    echo "${RAWFILE} hash doesn't match after VT download! ERROR"
+  elif [[ "${LINE}" == *"OK" ]]
+  then
+    # Hashes match, append rawacf to files to be removed from VT
+    # Also move rawacf from /data/holding/radar/ to /data/holding/globus/
+    echo "${RAWFILE} hash matches. Adding to ${FILESTODELETEFINAL}"
+    echo "Copying ${RAWFILE} to globus staging directory: ${LOCALGLOBUSDIR}"
+    mv -v ${RAWFILE} ${LOCALGLOBUSDIR}
+    echo ${RAWFILE} >> ${FILESTODELETEFINAL}
+  else
+    echo "ERROR! unknown: ${LINE}, adding to ${UNKNOWNLINES}"
+    echo ${LINE} >> ${UNKNOWNLINES}
+  fi
+done
+# Reset IFS to default IFS
+IFS="${OIFS}"
+
+# Create sftp batch file to remove successfully transferred rawacfs from VT
+SFTPBATCHDELETE=${HASHESFILE}.batch.del
+echo "Building sftp batch file to delete files..."
+# Empty any previous batch file first.
+echo -n > ${SFTPBATCHDELETE}
+# First we need to change to proper directory
+echo "cd ${REMOTEDIR}" >> ${SFTPBATCHDELETE}
+# Next we need to place rm commands for each file to delete
+totalFilesDelete=0
+for ITEM in $(cat ${FILESTODELETEFINAL})
+do
+  echo "-rm ${ITEM}" >> ${SFTPBATCHDELETE}
+  # Increment count of # of files to remove from VT
+  totalFilesDelete=$((totalFilesDelete + 1))
+done
+# Finally we exit from sftp
+echo "exit" >> ${SFTPBATCHDELETE}
+echo "Total files to delete: ${totalFilesDelete}"
+
+##############################################################################
+# Finally we are ready to execute the sftp batch file and delete the
+# required files. Redirect errors to a file ".errors". Do not execute
+# if there were zero files that required deletion.
+##############################################################################
+DELETETIMESTART=$(date +%s)
+SFTPERRORSDELETE=${HASHESFILE}.errors.del
+echo "Deleting files..."
+# Comment deletion of transferred files for testing purposes
+# Only execute sftp batch file if there is at least one file to remove from VT 
+if [[ ${totalFilesDelete} -gt 0 ]]
+then
+  ${SFTP} -p -b ${SFTPBATCHDELETE} ${USER}@${REMOTEHOST} 2> ${SFTPERRORSDELETE}
+fi
+DELETETIMEEND=$(date +%s)
+
+##############################################################################
+# Remove temporary files, print out some useful information, 
+# send email if required, and exit.
+##############################################################################
+if [[ $(cat ${HASHESERRORS} 2> /dev/null) != "" ]];
+then
+  echo -e "\n\nErrors from file hashing:\n"
+  cat ${HASHESERRORS}
+fi
+if [[ $(cat ${UPDATEDRAWFILES} 2> /dev/null) != "" ]];
+then
+  echo -e "\n\nFiles that we have but don't match remote:\n"
+  cat ${UPDATEDRAWFILES}
+fi
+if [[ $(cat ${UNKNOWNLINES} 2> /dev/null) != "" ]];
+then
+  echo -e "\n\nUnknown output lines of hash checking:\n"
+  cat ${UNKNOWNLINES}
+fi
+if [[ $(cat ${SFTPERRORS} 2> /dev/null) != "" ]];
+then
+  echo -e "\n\nSFTP Downloading errors:\n"
+  cat ${SFTPERRORS}
+fi
+if [[ $(cat ${SFTPERRORSDELETE} 2> /dev/null) != "" ]];
+then
+  echo -e "\n\nSFTP Delete errors:\n"
+  cat ${SFTPERRORSDELETE}
+fi
+
+REMOTEHASHESTIME=$((REMOTEHASHESEND - REMOTEHASHESSTART))
+HASHESTIME=$((HASHESTIMEEND - HASHESTIMESTART))
+DOWNLOADTIME=$((DOWNLOADTIMEEND - DOWNLOADTIMESTART))
+HASHESTIMEDELETE=$((HASHESTIMEENDDELETE - HASHESTIMESTARTDELETE))
+DELETETIME=$((DELETETIMEEND - DELETETIMESTART))
+NOW=$(date +%s)
+SCRIPTTIME=$((NOW - STARTTIME))
+echo "Time to calculate remote hashes: ${REMOTEHASHESTIME} seconds"
+echo "Time to compares hashes: ${HASHESTIME} seconds"
+echo "Time to download ${totalFiles} files: ${DOWNLOADTIME} seconds"
+echo "Time to compare hashes again: ${HASHESTIMEDELETE} seconds"
+echo "Time to delete ${totalFilesDelete} files: ${DELETETIME} seconds"
+
+echo "Total script time: ${SCRIPTTIME}"
+echo "Done."
