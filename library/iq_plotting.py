@@ -208,7 +208,7 @@ def plot_antennas_range_time(antennas_iq_file, antenna_nums=None, vmax=40.0, vmi
         experiment = f['metadata']['experiment_name'][()].decode('utf-8')
 
     # Read in the data from the file
-    dset = pydarnio.BorealisV1Read.read_arrays_as_xarray(antennas_iq_file)
+    dset = pydarnio.BorealisV1Read.arrays_as_xarray(antennas_iq_file)
     data = dset['antennas_iq_data']
     num_antennas = data.shape[0]
 
