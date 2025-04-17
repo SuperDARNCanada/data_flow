@@ -205,7 +205,7 @@ check_timestamp() {
 	local threshold=86400				# Threshold is 1 day (86400 seconds)
 
 	# Check that the filename given is a valid file name
-	if [[ ! "$filename" =~ ^[0-9]{8}\.[0-9]{4}\.[0-9]{2}\.[[:lower:]]{3}\.[0-9]+\..+\.h5$   ]]; then
+	if [[ ! "$filename" =~ ^[0-9]{8}\.[0-9]{4}\.[0-9]{2}\.[[:lower:]]{3}\.[a-z0-9]+\..+(\.h5)?$   ]]; then
 		printf "check_timestamp(): Invalid filename - $filename isn't a valid file name\n"
 		return 1
 	fi
