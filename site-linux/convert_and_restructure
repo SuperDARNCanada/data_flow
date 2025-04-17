@@ -34,6 +34,7 @@ else
 	readonly DATA_DIR="/data/borealis_data" # On Site Linux
 fi
 readonly SOURCE="${DATA_DIR}/daily" # this is the source
+readonly ANTENNAS_IQ_DEST="${DATA_DIR}/antennas_iq_array"
 readonly RAWACF_DMAP_DEST="${DATA_DIR}/rawacf_dmap"
 readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
 readonly BACKUP_DEST="${DATA_DIR}/backup"
@@ -73,8 +74,15 @@ printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last com
 printf "Conversion directory: $DATA_DIR\n\n" | tee --append $SUMMARY_FILE
 
 # Find files to be converted
+ANTENNAS_IQ_FILES=$(find "${SOURCE}" -name "*antennas_iq.h5" -type f)
 RAWACF_CONVERT_FILES=$(find "${SOURCE}" -name "*rawacf.h5" -type f)
 RAWACF_DMAP_FILES=$(find "${SOURCE}" -name "*.rawacf" -type f)
+
+# Copy the source rawacf file to backup.
+if [[ -n $ANTENNAS_IQ_FILES ]]; then
+    printf "Moving antennas_iq hdf5 files\n"
+    mv --verbose $ANTENNAS_IQ_FILES $ANTENNAS_IQ_DEST
+fi
 
 # Copy the source rawacf file to backup.
 if [[ -n $RAWACF_CONVERT_FILES ]]; then
