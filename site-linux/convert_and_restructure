@@ -103,6 +103,9 @@ for f in $RAWACF_DMAP_FILES; do
         # Back up the file first, just as for HDF5 files
         cp --verbose --preserve $f $BACKUP_DEST
 
+        # Compress the file
+        bzip2 --verbose $f
+
         # Move the file so the rsync_to_campus script will pick it up
         mv --verbose $f $RAWACF_DMAP_DEST
 

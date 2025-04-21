@@ -80,7 +80,8 @@ if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 
     printf "Conversion directory: $DATA_DIR\n\n"
 
-    RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.h5" -type f)
+    RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.(hdf5|h5)" -type f)
+    RAWACF_DMAP_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf" -type f)
 
     if [[ -n $RAWACF_CONVERT_FILES ]]; then
         printf "Converting the following files:\n"
@@ -89,11 +90,12 @@ if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
         printf "No files to be converted.\n" | tee --append $SUMMARY_FILE
     fi
 
+    # Convert HDF5 files to dmap then move to the proper directories
     for f in $RAWACF_CONVERT_FILES
     do
         printf "\nConverting ${f}\n"
-        printf "python3 borealis_array_to_dmap.py $(basename ${f})\n"
-        python3 "${HOME}/data_flow/campus/borealis_array_to_dmap.py" $f # Creates a new dmap file
+        printf "python3 borealis_to_dmap.py $(basename ${f})\n"
+        python3 "${HOME}/data_flow/campus/borealis_to_dmap.py" $f # Creates a new dmap file
         ret=$?
         if [[ $ret -eq 0 ]]; then
             # Move the resulting files if all was successful
@@ -111,6 +113,19 @@ if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 
             mv --verbose $f $PROBLEM_FILES_DEST
         fi
+    done
+
+    # For dmap files received straight from site, just move to the correct directory.
+    if [[ -n $RAWACF_DMAP_FILES ]]; then
+        printf "Moving the following files:\n"
+        printf '%s\n' "${RAWACF_DMAP_FILES[@]}"
+    else
+        printf "No dmap files to be moved.\n" | tee --append $SUMMARY_FILE
+    fi
+
+    for dmap_file in $RAWACF_DMAP_FILES
+    do
+        mv --verbose $dmap_file $DEST
     done
 else
     printf "\nNot converting files for $RADAR_ID.\n" | tee --append $SUMMARY_FILE
