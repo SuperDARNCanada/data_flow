@@ -107,7 +107,7 @@ for f in $RAWACF_DMAP_FILES; do
         bzip2 --verbose $f
 
         # Move the file so the rsync_to_campus script will pick it up
-        mv --verbose $f $RAWACF_DMAP_DEST
+        mv --verbose "${f}.bz2" $RAWACF_DMAP_DEST
 
     else
         printf "Not transferring: ${f}\n" | tee --append $SUMMARY_FILE
