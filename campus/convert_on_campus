@@ -114,22 +114,22 @@ if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
             mv --verbose $f $PROBLEM_FILES_DEST
         fi
     done
-
-    # For dmap files received straight from site, just move to the correct directory.
-    if [[ -n $RAWACF_DMAP_FILES ]]; then
-        printf "Moving the following files:\n"
-        printf '%s\n' "${RAWACF_DMAP_FILES[@]}"
-    else
-        printf "No dmap files to be moved.\n" | tee --append $SUMMARY_FILE
-    fi
-
-    for dmap_file in $RAWACF_DMAP_FILES
-    do
-        mv --verbose $dmap_file $DEST
-    done
 else
     printf "\nNot converting files for $RADAR_ID.\n" | tee --append $SUMMARY_FILE
 fi
+
+# For dmap files received straight from site, just move to the correct directory.
+if [[ -n $RAWACF_DMAP_FILES ]]; then
+    printf "Moving the following files:\n"
+    printf '%s\n' "${RAWACF_DMAP_FILES[@]}"
+else
+    printf "No dmap files to be moved.\n" | tee --append $SUMMARY_FILE
+fi
+
+for dmap_file in $RAWACF_DMAP_FILES
+do
+    mv --verbose $dmap_file $DEST
+done
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
