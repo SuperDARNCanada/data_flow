@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# A script to either run the weekly or monthly comparison between our mirror and BAS/NSSC.
+
+# Weekly:
+#   Compare our mirror to the BAS/NSSC mirror 1 month at a time going back 12 months
+#   Download any rawacf files that we are missing. Runs weekly.
+
+# Monthly:
+#   Compare our mirror to the BAS/NSSC mirror 1 month at a time going back to January 2006
+#   Download any rawacf files that we are missing. Runs monthly.
+
+# Valid MIRROR and MODE values
+readonly VALID_MIRRORS=("BAS" "NSSC")
+readonly VALID_MODES=("weekly" "monthly")
+
+MIRROR=$1
+MODE=$2
+
+# Check validity of input arguments
+if [[ $# -ne 2 ]]; then
+    printf "Usage: batch_sync_mirror MIRROR MODE\n"
+    exit 1
+fi
+
+if [[ ! " ${VALID_MIRRORS[*]} " =~ " ${MIRROR} " ]]; then
+    printf "\"$MIRROR\" is not a valid mirror\n"
+    exit 1
+fi
+
+if [[ ! " ${VALID_MODES[*]} " =~ " ${MODE} " ]]; then
+    printf "\"$MODE\" is not a valid mode\n"
+    exit 1
+fi
+
+# Update holding dir with provided mirror and get lowercase MIRROR
+HOLDING_DIR=/data/holding/${MIRROR}  # Add /test/ for testing purposes
+mirror="${MIRROR,,}"
+
+DATE_UTC=$(date -u)
+
+if [[ "${MODE}" == "weekly" ]]
+then
+  today=$(date +%Y%m%d)
+  # Start date is the 1st of the month, 1 year ago
+  startdate="$(date -d "$today - 1 year" +%Y%m)01"
+  d=${startdate}
+  # End date is the 1st of the month, now
+  enddate="$(date +%Y%m)01"
+  echo "Date range: ${startdate} - ${enddate}"
+
+  # Loop will end before we get to the current month
+  # Last iteration will be the month before the current month
+  while [ "$d" != "${enddate}" ]
+  do
+    yearmonth=$(date -d "$d" +%Y%m)
+    /home/dataman/data_flow/mirror/sync_mirror_data.sh ${HOLDING_DIR} ${MIRROR} ${yearmonth}
+    d=$(date -d "$d + 1 month" +%Y%m%d)
+  done
+
+elif [[ "${MODE}" == "monthly" ]]
+then
+  # Start date is the beginning of 2006
+  startdate=20060101
+  d=${startdate}
+  today=$(date +%Y%m%d)
+  # End date is the 1st of the current month
+  enddate="$(date +%Y%m)01"
+  echo "Date range: ${startdate} - ${enddate}"
+
+  # Loop ends before current month
+  while [ "$d" != "${enddate}" ]
+  do
+    yearmonth=$(date -d "$d" +%Y%m)
+    /home/dataman/data_flow/mirror/sync_mirror_data.sh ${HOLDING_DIR} ${MIRROR} ${yearmonth}
+    d=$(date -d "$d + 1 month" +%Y%m%d)
+  done
+
+  # Update mirror comparison
+  HASHES_DIRS="/home/dataman/tmp_hashes_usask_${mirror}_cmp/${today}.*"
+  CMP_DIR=/home/dataman/Documents/mirror_comparison_${today}/
+  mkdir -p ${CMP_DIR}/sorted
+
+  find ${HASHES_DIRS} -name '*data.different' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.different
+  find ${HASHES_DIRS} -name "*data.not_at_${mirror}" -exec cat '{}' \; > ${CMP_DIR}/${mirror}.not_at_${mirror}
+  find ${HASHES_DIRS} -name '*data.not_at_usask' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.not_at_usask
+  find ${HASHES_DIRS} -name '*data.failed' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.failed
+  find ${HASHES_DIRS} -name '*data.blocked' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.blocked
+
+  sort -k2 ${CMP_DIR}/${mirror}.different > ${CMP_DIR}/sorted/${mirror}_different
+  sort -k2 ${CMP_DIR}/${mirror}.not_at_${mirror} > ${CMP_DIR}/sorted/${mirror}_not_at_${mirror}
+  sort ${CMP_DIR}/${mirror}.not_at_usask > ${CMP_DIR}/sorted/${mirror}_not_at_usask
+  sort ${CMP_DIR}/${mirror}.failed > ${CMP_DIR}/sorted/${mirror}_failed
+  sort ${CMP_DIR}/${mirror}.blocked > ${CMP_DIR}/sorted/${mirror}_blocked
+
+fi
