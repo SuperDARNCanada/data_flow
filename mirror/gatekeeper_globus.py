@@ -222,12 +222,35 @@ def main():
         filename = item.split()[1]
         data_hash = item.split()[0]
         elements = parse_data_filename(filename)
+        radar = elements[6]
         data_type = elements[7]
         if data_type == "rawacf":
             data_type = "raw"
         metadata = {'year': f'{elements[0]}', 'month': f'{elements[1]}', 'day': f'{elements[2]}',
-                    'yearmonth': filename[0:6], 'hash': data_hash, 'type': data_type}
+                    'yearmonth': filename[0:6], 'hash': data_hash, 'type': data_type, 'radar': radar}
         files_to_upload_dict[filename].update(metadata)
+
+    ###################################################################################################################
+    # Step 5.5) Will remove this section once Cedar allocation is increased!
+    # Don't transfer files from new NSSC radars until our allocation on Cedar is increased
+    # Move data from new nssc radars to holding_dir/new_nssc_data/ for local storage
+    # Then, remake/check files_to_upload and exit if no files remaining in holding_dir
+    new_radars = ('hje', 'hjw', 'lje', 'ljw', 'sze', 'szw')
+    new_data = []
+    for filename in files_to_upload_dict:
+        if files_to_upload_dict[filename]['radar'] in new_radars:
+            new_data.append(filename)
+
+    if len(new_data) > 0:
+        logger.info(f"Found new NSSC data files ({len(new_data)}): {new_data}")
+        for file in new_data:
+            files_to_upload_dict.pop(file)
+        gk.move_files_to_subdir("new_nssc_data", new_data)
+        files_to_upload = sorted(list(files_to_upload_dict.keys()))
+
+    if len(files_to_upload) == 0:
+        msg = "No files to upload. Exiting."
+        gk.log_email_exit(logger.info, 0, 1, msg=msg)
 
     ###################################################################################################################
     # Step 6)
