@@ -80,8 +80,8 @@ if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 
     printf "Conversion directory: $DATA_DIR\n\n"
 
-    RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.(hdf5|h5)" -type f)
-    RAWACF_DMAP_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf" -type f)
+    RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.h*5" -type f)
+    RAWACF_DMAP_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.bz2" -type f)
 
     if [[ -n $RAWACF_CONVERT_FILES ]]; then
         printf "Converting the following files:\n"

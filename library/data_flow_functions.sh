@@ -45,7 +45,7 @@ get_dmap_name() {
 	borealis_filename=$(basename $1)
 	borealis_directory=$(dirname $1)
 	# Check that the filename given is a valid rawacf file name
-	if [[ ! "$borealis_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[0-9]+.rawacf.h5$   ]]; then
+	if [[ ! "$borealis_filename" =~ ^[0-9]{8}.[0-9]{4}.[0-9]{2}.[[:lower:]]{3}.[0-9]+.rawacf.hd?f?5$   ]]; then
 		printf "get_dmap_name(): Invalid filename - $borealis_filename isn't a valid borealis file name\n"
 		return 1
 	fi
@@ -104,7 +104,7 @@ get_borealis_name() {
 	slice_id=$(($ordinal_id - 97))
 
 	# Put it all together
-	borealis_file="${file_start_wo_character}${slice_id}.rawacf.h5"
+	borealis_file="${file_start_wo_character}${slice_id}.rawacf.hdf5"
 	printf "${dmap_directory}/${borealis_file}"
 
 	return 0
