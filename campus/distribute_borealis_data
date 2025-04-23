@@ -191,7 +191,7 @@ for file in $dmap_files; do
     fi
 done
 
-borealis_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.h5")
+borealis_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.h*5")
 
 # Iterate over all array files and back them up to NAS
 if [[ -n $borealis_files ]]; then
