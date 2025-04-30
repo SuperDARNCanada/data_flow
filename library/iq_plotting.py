@@ -18,6 +18,7 @@ The script will :
 """
 
 import argparse
+from datetime import datetime
 
 import h5py
 import matplotlib
@@ -125,8 +126,8 @@ def plot_unaveraged_range_time_data(data_array, num_sequences_array, timestamps_
         Name of the experiment that collected the data.
     """
 
-    start_time = timestamps_array[0]
-    end_time = timestamps_array[-1]
+    start_time = datetime.utcfromtimestamp(timestamps_array.values[0].astype(int) * 1e-9)
+    end_time = datetime.utcfromtimestamp(timestamps_array.values[-1].astype(int) * 1e-9)
 
     kw = {'width_ratios': [97, 3], 'height_ratios': [1, 4]}
     fig, ((ax1, cax1), (ax2, cax2)) = plt.subplots(2, 2, figsize=figsize, gridspec_kw=kw, layout='constrained',
@@ -135,7 +136,7 @@ def plot_unaveraged_range_time_data(data_array, num_sequences_array, timestamps_
                  f'{start_time.strftime("%H:%M:%S")} to {end_time.strftime("%H:%M:%S")} UTC')
 
     # Plot the number of sequences per averaging period
-    tstamp_indices = np.cumsum(num_sequences_array)
+    tstamp_indices = [0] + np.cumsum(num_sequences_array).values[:-1].tolist()
     ax1.plot(timestamps_array[tstamp_indices], num_sequences_array)
     ax1.set_ylabel('# sequences')
     ax1.set_ylim(0)
@@ -219,7 +220,7 @@ def plot_antennas_range_time(antennas_iq_file, antenna_nums=None, vmax=40.0, vmi
     else:
         antenna_indices = []
         for antenna_num in antenna_nums:
-            antenna_indices.append(list(dset['rx_antennas']).index(antenna_num))
+            antenna_indices.append(list(dset['rx_antenna']).index(antenna_num))
 
     antenna_names = [f'antenna_{x}' for x in antenna_nums]
 

@@ -107,7 +107,7 @@ fi
 for f in ${daily_files}; do
   printf "\nPlotting ${f}\n"
 
-  python3 ${HOME}/data_flow/library/iq_plotting.py "${f}" --plot-directory=${FULLSIZE_DEST}
+  python3 ${HOME}/data_flow/library/iq_plotting.py "${f}" --plot-directory=${FULLSIZE_DEST} --antennas="0-19"
 
   if [ $? -eq 0 ]; then
     printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
