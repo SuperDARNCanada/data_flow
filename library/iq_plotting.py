@@ -126,8 +126,8 @@ def plot_unaveraged_range_time_data(data_array, num_sequences_array, timestamps_
         Name of the experiment that collected the data.
     """
 
-    start_time = datetime.utcfromtimestamp(timestamps_array.values[0].astype(int) * 1e-9)
-    end_time = datetime.utcfromtimestamp(timestamps_array.values[-1].astype(int) * 1e-9)
+    start_time = dt.datetime.utcfromtimestamp(timestamps_array.values[0].astype(int) * 1e-9)
+    end_time = dt.datetime.utcfromtimestamp(timestamps_array.values[-1].astype(int) * 1e-9)
 
     kw = {'width_ratios': [97, 3], 'height_ratios': [1, 4]}
     fig, ((ax1, cax1), (ax2, cax2)) = plt.subplots(2, 2, figsize=figsize, gridspec_kw=kw, layout='constrained',
@@ -135,17 +135,25 @@ def plot_unaveraged_range_time_data(data_array, num_sequences_array, timestamps_
     fig.suptitle(f'{experiment}: {dataset_descriptor} Power - {start_time.strftime("%Y%m%d")} '
                  f'{start_time.strftime("%H:%M:%S")} to {end_time.strftime("%H:%M:%S")} UTC')
 
+    tstamp_values = timestamps_array.values
+    tstamps = [dt.datetime.utcfromtimestamp(x.astype(int) * 1e-9) for x in tstamp_values]
+
     # Plot the number of sequences per averaging period
-    tstamp_indices = [0] + np.cumsum(num_sequences_array).values[:-1].tolist()
-    ax1.plot(timestamps_array[tstamp_indices], num_sequences_array)
+    tstamp_indices = np.array([0] + np.cumsum(num_sequences_array).values[:-1].tolist(), dtype=int)
+    ax1.plot(np.array(tstamps)[tstamp_indices], num_sequences_array.values)
     ax1.set_ylabel('# sequences')
     ax1.set_ylim(0)
 
-    power = 20 * np.log10(np.abs(data_array))
-    img = ax2.imshow(power, aspect='auto', origin='lower', cmap=plt.get_cmap('plasma'), vmax=vmax, vmin=vmin)
+    last_tstamp = tstamps[-1] + dt.timedelta(seconds=0.1)
+    tstamps.append(last_tstamp)
+    power = 20 * np.log10(np.abs(data_array.values.T))
+    img = ax2.pcolormesh(
+            tstamps,
+            np.arange(start_sample - 0.5, end_sample + 0.5),
+            power[start_sample:end_sample],
+            cmap=plt.get_cmap('plasma'), vmax=vmax, vmin=vmin)
     ax2.set_ylabel('Sample number (Range)')
     ax2.set_xlabel('Timestamp')
-    ax2.set_ylim(start_sample, end_sample)
 
     fig.colorbar(img, cax=cax2, label='Power (dB)')
     cax1.axis('off')
