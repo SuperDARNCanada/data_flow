@@ -18,7 +18,7 @@ The script will :
 """
 
 import argparse
-from datetime import datetime
+import datetime as dt
 
 import h5py
 import matplotlib
