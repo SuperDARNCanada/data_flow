@@ -35,12 +35,8 @@ readonly BOREALIS_SOURCE="${DATA_DIR}/rawacf_array/"
 readonly IQPLOT_SOURCE="${HOME}/logs/daily_plots/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
-if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
-	readonly DEST="/sddata/${RADAR_ID}_holding_dir"
-else
-	readonly DEST="/sddata/${RADAR_ID}_data/"
-fi
-
+readonly HDF5_DEST="/sddata/${RADAR_ID}_holding_dir"
+readonly DMAP_DEST="/sddata/${RADAR_ID}_data/"
 readonly PLOTDEST="/home/dataman/antennas_iq_plots/${RADAR_ID}_iq_plots/"
 
 # Create log file. New file created daily
@@ -77,48 +73,44 @@ printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last com
 		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
 printf "Transferring from: $DATA_DIR\n" | tee --append $SUMMARY_FILE
-printf "Transferring to: $SDCOPY:$DEST\n\n" | tee --append $SUMMARY_FILE
+printf "Transferring HDF5 files to: $SDCOPY:$HDF5_DEST\n\n" | tee --append $SUMMARY_FILE
+printf "Transferring dmap files to: $SDCOPY:$DMAP_DEST\n\n" | tee --append $SUMMARY_FILE
 
-# Check if this site is transferring dmaps to campus
-if [[ ! " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
-	# Find all dmap files to transfer
-	files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
+# Find all dmap files to transfer
+files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 
-	if [[ -n $files ]]; then
-		printf "\nPlacing following dmap files in ${SDCOPY}:${DEST}:\n"
-		printf '%s\n' "${files[@]}"
-	else
-		printf "No dmap files found to be transferred.\n" | tee --append $SUMMARY_FILE
-	fi
-
-	# Transfer all files found
-	for file in $files; do
-		printf "\nTransferring: ${file} to ${SDCOPY}:${DEST}\n"
-		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
-
-		# Check if transfer was okay using the md5sum program, then remove the file if it matches
-		verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
-		return_value=$?
-		if [[ $return_value -eq 0 ]]; then
-			printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
-			printf "Deleting file...\n"
-			rm --verbose $file
-		else
-            # If file not transferred successfully, don't delete and try again next time
-			printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
-			printf "File not deleted.\n"
-		fi
-	done
+if [[ -n $files ]]; then
+  printf "\nPlacing following dmap files in ${SDCOPY}:${DMAP_DEST}:\n"
+  printf '%s\n' "${files[@]}"
 else
-	printf "Not transferring any dmap files\n" | tee --append $SUMMARY_FILE
+  printf "No dmap files found to be transferred.\n" | tee --append $SUMMARY_FILE
 fi
+
+# Transfer all files found
+for file in $files; do
+  printf "\nTransferring: ${file} to ${SDCOPY}:${DMAP_DEST}\n"
+  rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DMAP_DEST
+
+  # Check if transfer was okay using the md5sum program, then remove the file if it matches
+  verify_transfer $file "${DMAP_DEST}/$(basename $file)" $SDCOPY
+  return_value=$?
+  if [[ $return_value -eq 0 ]]; then
+    printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+    printf "Deleting file...\n"
+    rm --verbose $file
+  else
+          # If file not transferred successfully, don't delete and try again next time
+    printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+    printf "File not deleted.\n"
+  fi
+done
 
 
 # Find all hdf5 files to transfer
 files=$(find ${BOREALIS_SOURCE} -name '*rawacf.h5' -printf '%p\n')
 
 if [[ -n $files ]]; then
-	printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${DEST}:\n"
+	printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${HDF5_DEST}:\n"
 	printf '%s\n' "${files[@]}"
 else
 	printf "\nNo hdf5 files found to be transferred.\n" | tee --append $SUMMARY_FILE
@@ -127,10 +119,10 @@ fi
 # Transfer all files found
 for file in $files; do
 	printf "\nTransferring: $(basename $file)\n"
-	rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DEST
+	rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$HDF5_DEST
 
 	# Check if transfer was okay using the md5sum program
-	verify_transfer $file "${DEST}/$(basename $file)" $SDCOPY
+	verify_transfer $file "${HDF5_DEST}/$(basename $file)" $SDCOPY
 	return_value=$?
 	if [[ $return_value -eq 0 ]]; then
 		printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE

@@ -6,7 +6,7 @@
 # amounts of backed-up antennas_iq files. Converted files remain in the same directory after 
 # completion, if files fail conversion they are moved to a separate directory.
 
-# Modified from convert_and_restructure script
+# Modified from old convert_and_restructure script
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env

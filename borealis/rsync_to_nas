@@ -51,7 +51,10 @@ else
 	readonly DEST="/data/borealis_data" # On Site Linux
 fi
 
-readonly SUCCESS_DEST="${DEST}/daily/" # All good Borealis files go here
+readonly ANTENNAS_IQ_DEST="${DATA_DIR}/antennas_iq_array"
+readonly RAWACF_DMAP_DEST="${DATA_DIR}/rawacf_dmap"
+readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
+readonly BACKUP_DEST="${DATA_DIR}/backup"
 readonly FAIL_DEST="${DEST}/conversion_failure/" # Any files that fail checks go here
 
 # Create log file. New file created daily
@@ -99,9 +102,11 @@ printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	printf "Transferring to NAS: $DEST\n\n" | tee --append $SUMMARY_FILE
 	search=(\( -name "*rawacf*" -o -name "*bfiq*" -o -name "*antennas_iq*" \))
+	readonly TRANSFER_LOC=""
 else
 	printf "Transferring to Site-Linux: $DEST\n\n" | tee --append $SUMMARY_FILE
 	search=(\( -name "*rawacf*" \)) 	# If transferring to site computer, only send rawacf
+	readonly TRANSFER_LOC="$SITE_LINUX:"
 fi
 
 # Using the filename that this script triggered on, a pattern can be determined to omit the current
@@ -130,12 +135,27 @@ fi
 # Transfer files
 for file in $files
 do
-	printf "\nSynching: $file\n"
+	printf "\nSyncing: $file\n"
 	
 	# Ensure that the file has all group permissions enabled (read/write/execute)
 	chmod --verbose 775 $file
 
-	SPECIFIC_DEST="$SUCCESS_DEST"
+  needs_zip=0
+  backup=0
+  if [[ $file == "*.rawacf" ]]; then
+	  SPECIFIC_DEST="$RAWACF_DMAP_DEST"
+	  needs_zip=1  # bzip rawacf DMAP files
+	  backup=1  # backup rawacf files
+	elif [[ $file == "*.rawacf.h5" ]]; then
+	  SPECIFIC_DEST="$RAWACF_ARRAY_DEST"
+	  backup=1  # backup rawacf files
+	elif [[ $file == "*.antennas_iq.h5" ]]; then
+	  SPECIFIC_DEST="$ANTENNAS_IQ_DEST"
+	else
+	  error="unknown file type: ${file}\n"
+	  printf "${error}" | tee --append $SUMMARY_FILE
+	  SPECIFIC_DEST="$FAIL_DEST"
+	fi
 
 	# Check that the timestamps and file modification times are consistent. If they aren't, change
 	# the destination to the failed file directory.
@@ -150,30 +170,39 @@ do
 		SPECIFIC_DEST="$FAIL_DEST"	# Change destination
 	fi
 
+  # Bzip file if needed
+  if [[ $needs_zip -eq 1 ]]; then
+    file_to_transfer="${file}.bz2"
+    bzip2 --verbose $file
+  else
+    file_to_transfer="$file"
+  fi
+
+  if [[ $backup -eq 1 ] && [ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+    # rsync file to NAS for backup
+    rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${BACKUP_DEST}"
+
+    # Check if transfer was okay using the md5sum program
+    verify_transfer $file_to_transfer "${BACKUP_DEST}/$(basename $file_to_transfer)" ${TRANSFER_LOC%:}
+    return_value=$?
+  fi
+
 	printf "Destination: $SPECIFIC_DEST\n"
-	if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
-		# rsync file to NAS
-		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SPECIFIC_DEST
+	# rsync file to NAS or site-linux computer
+  rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${SPECIFIC_DEST}"
 
-		# Check if transfer was okay using the md5sum program
-		verify_transfer $file "${SPECIFIC_DEST}/$(basename $file)"
-		return_value=$?
-	else
-		# rsync file to site computer
-		rsync -av --append-verify --timeout=180 --rsh=ssh $file $SITE_LINUX:$SPECIFIC_DEST
-
-		verify_transfer $file "${SPECIFIC_DEST}/$(basename $file)" $SITE_LINUX
-		return_value=$?
-	fi
+  # Check if transfer was okay using the md5sum program
+  verify_transfer $file_to_transfer "${SPECIFIC_DEST}/$(basename $file_to_transfer)" ${TRANSFER_LOC%:}
+  return_value=$?
 
 	if [[ $return_value -eq 0 ]]; then
 		# Remove the file if transfer is successful
-		printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "Successfully transferred: ${file_to_transfer}\n" | tee --append $SUMMARY_FILE
 		printf "Deleting file...\n"
-		rm --verbose $file
+		rm --verbose $file_to_transfer
 	else
 		# If file not transferred successfully, don't delete and try again next time
-		printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "Transfer failed: ${file_to_transfer}\n" | tee --append $SUMMARY_FILE
 		printf "File not deleted.\n"
 	fi
 done
