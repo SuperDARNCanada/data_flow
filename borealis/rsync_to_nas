@@ -178,7 +178,7 @@ do
     file_to_transfer="$file"
   fi
 
-  if [[ $backup -eq 1 ] && [ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+  if [[ $backup -eq 1 && " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     # rsync file to NAS for backup
     rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${BACKUP_DEST}"
 
