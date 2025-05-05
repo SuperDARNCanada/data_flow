@@ -142,14 +142,14 @@ do
 
   needs_zip=0
   backup=0
-  if [[ $file == "*.rawacf" ]]; then
+  if [[ $file == *.rawacf ]]; then
 	  SPECIFIC_DEST="$RAWACF_DMAP_DEST"
 	  needs_zip=1  # bzip rawacf DMAP files
 	  backup=1  # backup rawacf files
-	elif [[ $file == "*.rawacf.h5" ]]; then
+	elif [[ $file == *.rawacf.h5 ]]; then
 	  SPECIFIC_DEST="$RAWACF_ARRAY_DEST"
 	  backup=1  # backup rawacf files
-	elif [[ $file == "*.antennas_iq.h5" ]]; then
+	elif [[ $file == *.antennas_iq.h5 ]]; then
 	  SPECIFIC_DEST="$ANTENNAS_IQ_DEST"
 	else
 	  error="unknown file type: ${file}\n"
