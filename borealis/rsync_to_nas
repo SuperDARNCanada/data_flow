@@ -51,10 +51,10 @@ else
 	readonly DEST="/data/borealis_data" # On Site Linux
 fi
 
-readonly ANTENNAS_IQ_DEST="${DATA_DIR}/antennas_iq_array"
-readonly RAWACF_DMAP_DEST="${DATA_DIR}/rawacf_dmap"
-readonly RAWACF_ARRAY_DEST="${DATA_DIR}/rawacf_array"
-readonly BACKUP_DEST="${DATA_DIR}/backup"
+readonly ANTENNAS_IQ_DEST="${DEST}/antennas_iq_array"
+readonly RAWACF_DMAP_DEST="${DEST}/rawacf_dmap"
+readonly RAWACF_ARRAY_DEST="${DEST}/rawacf_array"
+readonly BACKUP_DEST="${DEST}/backup"
 readonly FAIL_DEST="${DEST}/conversion_failure/" # Any files that fail checks go here
 
 # Create log file. New file created daily
