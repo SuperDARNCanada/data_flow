@@ -2,16 +2,16 @@
 # Copyright 2019 SuperDARN Canada, University of Saskatchewan
 # Author: Dieter Andre, Theodore Kolkman
 #
-# A singleton script to transfer rawacf dmap and hdf5 files from site NAS to sdc-serv on 
+# A singleton script to transfer rawacf dmap and hdf5 files from the NAS on site to sdc-serv on 
 # campus. Files are copied first and removed once copy is confirmed to be successful. 
 #
 # To modify this script to transfer files from a local Site-Linux directory instead of the NAS:
-#	1. Remove RADAR_ID for the specified site from NAS_SITES in config.sh
+#	  - Remove RADAR_ID for the specified site from NAS_SITES in config.sh
 #
 # Dependencies:
 # 	- RADAR_ID and SDCOPY set as environment variables in ${HOME}/.profile
-#	- ssh link established between Site-Linux and SDCOPY computers
-#	- ssh link established between Site-Linux and TELEMETRY computers
+#	  - ssh link established between Site-Linux and SDCOPY computers
+#	  - ssh link established between Site-Linux and TELEMETRY computers
 #
 # This script should be run via an inotify daemon triggering when the previous data flow script
 # finishes execution
@@ -24,20 +24,20 @@ source "${HOME}/data_flow/library/data_flow_functions.sh" # Load dataflow functi
 
 ###################################################################################################
 
-# Location all files are transferring from
+# Location all files will be transferring from
 if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	readonly DATA_DIR="/borealis_nfs/borealis_data" # On NAS
 else
 	readonly DATA_DIR="/data/borealis_data" # On Site Linux
 fi
 readonly DMAP_SOURCE="${DATA_DIR}/rawacf_dmap/"
-readonly BOREALIS_SOURCE="${DATA_DIR}/rawacf_array/"
-readonly IQPLOT_SOURCE="${HOME}/logs/daily_plots/"
+readonly HDF5_SOURCE="${DATA_DIR}/rawacf_array/"
+readonly PLOT_SOURCE="${HOME}/logs/daily_plots/"
 
 # If site isn't transferring dmap files, send to holding directory for campus conversion
 readonly HDF5_DEST="/sddata/${RADAR_ID}_holding_dir"
 readonly DMAP_DEST="/sddata/${RADAR_ID}_data/"
-readonly PLOTDEST="/home/dataman/antennas_iq_plots/${RADAR_ID}_iq_plots/"
+readonly PLOT_DEST="/home/dataman/antennas_iq_plots/${RADAR_ID}_iq_plots/"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/rsync_to_campus/$(date +%Y/%m)"
@@ -66,15 +66,14 @@ printf "########################################################################
 printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
-# Get status info on data_flow and pyDARNio repos
+# Get status info on data_flow repo
 printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
 		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
-printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
-		$(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
 printf "Transferring from: $DATA_DIR\n" | tee --append $SUMMARY_FILE
 printf "Transferring HDF5 files to: $SDCOPY:$HDF5_DEST\n\n" | tee --append $SUMMARY_FILE
-printf "Transferring dmap files to: $SDCOPY:$DMAP_DEST\n\n" | tee --append $SUMMARY_FILE
+printf "Transferring DMap files to: $SDCOPY:$DMAP_DEST\n\n" | tee --append $SUMMARY_FILE
+
 
 # Find all dmap files to transfer
 files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
@@ -107,7 +106,7 @@ done
 
 
 # Find all hdf5 files to transfer
-files=$(find ${BOREALIS_SOURCE} -name '*rawacf.h5' -printf '%p\n')
+files=$(find ${HDF5_SOURCE} -name '*rawacf.h5' -printf '%p\n')
 
 if [[ -n $files ]]; then
 	printf "\n\nPlacing following hdf5 files in ${SDCOPY}:${HDF5_DEST}:\n"
@@ -135,11 +134,12 @@ for file in $files; do
 	fi
 done
 
-# Find all antennas iq plots to transfer
-files=$(find "${IQPLOT_SOURCE}" -type f -regex ".*\.\(png\|jpg\)")
+
+# Find all antennas_iq plots to transfer
+files=$(find "${PLOT_SOURCE}" -type f -regex ".*\.\(png\|jpg\)")
 
 if [[ -n $files ]]; then
-	printf "\n\nPlacing the following antenna iq plots in ${SDCOPY}:${PLOTDEST}:\n"
+	printf "\n\nPlacing the following antenna iq plots in ${SDCOPY}:${PLOT_DEST}:\n"
 	printf '%s\n' "${files[@]}"
 else
 	printf "\nNo antennas iq plots found to be transferred.\n" | tee --append $SUMMARY_FILE
@@ -147,10 +147,10 @@ fi
 
 for file in $files; do
   printf "\nTransferring: ${file}\n"
-  rsync -av --append-verify --timeout=180 --rsh=ssh ${file} $SDCOPY:$PLOTDEST
+  rsync -av --append-verify --timeout=180 --rsh=ssh ${file} $SDCOPY:$PLOT_DEST
 
   # Check if transfer was okay using the md5sum program
-  verify_transfer $file "${PLOTDEST}/$(basename $file)" $SDCOPY
+  verify_transfer $file "${PLOT_DEST}/$(basename $file)" $SDCOPY
   return_value=$?
   if [[ $return_value -eq 0 ]]; then
     printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
