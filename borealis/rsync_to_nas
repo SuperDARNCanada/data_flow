@@ -187,7 +187,7 @@ do
     return_value=$?
   fi
 
-	printf "Destination: $SPECIFIC_DEST\n"
+	printf "Transferring to: $SPECIFIC_DEST\n"
 	# rsync file to NAS or site-linux computer
   rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${SPECIFIC_DEST}"
 
