@@ -45,7 +45,7 @@ def usage_msg():
 def borealis_conversion_parser():
     parser = argparse.ArgumentParser(usage=usage_msg())
     parser.add_argument("borealis_file", help="Path to the borealis file that you wish to convert. "
-                                              "(e.g. 20190327.2210.38.sas.0.bfiq.h5)")
+                                              "(e.g. 20190327.2210.38.sas.0.rawacf.h5)")
     return parser
 
 
