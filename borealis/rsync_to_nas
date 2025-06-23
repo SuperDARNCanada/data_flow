@@ -172,6 +172,7 @@ do
 
   # Bzip file if needed
   if [[ $needs_zip -eq 1 ]]; then
+    printf "Bzipping $file to $file_to_transfer\n"
     file_to_transfer="${file}.bz2"
     bzip2 --verbose $file
   else
