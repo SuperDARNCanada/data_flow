@@ -94,7 +94,7 @@ if [[ -z "$SOURCE" ]]; then
 fi
 printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 
-# Get all files that aren't currently being written do. First, find all files in the source
+# Get all files that aren't currently being written to. First, find all files in the source
 # directory. Then, filter out all files that have same timestamp in the filename as the file that 
 # triggered the script via inotify. This will effectively prevent the script from transferring 
 # files currently being written by Borealis
