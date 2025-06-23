@@ -180,6 +180,7 @@ do
 
   if [[ $backup -eq 1 && " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     # rsync file to NAS for backup
+    printf "Backing up to: $BACKUP_DEST\n"
     rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${BACKUP_DEST}"
 
     # Check if transfer was okay using the md5sum program
