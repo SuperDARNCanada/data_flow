@@ -94,7 +94,7 @@ if [[ -z "$SOURCE" ]]; then
 fi
 printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 
-# Get all files that aren't currently being written do. First, find all files in the source
+# Get all files that aren't currently being written to. First, find all files in the source
 # directory. Then, filter out all files that have same timestamp in the filename as the file that 
 # triggered the script via inotify. This will effectively prevent the script from transferring 
 # files currently being written by Borealis
@@ -172,6 +172,7 @@ do
 
   # Bzip file if needed
   if [[ $needs_zip -eq 1 ]]; then
+    printf "Bzipping $file to $file_to_transfer\n"
     file_to_transfer="${file}.bz2"
     bzip2 --verbose $file
   else
@@ -180,6 +181,7 @@ do
 
   if [[ $backup -eq 1 && " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
     # rsync file to NAS for backup
+    printf "Backing up to: $BACKUP_DEST\n"
     rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${BACKUP_DEST}"
 
     # Check if transfer was okay using the md5sum program
@@ -187,7 +189,7 @@ do
     return_value=$?
   fi
 
-	printf "Destination: $SPECIFIC_DEST\n"
+	printf "Transferring to: $SPECIFIC_DEST\n"
 	# rsync file to NAS or site-linux computer
   rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${SPECIFIC_DEST}"
 

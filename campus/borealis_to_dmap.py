@@ -8,7 +8,7 @@ borealis_to_dmap.py [-h] borealis_file
 Pass in the filename you wish to convert (should end in '.h5').
 
 The script will convert the records to a dmap dictionary and then write to file as the given filename, with extensions
-'.[borealis_filetype].h5' replaced with [dmap_filetype].bz2.
+'.[borealis_filetype].h5' replaced with .[dmap_filetype].bz2.
 
 Requires pydarnio v2
 """
@@ -45,7 +45,7 @@ def usage_msg():
 def borealis_conversion_parser():
     parser = argparse.ArgumentParser(usage=usage_msg())
     parser.add_argument("borealis_file", help="Path to the borealis file that you wish to convert. "
-                                              "(e.g. 20190327.2210.38.sas.0.bfiq.h5)")
+                                              "(e.g. 20190327.2210.38.sas.0.rawacf.h5)")
     return parser
 
 
