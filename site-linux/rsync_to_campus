@@ -15,7 +15,7 @@
 # - ${HOME}/.ssh/controlmasters/ directory exists
 # - ${HOME}/.ssh/config has the following ([xxxx] indicates you should fill this in intelligently):
 # HOST [SDCOPY address, either IP or hostname]
-#     User [SDCOPY username]   # Optional, you can omit
+#     User [SDCOPY username]
 #     ControlPath ~/.ssh/controlmasters/%C
 #     ControlMaster auto
 #     ControlPersist 10m
@@ -90,7 +90,7 @@ ssh -N -f ${SDCOPY}
 # Verify the multiplexed session is running
 ssh -O check ${SDCOPY}
 return_value=$?
-if [[ $? -eq 0 ]]; then
+if [[ $? -neq 0 ]]; then
     printf "Could not establish connection to ${SDCOPY}\n" | tee --append $SUMMARY_FILE
     printf "Exiting...\n"
     exit
