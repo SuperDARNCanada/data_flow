@@ -90,7 +90,7 @@ ssh -N -f ${SDCOPY}
 # Verify the multiplexed session is running
 ssh -O check ${SDCOPY}
 return_value=$?
-if [[ $? -neq 0 ]]; then
+if [[ $? -ne 0 ]]; then
     printf "Could not establish connection to ${SDCOPY}\n" | tee --append $SUMMARY_FILE
     printf "Exiting...\n"
     exit
