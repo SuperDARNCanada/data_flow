@@ -30,37 +30,6 @@ import os
 matplotlib.use('Agg')
 
 
-def usage_msg():
-    """
-    Return the usage message for this process.
-
-    This is used if a -h flag or invalid arguments are provided.
-
-    :returns: the usage message
-    """
-
-    usage_message = """iq_plotting.py [-h] [--plot-directory]=[destination] antennas_iq_file
-
-    Pass in the antennas iq file you wish to plot and specify the directory
-    you would like the plot to be saved. Default is the working directory.
-    """
-
-    return usage_message
-
-
-def iq_plotting_parser():
-    parser = argparse.ArgumentParser(usage=usage_msg())
-    parser.add_argument("antennas_iq_file", help="Name of the file to plot.")
-    parser.add_argument("--antennas", help="Antenna indices to plot. Format as --antennas=0,2-4,8")
-    parser.add_argument("--max-power", help="Maximum Power of color scale (dB).", default=40.0, type=float)
-    parser.add_argument("--min-power", help="Minimum Power of color scale (dB).", default=10.0, type=float)
-    parser.add_argument("--start-sample", help="Sample Number to start at.", default=0, type=int)
-    parser.add_argument("--end-sample", help="Sample Number to end at.", default=70, type=int)
-    parser.add_argument("--plot-directory", help="Directory to save plots.", default='', type=str)
-    parser.add_argument("--figsize", help="Figure dimensions in inches. Format as --figsize=10,6", type=str)
-    return parser
-
-
 def build_list_from_input(str_in: str):
     """
     Takes a string formatted like 0-2,3,5,7,9-12 and parses into a list containing all numbers,
@@ -140,20 +109,37 @@ def plot_unaveraged_range_time_data(data_array, num_sequences_array, timestamps_
 
     # Plot the number of sequences per averaging period
     tstamp_indices = np.array([0] + np.cumsum(num_sequences_array).values[:-1].tolist(), dtype=int)
-    ax1.plot(np.array(tstamps)[tstamp_indices], num_sequences_array.values)
+
+    ax1.plot(tstamp_indices, num_sequences_array.values)
     ax1.set_ylabel('# sequences')
     ax1.set_ylim(0)
 
-    last_tstamp = tstamps[-1] + dt.timedelta(seconds=0.1)
-    tstamps.append(last_tstamp)
+    # last_tstamp = tstamps[-1] + dt.timedelta(seconds=0.1)
+    # tstamps.append(last_tstamp)
     power = 20 * np.log10(np.abs(data_array.values.T))
-    img = ax2.pcolormesh(
-            tstamps,
-            np.arange(start_sample - 0.5, end_sample + 0.5),
-            power[start_sample:end_sample],
-            cmap=plt.get_cmap('plasma'), vmax=vmax, vmin=vmin)
+    # img = ax2.pcolormesh(
+    #         tstamps,
+    #         np.arange(start_sample - 0.5, end_sample + 0.5),
+    #         power[start_sample:end_sample],
+    #         cmap=plt.get_cmap('plasma'), vmax=vmax, vmin=vmin)
+    print((
+            -0.5,
+            start_sample - 0.5,
+            len(tstamps) + 0.5,
+            end_sample + 0.5
+        ))
+    img = ax2.imshow(
+        power[start_sample:end_sample],
+        extent=(
+            -0.5,
+            len(tstamps) + 0.5,
+            start_sample - 0.5,
+            end_sample + 0.5
+        ),
+        origin='lower', cmap=plt.get_cmap('plasma'), vmax=vmax, vmin=vmin, aspect='auto',
+    )
     ax2.set_ylabel('Sample number (Range)')
-    ax2.set_xlabel('Timestamp')
+    ax2.set_xlabel('Sequence number')
 
     fig.colorbar(img, cax=cax2, label='Power (dB)')
     cax1.axis('off')
@@ -245,8 +231,16 @@ def plot_antennas_range_time(antennas_iq_file, antenna_nums=None, vmax=40.0, vmi
 
 
 def main():
-    antennas_iq_parser = iq_plotting_parser()
-    args = antennas_iq_parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("antennas_iq_file", help="Name of the file to plot.")
+    parser.add_argument("--antennas", help="Antenna indices to plot. Format as --antennas=0,2-4,8")
+    parser.add_argument("--max-power", help="Maximum Power of color scale (dB).", default=40.0, type=float)
+    parser.add_argument("--min-power", help="Minimum Power of color scale (dB).", default=10.0, type=float)
+    parser.add_argument("--start-sample", help="Sample Number to start at.", default=0, type=int)
+    parser.add_argument("--end-sample", help="Sample Number to end at.", default=70, type=int)
+    parser.add_argument("--plot-directory", help="Directory to save plots.", default='./', type=str)
+    parser.add_argument("--figsize", help="Figure dimensions in inches. Format as --figsize=10,6", type=str)
+    args = parser.parse_args()
 
     filename = args.antennas_iq_file
 
