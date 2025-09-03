@@ -98,7 +98,7 @@ DIFFERENTHASHESDIR=${LOCALRADARDIR}/different/${DATE}/
 ##############################################################################
 send_email () {
   # What email address to send to?
-  EMAILADDRESS=saif.marei@usask.ca
+  EMAILADDRESS=superdarn_engineers@usask.ca
   echo -e "${2}" | mutt -s "${1}" ${EMAILADDRESS}
 }
 

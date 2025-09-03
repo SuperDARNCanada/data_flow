@@ -57,7 +57,8 @@ if isfile(PERSONAL_UUID_FILENAME):
         PERSONAL_UUID = f.readline().strip()
 
 # Client ID retrieved from https://auth.globus.org/v2/web/developers
-gatekeeper_app_CLIENT_ID = 'bc9d5b7a-6592-4156-bfb8-aeb0fc4fb07e'
+# gatekeeper_app_CLIENT_ID = 'bc9d5b7a-6592-4156-bfb8-aeb0fc4fb07e'  # Saif's app
+gatekeeper_app_CLIENT_ID = 'e70228d0-56a2-4d85-bf63-7fbccc92dcd3'  # Rem's app
 
 
 def main():
@@ -159,7 +160,7 @@ def main():
     # Recursively get blocklist folder and generate list of blocked files
     logger.info("Getting blocklist directory...\n")
     gk.get_blocklist(dest_path=f"{gk.get_working_dir()}/blocklist/")
-    if not gk.wait_for_last_task(timeout_s=120):
+    if not gk.wait_for_last_task(timeout_s=300):
         msg = "get_blocklist timeout. Exiting"
         gk.log_email_exit(logger.error, 0, 1, msg=msg)
 

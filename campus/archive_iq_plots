@@ -70,11 +70,12 @@ for file in ${files[@]}; do
   # timezone. Sorry.
   cutoff=$(expr ${now} - 86400)
   if [[ $(date -d ${file_date} +"%s") < ${cutoff} ]]; then
-    convert -verbose -thumbnail ${RESOLUTION} "${file}" "${ARCHIVE}/thumbnail-$(basename ${file})"
-
-    if [[ $? -eq 0 ]]; then
-      rm --verbose ${file}
-    fi
+    mv "${file}" "${ARCHIVE}/"
+#    convert -verbose -thumbnail ${RESOLUTION} "${file}" "${ARCHIVE}/thumbnail-$(basename ${file})"
+#
+#    if [[ $? -eq 0 ]]; then
+#      rm --verbose ${file}
+#    fi
   fi
 done
 
