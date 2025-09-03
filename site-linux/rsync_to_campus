@@ -9,9 +9,16 @@
 #	  - Remove RADAR_ID for the specified site from NAS_SITES in config.sh
 #
 # Dependencies:
-# 	- RADAR_ID and SDCOPY set as environment variables in ${HOME}/.profile
-#	  - ssh link established between Site-Linux and SDCOPY computers
-#	  - ssh link established between Site-Linux and TELEMETRY computers
+# - RADAR_ID and SDCOPY set as environment variables in ${HOME}/.profile
+#	- ssh link established between Site-Linux and SDCOPY computers
+#	- ssh link established between Site-Linux and TELEMETRY computers
+# - ${HOME}/.ssh/controlmasters/ directory exists
+# - ${HOME}/.ssh/config has the following ([xxxx] indicates you should fill this in intelligently):
+# HOST [SDCOPY address, either IP or hostname]
+#     User [SDCOPY username]
+#     ControlPath ~/.ssh/controlmasters/%C
+#     ControlMaster auto
+#     ControlPersist 10m
 #
 # This script should be run via an inotify daemon triggering when the previous data flow script
 # finishes execution
@@ -74,6 +81,20 @@ printf "Transferring from: $DATA_DIR\n" | tee --append $SUMMARY_FILE
 printf "Transferring HDF5 files to: $SDCOPY:$HDF5_DEST\n\n" | tee --append $SUMMARY_FILE
 printf "Transferring DMap files to: $SDCOPY:$DMAP_DEST\n\n" | tee --append $SUMMARY_FILE
 
+
+# Establish multiplexed SSH connection for all rsync's to $SDCOPY
+# -N: do not execute a remote command on ${SDCOPY}
+# -f: run in the background
+ssh -N -f ${SDCOPY}
+
+# Verify the multiplexed session is running
+ssh -O check ${SDCOPY}
+return_value=$?
+if [[ $? -ne 0 ]]; then
+    printf "Could not establish connection to ${SDCOPY}\n" | tee --append $SUMMARY_FILE
+    printf "Exiting...\n"
+    exit
+fi
 
 # Find all dmap files to transfer
 files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')

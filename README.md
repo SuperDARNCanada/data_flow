@@ -87,6 +87,34 @@ Useful systemctl commands for operating `systemd` daemons:
 - `systemctl stop borealis_dataflow.service`
 - `systemctl disable borealis_dataflow.service`
 
+### Setting up SSH multiplexing
+The University of Saskatchewan has a firewall which blocks an IP address from connecting to the campus
+network if 50 connection requests are made within one minute. The `rsync_to_campus` script can easily
+hit this mark when sending `antennas_iq` plots, so SSH multiplexing is recommended. To configure this:
+
+1. log into the remote computer that will be running the `rsync_to_campus` script (i.e. a site-linux
+computer).
+2. `cd ~/.ssh`
+3. `mkdir controlmasters`
+4. Edit the file called `config`, adding the following (`[xxx]` indicates to fill in the value intelligently):
+```
+HOST [address of the campus computer, either hostname or IP]
+    User [username]
+    ControlPath ~/.ssh/controlmasters/%C
+    ControlMaster auto
+    ControlPersist 10m
+```
+5. Verify that the settings are working by running `ssh -N -f [username]@[address]; ssh -O check [username]@[address]`,
+   where username and address are the same as those set in the config file. The output will be something like:
+```
+Success:
+transfer@pgrdist205:~> ssh -N -f dataman@sdc-serv.usask.ca; ssh -O check dataman@sdc-serv.usask.ca
+Master running (pid=15739)
+
+Failure:
+transfer@pgrdist205:~> ssh -N -f dataman@sdc-serv.usask.ca; ssh -O check dataman@sdc-serv.usask.ca
+Control socket connect(/home/transfer/.ssh/controlmasters/3354587955ba492d0d5f595f8619d902ac0192a7): No such file or directory
+```
 
 ### Installing data flow
 
