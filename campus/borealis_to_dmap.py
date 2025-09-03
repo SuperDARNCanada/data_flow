@@ -92,10 +92,8 @@ def convert_borealis_to_dmap(filename, borealis_filetype, slice_id, dmap_filenam
 def borealis_to_dmap(borealis_file):
     borealis_filetype = borealis_file.split('.')[-2]  # XXX.h5
     slice_id = int(borealis_file.split('.')[-3])  # X.rawacf.h5
-    
-    dmap_filetypes = {'rawacf': 'rawacf', 'bfiq': 'iqdat'}
 
-    if borealis_filetype in dmap_filetypes.keys():
+    if borealis_filetype != "rawacf":
         dmap_filename = create_dmap_filename(borealis_file)
         convert_borealis_to_dmap(borealis_file, borealis_filetype, slice_id, dmap_filename)
 
