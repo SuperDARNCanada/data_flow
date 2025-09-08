@@ -44,7 +44,7 @@ readonly PLOT_SOURCE="${HOME}/logs/daily_plots/"
 # If site isn't transferring dmap files, send to holding directory for campus conversion
 readonly HDF5_DEST="/sddata/${RADAR_ID}_holding_dir"
 readonly DMAP_DEST="/sddata/${RADAR_ID}_data/"
-readonly PLOT_DEST="/home/dataman/antennas_iq_plots/${RADAR_ID}_iq_plots/"
+readonly PLOT_DEST="/sddata/antennas_iq_plots/${RADAR_ID}_iq_plots/"
 
 # Create log file. New file created daily
 readonly LOGGING_DIR="${HOME}/logs/rsync_to_campus/$(date +%Y/%m)"
