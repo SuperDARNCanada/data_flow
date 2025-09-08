@@ -2,15 +2,13 @@
 # Copyright 2024 SuperDARN Canada, University of Saskatchewan
 # Author: Draven Galeschuk
 #
-# A script that searches the antennas iq plot directory of a  requested radar id and archives any
-# files that are over 1 day old into a thumbnail format to reduce the memory usage of the iq plot
-# directories.
+# A script that searches the antennas iq plot directory of a  requested radar id and moves any
+# files that are over 1 day old into a sorted archive.
 #
 # This script should be executed on campus for all SuperDARN radar sites. It can be run after all
 # the other dataflow services in the campus daemon.
 #
 # Dependencies:
-#   - convert linux utility
 #
 # Usage: ./archive_iq_plots RADAR_ID
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
@@ -34,8 +32,11 @@ if [[ ! " ${VALID_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
 fi
 
 # Define directories
-readonly IQ_PLOTS="${HOME}/antennas_iq_plots/${RADAR_ID}_iq_plots/"
+readonly IQ_PLOTS="sddata/antennas_iq_plots/${RADAR_ID}_iq_plots/"
 readonly ARCHIVE="${IQ_PLOTS}/archive/"
+
+# Create latest archive directory if needed, based on time script was run
+mkdir --parents "${ARCHIVE}/$(date +%Y/%m)"
 
 # Create log file
 readonly LOGGING_DIR="${HOME}/logs/archive_iq/$(date +%Y/%m)"
@@ -58,24 +59,19 @@ printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_F
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
 files=$(find ${IQ_PLOTS} -maxdepth 1 -type f -name "*.jpg")
-now=$(date +"%s")
+now=$(date -u +"%s")
 
 for file in ${files[@]}; do
   # strips away everything but the file time and format it to be parsed by date
   file_date=$(basename ${file} | sed 's/[^0-9][^0-9].*.//' | cut -d '.' -f 1,2 | tr . T)
 
-  # Note: Date conversion is off by a few hours due to `date` refusing to just interpret the input
-  # as UTC and output the interpreted string as UTC. The script should only archive files after they
-  # are older than 24 hours, but it will likely adjust that limit by a few hours based on the loacl
-  # timezone. Sorry.
+  # Determine archive directory Year/Month destination for each file
+  archive_dir="${ARCHIVE}/$(date -d ${file_date} +%Y/%m)/"
+
+  # Move any files older than 24 hr to the archive directory
   cutoff=$(expr ${now} - 86400)
-  if [[ $(date -d ${file_date} +"%s") < ${cutoff} ]]; then
-    mv "${file}" "${ARCHIVE}/"
-#    convert -verbose -thumbnail ${RESOLUTION} "${file}" "${ARCHIVE}/thumbnail-$(basename ${file})"
-#
-#    if [[ $? -eq 0 ]]; then
-#      rm --verbose ${file}
-#    fi
+  if [[ $(date -u -d ${file_date} +"%s") < ${cutoff} ]]; then
+    mv "${file}" "${archive_dir}"
   fi
 done
 
