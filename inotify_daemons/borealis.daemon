@@ -54,7 +54,7 @@ endtime=0
 inotifywait --recursive --monitor --syslog --timefmt '%Y%m%d.%H:%M:%S' --format '%T %w %e %f' --event create $WATCH_DIR | \
 while read TIME DIRECTORY ACTION FILE # These must line up with format parameters
 do
-    if [[ "$FILE" =~ .*\.site$ ]]   # Only interested in 2 hour .site files
+    if [[ "$FILE" =~ .*\.(h5|rawacf)$ ]]   # Only interested in 2 hour .site files
     then
         # If script just executed, then don't execute again
         cur_time=$(date "+%s")

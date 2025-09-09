@@ -15,17 +15,15 @@ Requires pydarnio v1.0.
 """
 
 import argparse
+import pydarnio
 
-from pydarnio import SDarnRead
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('infile', help='Path to DMAP rawacf file', type=str)
     args = parser.parse_args()
 
-    dmap_stream = open(args.infile, 'rb').read()
-    reader = SDarnRead(dmap_stream, True)
-    records = reader.read_rawacf()
+    records = pydarnio.read_rawacf(args.infile)
 
     # If the file couldn't be read correctly, 1 is returned
     # Otherwise if no errors are thrown, 0 is returned

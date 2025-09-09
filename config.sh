@@ -28,7 +28,6 @@ readonly ANTENNAS_IQ_SITES=("sas" "pgr" "inv" "cly" "rkn")
 # Special case sites. If a site is specified here, the data flow will be slightly altered to 
 # accomodate the site
 readonly LOW_MEMORY_SITES=("pgr" "inv" "cly" "rkn" "sas")
-readonly CONVERT_ON_CAMPUS_SITES=("sas" "pgr" "inv" "cly" "rkn")
 
 ###################################################################################################
 

@@ -3,11 +3,9 @@
 # Author: Marci Detwiller, Theodore Kolkman
 #
 # A script that uses pydarnio to convert Borealis rawacf files to SuperDARN DMap files. Uses the
-# borealis_array_to_dmap.py script to convert already-restructured array files to dmap. 
+# borealis_to_dmap.py script to convert already-restructured array files to dmap.
 # 
-# This script is executed on sdc-serv.usask.ca for all sites, but only performs conversions for
-# sites specified in the CONVERT_ON_CAMPUS_SITES array. Only sites that don't transfer dmap
-# files to campus should be specified in this array.
+# This script is executed on sdc-serv.usask.ca for all sites.
 #
 # Dependencies:
 #	- pydarnio installed in a virtualenv at $HOME/pydarnio-env
@@ -16,7 +14,7 @@
 # Usage: ./convert_on_campus RADAR_ID
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
 #
-# This script should be run via an inotify daemon triggerring when the previous data flow script 
+# This script should be run via an inotify daemon triggering when the previous data flow script
 # finishes execution. To ensure only one instance runs for each site, use flock within the inotify
 # daemon code
 
@@ -39,10 +37,6 @@ if [[ ! " ${VALID_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
     printf "\"$RADAR_ID\" is not a valid radar ID\n"
     exit 1
 fi
-
-# Sites that have to convert dmap files on campus are specified in CONVERT_ON_CAMPUS_SITES within the
-# config file. If a site isn't specified there, then this script is skipped and the next data flow 
-# script executes immediately
 
 # Define directories
 readonly DATA_DIR="/sddata"     # Located on superdarn-data NAS
@@ -70,51 +64,62 @@ printf "########################################################################
 printf "Executing $0 on $(hostname) for ${RADAR_ID}\n" | tee --append $SUMMARY_FILE
 date --utc "+%Y%m%d %H:%M:%S UTC" | tee --append $SUMMARY_FILE
 
-if [[ " ${CONVERT_ON_CAMPUS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 
-    # Get status info on data_flow and pyDARNio repos
-    printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
-            $(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
-    printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
-            $(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+# Get status info on data_flow and pyDARNio repos
+printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last commit: \
+        $(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
+printf "pyDARNio: $(git -C ${HOME}/pyDARNio status | grep "On branch"), last commit: \
+        $(git -C ${HOME}/pyDARNio log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
-    printf "Conversion directory: $DATA_DIR\n\n"
+printf "Conversion directory: $DATA_DIR\n\n"
 
-    RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.hdf5" -type f)
+RAWACF_CONVERT_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.h*5" -type f)
+RAWACF_DMAP_FILES=$(find "${SOURCE}" -maxdepth 1 -name "*rawacf.bz2" -type f)
 
-    if [[ -n $RAWACF_CONVERT_FILES ]]; then
-        printf "Converting the following files:\n"
-        printf '%s\n' "${RAWACF_CONVERT_FILES[@]}"
-    else
-        printf "No files to be converted.\n" | tee --append $SUMMARY_FILE
-    fi
-
-    for f in $RAWACF_CONVERT_FILES
-    do
-        printf "\nConverting ${f}\n"
-        printf "python3 borealis_array_to_dmap.py $(basename ${f})\n"
-        python3 "${HOME}/data_flow/campus/borealis_array_to_dmap.py" $f # Creates a new dmap file
-        ret=$?
-        if [[ $ret -eq 0 ]]; then
-            # Move the resulting files if all was successful
-            dmap_file=$(get_dmap_name $f)
-
-            mv --verbose $dmap_file $DEST
-            mv --verbose $f $DEST
-            printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
-        else
-            error="File failed to convert to dmap: ${f}\n"
-            printf "${error}" | tee --append $SUMMARY_FILE
-
-            message="$(date +'%Y%m%d %H:%M:%S')   convert_on_campus ${RADAR_ID} - ${error}"
-            alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
-
-            mv --verbose $f $PROBLEM_FILES_DEST
-        fi
-    done
+if [[ -n $RAWACF_CONVERT_FILES ]]; then
+    printf "Converting the following files:\n"
+    printf '%s\n' "${RAWACF_CONVERT_FILES[@]}"
 else
-    printf "\nNot converting files for $RADAR_ID.\n" | tee --append $SUMMARY_FILE
+    printf "No files to be converted.\n" | tee --append $SUMMARY_FILE
 fi
+
+# Convert HDF5 files to dmap then move to the proper directories
+for f in $RAWACF_CONVERT_FILES
+do
+    printf "\nConverting ${f}\n"
+    printf "python3 borealis_to_dmap.py $(basename ${f})\n"
+    python3 "${HOME}/data_flow/campus/borealis_to_dmap.py" $f # Creates a new dmap file
+    ret=$?
+    if [[ $ret -eq 0 ]]; then
+        # Move the resulting files if all was successful
+        dmap_file=$(get_dmap_name $f)
+
+        mv --verbose $dmap_file $DEST
+        mv --verbose $f $DEST
+        printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
+    else
+        error="File failed to convert to dmap: ${f}\n"
+        printf "${error}" | tee --append $SUMMARY_FILE
+
+        message="$(date +'%Y%m%d %H:%M:%S')   convert_on_campus ${RADAR_ID} - ${error}"
+        alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
+
+        mv --verbose $f $PROBLEM_FILES_DEST
+    fi
+done
+
+# For dmap files received straight from site, just move to the correct directory.
+if [[ -n $RAWACF_DMAP_FILES ]]; then
+    printf "Moving the following files:\n"
+    printf '%s\n' "${RAWACF_DMAP_FILES[@]}"
+else
+    printf "No dmap files to be moved.\n" | tee --append $SUMMARY_FILE
+fi
+
+for dmap_file in $RAWACF_DMAP_FILES
+do
+    mv --verbose $dmap_file $DEST
+done
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 

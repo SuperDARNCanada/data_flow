@@ -57,7 +57,8 @@ if isfile(PERSONAL_UUID_FILENAME):
         PERSONAL_UUID = f.readline().strip()
 
 # Client ID retrieved from https://auth.globus.org/v2/web/developers
-gatekeeper_app_CLIENT_ID = 'bc9d5b7a-6592-4156-bfb8-aeb0fc4fb07e'
+# gatekeeper_app_CLIENT_ID = 'bc9d5b7a-6592-4156-bfb8-aeb0fc4fb07e'  # Saif's app
+gatekeeper_app_CLIENT_ID = 'e70228d0-56a2-4d85-bf63-7fbccc92dcd3'  # Rem's app
 
 
 def main():
@@ -159,7 +160,7 @@ def main():
     # Recursively get blocklist folder and generate list of blocked files
     logger.info("Getting blocklist directory...\n")
     gk.get_blocklist(dest_path=f"{gk.get_working_dir()}/blocklist/")
-    if not gk.wait_for_last_task(timeout_s=120):
+    if not gk.wait_for_last_task(timeout_s=300):
         msg = "get_blocklist timeout. Exiting"
         gk.log_email_exit(logger.error, 0, 1, msg=msg)
 
@@ -222,12 +223,35 @@ def main():
         filename = item.split()[1]
         data_hash = item.split()[0]
         elements = parse_data_filename(filename)
+        radar = elements[6]
         data_type = elements[7]
         if data_type == "rawacf":
             data_type = "raw"
         metadata = {'year': f'{elements[0]}', 'month': f'{elements[1]}', 'day': f'{elements[2]}',
-                    'yearmonth': filename[0:6], 'hash': data_hash, 'type': data_type}
+                    'yearmonth': filename[0:6], 'hash': data_hash, 'type': data_type, 'radar': radar}
         files_to_upload_dict[filename].update(metadata)
+
+    ###################################################################################################################
+    # Step 5.5) Will remove this section once Cedar allocation is increased!
+    # Don't transfer files from new NSSC radars until our allocation on Cedar is increased
+    # Move data from new nssc radars to holding_dir/new_nssc_data/ for local storage
+    # Then, remake/check files_to_upload and exit if no files remaining in holding_dir
+    new_radars = ('hje', 'hjw', 'lje', 'ljw', 'sze', 'szw')
+    new_data = []
+    for filename in files_to_upload_dict:
+        if files_to_upload_dict[filename]['radar'] in new_radars:
+            new_data.append(filename)
+
+    if len(new_data) > 0:
+        logger.info(f"Found new NSSC data files ({len(new_data)}): {new_data}")
+        for file in new_data:
+            files_to_upload_dict.pop(file)
+        gk.move_files_to_subdir("new_nssc_data", new_data)
+        files_to_upload = sorted(list(files_to_upload_dict.keys()))
+
+    if len(files_to_upload) == 0:
+        msg = "No files to upload. Exiting."
+        gk.log_email_exit(logger.info, 0, 1, msg=msg)
 
     ###################################################################################################################
     # Step 6)

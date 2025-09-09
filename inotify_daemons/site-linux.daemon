@@ -2,7 +2,7 @@
 # Copyright 2022 SuperDARN Canada, University of Saskatchewan
 # Author: Theodore Kolkman
 #
-# Inotify script to be run on Site-Linux computer. Executes convert_and_restructure and 
+# Inotify script to be run on Site-Linux computer. Executes plot_antennas_iq and
 # rsync_to_campus, one after the other
 #
 # Dependencies:
@@ -44,12 +44,10 @@ do
     then
         printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify triggered on $0\n"
 
-        printf "Executing convert_and_restructure...\n"
-        $HOME/data_flow/site-linux/convert_and_restructure
         printf "Generating antennas iq plots...\n"
-        $HOME/data_flow/site-linux/plot_antennas_iq
+        $HOME/data_flow/site-linux/plot_antennas_iq <&-
         printf "Executing rsync_to_campus...\n"
-        $HOME/data_flow/site-linux/rsync_to_campus
+        $HOME/data_flow/site-linux/rsync_to_campus <&-
 
         # Reset flag by removing .borealis_flag, so inotify can be triggered again
         rm --verbose --force "${DIRECTORY}${FILE}"
@@ -57,7 +55,10 @@ do
         # Send "flag" file to notify sdc-serv on campus to start next script
         printf "Sending ${FLAG_OUT} to ${SDCOPY}:${REMOTE_FLAG_DEST}\n"
         touch $FLAG_OUT
-        rsync --archive --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${REMOTE_FLAG_DEST}"
+        rsync --archive --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${REMOTE_FLAG_DEST}" <&-
+
+        # Close the multiplexed SSH session opened by rsync_to_campus script
+        ssh -O exit ${SDCOPY} <&-
 
         printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"
     fi

@@ -162,6 +162,7 @@ class Gatekeeper(object):
         self.mirror_uuid = '8dec4129-9ab4-451d-a45f-5b4b8471f7a3'
         # self.mirror_uuid = '88cd829c-75fa-44e6-84bb-42e6250afaea'
         # self.mirror_uuid = "bc9d5b7a-6592-4156-bfb8-aeb0fc4fb07e"
+        # self.mirror_uuid = '087f175e-9e9c-42cc-9efc-667d25b64fa0'  # SuperDARN Mirror (Cedar/Fir) UUID
         self.transfer_client = self.get_transfer_client()
 
         # Email information ##########################################################
@@ -169,7 +170,7 @@ class Gatekeeper(object):
         # emailFlag is set to 1 if a condition arises that requires an email alert
         # emailMessage is initialized to nothing here, and filled in with an
         #       appropriate message depending upon the reason for the email.
-        self.email_recipients = ['saif.marei@usask.ca']
+        self.email_recipients = ['superdarn_engineers@usask.ca']
         self.email_from = 'dataman'
         self.current_time = datetime.now()
         self.email_subject = '[Gatekeeper Globus] ' + self.current_time.strftime("%Y%m%d.%H%M : ")
