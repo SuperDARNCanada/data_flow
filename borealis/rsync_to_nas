@@ -101,7 +101,7 @@ printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 
 if [[ " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
 	printf "Transferring to NAS: $DEST\n\n" | tee --append $SUMMARY_FILE
-	search=(\( -name "*rawacf*" -o -name "*bfiq*" -o -name "*antennas_iq*" \))
+	search=(\( -name "*rawacf*" -o -name "*antennas_iq*" \))
 	readonly TRANSFER_LOC=""
 else
 	printf "Transferring to Site-Linux: $DEST\n\n" | tee --append $SUMMARY_FILE
