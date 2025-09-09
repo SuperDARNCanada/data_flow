@@ -83,11 +83,11 @@ fi
 
 
 # Find files to be transferred
-cam210_files=$(find ${PHOTO_SOURCE} -name '*cam210*.bz2' -printf '%p\n')
-cam211_files=$(find ${PHOTO_SOURCE} -name '*cam211*.bz2' -printf '%p\n')
-cam212_files=$(find ${PHOTO_SOURCE} -name '*cam212*.bz2' -printf '%p\n')
+cam210_files=$(find ${PHOTO_SOURCE} -name '*cam210*.jpg' -printf '%p\n')
+cam211_files=$(find ${PHOTO_SOURCE} -name '*cam211*.jpg' -printf '%p\n')
+cam212_files=$(find ${PHOTO_SOURCE} -name '*cam212*.jpg' -printf '%p\n')
 
-if [[ -z "$cam210_files" -a  -z "$cam211_files" -a  -z "$cam212_files" ]]; then
+if [[ -z "$cam210_files" && -z "$cam211_files" && -z "$cam212_files" ]]; then
     printf "No camera photos found to be transferred.\n" | tee --append $SUMMARY_FILE
 fi
 
@@ -97,23 +97,27 @@ for file in $cam210_files; do
     sub_dest="${RADAR_ID}cam210/$(date -d $filedate +%Y/%m/)"
 
 	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n"
-    rsync -av --rsh=ssh --relative $sub_dest $file $SDCOPY:$PHOTO_DEST
-done
+    # Set permissions of new directories to 775 and new files to 664. New directories will
+    # automatically be created.
+    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" --chmod=D775,F664 $file $SDCOPY:${PHOTO_DEST}${sub_dest}done
 
 for file in $cam211_files; do
     filedate=$(basename $file | cut -d '.' -f 1)
     sub_dest="${RADAR_ID}cam211/$(date -d $filedate +%Y/%m/)"
 
 	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n"
-    rsync -av --rsh=ssh --relative $sub_dest $file $SDCOPY:$PHOTO_DEST
-done
+    # Set permissions of new directories to 775 and new files to 664. New directories will
+    # automatically be created.
+    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" --chmod=D775,F664 $file $SDCOPY:${PHOTO_DEST}${sub_dest}done
 
 for file in $cam212_files; do
     filedate=$(basename $file | cut -d '.' -f 1)
     sub_dest="${RADAR_ID}cam212/$(date -d $filedate +%Y/%m/)"
 
 	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n"
-    rsync -av --rsh=ssh --relative $sub_dest $file $SDCOPY:$PHOTO_DEST
+    # Set permissions of new directories to 775 and new files to 664. New directories will
+    # automatically be created.
+    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" --chmod=D775,F664 $file $SDCOPY:${PHOTO_DEST}${sub_dest}
 done
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
