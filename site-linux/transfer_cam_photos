@@ -99,7 +99,10 @@ for file in $cam210_files; do
 	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n"
     # Set permissions of new directories to 775 and new files to 664. New directories will
     # automatically be created.
-    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" --chmod=D775,F664 $file $SDCOPY:${PHOTO_DEST}${sub_dest}
+    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" \
+                        --chmod=D775,F664 \
+                        --remove-source-files \
+                        $file $SDCOPY:${PHOTO_DEST}${sub_dest}
 done
 
 for file in $cam211_files; do
@@ -109,7 +112,10 @@ for file in $cam211_files; do
 	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n"
     # Set permissions of new directories to 775 and new files to 664. New directories will
     # automatically be created.
-    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" --chmod=D775,F664 $file $SDCOPY:${PHOTO_DEST}${sub_dest}
+    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" \
+                        --chmod=D775,F664 \
+                        --remove-source-files \
+                        $file $SDCOPY:${PHOTO_DEST}${sub_dest}
 done
 
 for file in $cam212_files; do
@@ -119,7 +125,10 @@ for file in $cam212_files; do
 	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n"
     # Set permissions of new directories to 775 and new files to 664. New directories will
     # automatically be created.
-    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" --chmod=D775,F664 $file $SDCOPY:${PHOTO_DEST}${sub_dest}
+    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" \
+                        --chmod=D775,F664 \
+                        --remove-source-files \
+                        $file $SDCOPY:${PHOTO_DEST}${sub_dest}
 done
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
