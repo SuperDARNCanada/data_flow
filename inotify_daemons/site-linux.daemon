@@ -57,9 +57,6 @@ do
         touch $FLAG_OUT
         rsync --archive --rsh=ssh "${FLAG_OUT}" "${SDCOPY}:${REMOTE_FLAG_DEST}" <&-
 
-        # Close the multiplexed SSH session opened by rsync_to_campus script
-        ssh -O exit ${SDCOPY} <&-
-
         printf "$(date --utc "+%Y%m%d %H:%M:%S UTC") - Inotify finished on $0\n\n"
     fi
 done
