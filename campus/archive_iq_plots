@@ -62,17 +62,17 @@ files=$(find ${IQ_PLOTS} -maxdepth 1 -type f -name "*.jpg")
 now=$(date -u +"%s")
 
 for file in ${files[@]}; do
-  # strips away everything but the file time and format it to be parsed by date
-  file_date=$(basename ${file} | sed 's/[^0-9][^0-9].*.//' | cut -d '.' -f 1,2 | tr . T)
+	# strips away everything but the file time and format it to be parsed by date
+	file_date=$(basename ${file} | sed 's/[^0-9][^0-9].*.//' | cut -d '.' -f 1,2 | tr . T)
 
-  # Determine archive directory Year/Month destination for each file
-  archive_dir="${ARCHIVE}/$(date -d ${file_date} +%Y/%m)/"
+	# Determine archive directory Year/Month destination for each file
+	archive_dir="${ARCHIVE}/$(date -d ${file_date} +%Y/%m)/"
 
-  # Move any files older than 24 hr to the archive directory
-  cutoff=$(expr ${now} - 86400)
-  if [[ $(date -u -d ${file_date} +"%s") < ${cutoff} ]]; then
-    mv "${file}" "${archive_dir}"
-  fi
+	# Move any files older than 24 hr to the archive directory
+	cutoff=$(expr ${now} - 86400)
+	if [[ $(date -u -d ${file_date} +"%s") < ${cutoff} ]]; then
+		mv "${file}" "${archive_dir}"
+	fi
 done
 
 

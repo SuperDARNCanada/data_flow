@@ -100,29 +100,29 @@ fi
 files=$(find ${DMAP_SOURCE} -name '*rawacf.bz2' -printf '%p\n')
 
 if [[ -n $files ]]; then
-  printf "\nPlacing following dmap files in ${SDCOPY}:${DMAP_DEST}:\n"
-  printf '%s\n' "${files[@]}"
+	printf "\nPlacing following dmap files in ${SDCOPY}:${DMAP_DEST}:\n"
+	printf '%s\n' "${files[@]}"
 else
-  printf "No dmap files found to be transferred.\n" | tee --append $SUMMARY_FILE
+	printf "No dmap files found to be transferred.\n" | tee --append $SUMMARY_FILE
 fi
 
 # Transfer all files found
 for file in $files; do
-  printf "\nTransferring: ${file} to ${SDCOPY}:${DMAP_DEST}\n"
-  rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DMAP_DEST
+	printf "\nTransferring: ${file} to ${SDCOPY}:${DMAP_DEST}\n"
+	rsync -av --append-verify --timeout=180 --rsh=ssh $file $SDCOPY:$DMAP_DEST
 
-  # Check if transfer was okay using the md5sum program, then remove the file if it matches
-  verify_transfer $file "${DMAP_DEST}/$(basename $file)" $SDCOPY
-  return_value=$?
-  if [[ $return_value -eq 0 ]]; then
-    printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
-    printf "Deleting file...\n"
-    rm --verbose $file
-  else
-          # If file not transferred successfully, don't delete and try again next time
-    printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
-    printf "File not deleted.\n"
-  fi
+	# Check if transfer was okay using the md5sum program, then remove the file if it matches
+	verify_transfer $file "${DMAP_DEST}/$(basename $file)" $SDCOPY
+	return_value=$?
+	if [[ $return_value -eq 0 ]]; then
+		printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "Deleting file...\n"
+		rm --verbose $file
+	else
+			# If file not transferred successfully, don't delete and try again next time
+		printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "File not deleted.\n"
+	fi
 done
 
 
@@ -167,21 +167,21 @@ else
 fi
 
 for file in $files; do
-  printf "\nTransferring: ${file}\n"
-  rsync -av --append-verify --timeout=180 --rsh=ssh ${file} $SDCOPY:$PLOT_DEST
+	printf "\nTransferring: ${file}\n"
+	rsync -av --append-verify --timeout=180 --rsh=ssh ${file} $SDCOPY:$PLOT_DEST
 
-  # Check if transfer was okay using the md5sum program
-  verify_transfer $file "${PLOT_DEST}/$(basename $file)" $SDCOPY
-  return_value=$?
-  if [[ $return_value -eq 0 ]]; then
-    printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
-    printf "Deleting file...\n"
-    rm --verbose ${file}
-  else
-    # If file not transferred successfully, try again next time, don't delete
-    printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
-    printf "File not deleted.\n"
-  fi
+	# Check if transfer was okay using the md5sum program
+	verify_transfer $file "${PLOT_DEST}/$(basename $file)" $SDCOPY
+	return_value=$?
+	if [[ $return_value -eq 0 ]]; then
+		printf "Successfully transferred: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "Deleting file...\n"
+		rm --verbose ${file}
+	else
+		# If file not transferred successfully, try again next time, don't delete
+		printf "Transfer failed: ${file}\n" | tee --append $SUMMARY_FILE
+		printf "File not deleted.\n"
+	fi
 done
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE

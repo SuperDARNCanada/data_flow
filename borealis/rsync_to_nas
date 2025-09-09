@@ -89,8 +89,8 @@ printf "data_flow: $(git -C ${HOME}/data_flow status | grep "On branch"), last c
 		$(git -C ${HOME}/data_flow log -1 --format="%h %cd" --date=iso)\n" | tee --append $SUMMARY_FILE
 
 if [[ -z "$SOURCE" ]]; then
-        printf "Error: Source directory not defined. Exiting...\n"
-        exit 1
+	printf "Error: Source directory not defined. Exiting...\n"
+	exit 1
 fi
 printf "Transferring from: $SOURCE\n" | tee --append $SUMMARY_FILE
 
@@ -140,21 +140,21 @@ do
 	# Ensure that the file has all group permissions enabled (read/write/execute)
 	chmod --verbose 775 $file
 
-  needs_zip=0
-  backup=0
-  if [[ $file == *.rawacf ]]; then
-	  SPECIFIC_DEST="$RAWACF_DMAP_DEST"
-	  needs_zip=1  # bzip rawacf DMAP files
-	  backup=1  # backup rawacf files
+	needs_zip=0
+	backup=0
+	if [[ $file == *.rawacf ]]; then
+		SPECIFIC_DEST="$RAWACF_DMAP_DEST"
+		needs_zip=1  # bzip rawacf DMAP files
+		backup=1  # backup rawacf files
 	elif [[ $file == *.rawacf.h5 ]]; then
-	  SPECIFIC_DEST="$RAWACF_ARRAY_DEST"
-	  backup=1  # backup rawacf files
+		SPECIFIC_DEST="$RAWACF_ARRAY_DEST"
+		backup=1  # backup rawacf files
 	elif [[ $file == *.antennas_iq.h5 ]]; then
-	  SPECIFIC_DEST="$ANTENNAS_IQ_DEST"
+		SPECIFIC_DEST="$ANTENNAS_IQ_DEST"
 	else
-	  error="unknown file type: ${file}\n"
-	  printf "${error}" | tee --append $SUMMARY_FILE
-	  SPECIFIC_DEST="$FAIL_DEST"
+		error="unknown file type: ${file}\n"
+		printf "${error}" | tee --append $SUMMARY_FILE
+		SPECIFIC_DEST="$FAIL_DEST"
 	fi
 
 	# Check that the timestamps and file modification times are consistent. If they aren't, change
@@ -170,32 +170,32 @@ do
 		SPECIFIC_DEST="$FAIL_DEST"	# Change destination
 	fi
 
-  # Bzip file if needed
-  if [[ $needs_zip -eq 1 ]]; then
-    printf "Bzipping $file to $file_to_transfer\n"
-    file_to_transfer="${file}.bz2"
-    bzip2 --verbose $file
-  else
-    file_to_transfer="$file"
-  fi
+	# Bzip file if needed
+	if [[ $needs_zip -eq 1 ]]; then
+		printf "Bzipping $file to $file_to_transfer\n"
+		file_to_transfer="${file}.bz2"
+		bzip2 --verbose $file
+	else
+		file_to_transfer="$file"
+	fi
 
-  if [[ $backup -eq 1 && " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
-    # rsync file to NAS for backup
-    printf "Backing up to: $BACKUP_DEST\n"
-    rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${BACKUP_DEST}"
+	if [[ $backup -eq 1 && " ${NAS_SITES[*]} " =~ " ${RADAR_ID} " ]]; then
+		# rsync file to NAS for backup
+		printf "Backing up to: $BACKUP_DEST\n"
+		rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${BACKUP_DEST}"
 
-    # Check if transfer was okay using the md5sum program
-    verify_transfer $file_to_transfer "${BACKUP_DEST}/$(basename $file_to_transfer)" ${TRANSFER_LOC%:}
-    return_value=$?
-  fi
+		# Check if transfer was okay using the md5sum program
+		verify_transfer $file_to_transfer "${BACKUP_DEST}/$(basename $file_to_transfer)" ${TRANSFER_LOC%:}
+		return_value=$?
+	fi
 
 	printf "Transferring to: $SPECIFIC_DEST\n"
 	# rsync file to NAS or site-linux computer
-  rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${SPECIFIC_DEST}"
+	rsync -av --append-verify --timeout=180 --rsh=ssh $file_to_transfer "${TRANSFER_LOC}${SPECIFIC_DEST}"
 
-  # Check if transfer was okay using the md5sum program
-  verify_transfer $file_to_transfer "${SPECIFIC_DEST}/$(basename $file_to_transfer)" ${TRANSFER_LOC%:}
-  return_value=$?
+	# Check if transfer was okay using the md5sum program
+	verify_transfer $file_to_transfer "${SPECIFIC_DEST}/$(basename $file_to_transfer)" ${TRANSFER_LOC%:}
+	return_value=$?
 
 	if [[ $return_value -eq 0 ]]; then
 		# Remove the file if transfer is successful

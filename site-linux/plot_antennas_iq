@@ -105,40 +105,40 @@ else
 fi
 
 for f in ${daily_files}; do
-  printf "\nPlotting ${f}\n"
+	printf "\nPlotting ${f}\n"
 
-  python3 ${HOME}/data_flow/library/iq_plotting.py "${f}" --plot-directory=${FULLSIZE_DEST} --antennas="0-19" --min-power=30 --max-power=80
+	python3 ${HOME}/data_flow/library/iq_plotting.py "${f}" --plot-directory=${FULLSIZE_DEST} --antennas="0-19" --min-power=30 --max-power=80
 
-  if [ $? -eq 0 ]; then
-    printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
-  else
-     error="Failed to generate iq plot from: ${f}\n"
-     printf "${error}" | tee --append $SUMMARY_FILE
+	if [ $? -eq 0 ]; then
+		printf "Successfully converted: ${f}\n" | tee --append $SUMMARY_FILE
+	else
+		error="Failed to generate iq plot from: ${f}\n"
+		printf "${error}" | tee --append $SUMMARY_FILE
 
-     message="$(date +'%Y%m%d %H:%M:%S')   ${RADAR_ID} - ${error}"
-     alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
-  fi
+		message="$(date +'%Y%m%d %H:%M:%S')   ${RADAR_ID} - ${error}"
+		alert_slack "${message}" "${SLACK_DATAFLOW_WEBHOOK}"
+	fi
 done
 
 # Only need to resize plots if there were files to make
 if [[ -n $daily_files ]]; then
-  # Get the names of all plots just generated
-  daily_plots=$(ls ${FULLSIZE_DEST}/*.{png,jpg})
-  if [[ -z $daily_plots ]]; then
-    printf "Unable to find files to resize...\n" | tee --append $SUMMARY_FILE
-  fi
+	# Get the names of all plots just generated
+	daily_plots=$(ls ${FULLSIZE_DEST}/*.{png,jpg})
+	if [[ -z $daily_plots ]]; then
+		printf "Unable to find files to resize...\n" | tee --append $SUMMARY_FILE
+	fi
 
-  # Resize the images to a desired pixel width
-  for img in ${daily_plots}; do
-    printf "Resizing file: ${f}\n" | tee --append $SUMMARY_FILE
-	  smartresize ${img} 1000 ${PLOT_DEST}
-	  if [ $? -eq 0 ]; then
-	    rm --verbose ${img}
-	  else
-	    printf "Failed to resize ${img}"
-	    mv --verbose ${img} ${FAILED_RESIZE_DEST}
-    fi
-  done
+	# Resize the images to a desired pixel width
+	for img in ${daily_plots}; do
+		printf "Resizing file: ${f}\n" | tee --append $SUMMARY_FILE
+		smartresize ${img} 1000 ${PLOT_DEST}
+		if [ $? -eq 0 ]; then
+			rm --verbose ${img}
+		else
+			printf "Failed to resize ${img}"
+			mv --verbose ${img} ${FAILED_RESIZE_DEST}
+		fi
+	done
 fi
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
