@@ -96,39 +96,36 @@ for file in $cam210_files; do
     filedate=$(basename $file | cut -d '.' -f 1)
     sub_dest="${RADAR_ID}cam210/$(date -d $filedate +%Y/%m/)"
 
-	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n"
-    # Set permissions of new directories to 775 and new files to 664. New directories will
-    # automatically be created.
-    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" \
-                        --chmod=D775,F664 \
-                        --remove-source-files \
-                        $file $SDCOPY:${PHOTO_DEST}${sub_dest}
+    # Create subdirectory if needed (needed for making new year directory)
+    ssh dataman@sdc-serv.usask.ca "mkdir -p -m 775 ${PHOTO_DEST}${sub_dest}"
+
+	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n" | tee --append $SUMMARY_FILE
+    # Set permissions of new files to 664. New directories will automatically be created.
+    rsync -av --rsh=ssh --chmod=F664 --remove-source-files $file $SDCOPY:${PHOTO_DEST}${sub_dest}
 done
 
 for file in $cam211_files; do
     filedate=$(basename $file | cut -d '.' -f 1)
     sub_dest="${RADAR_ID}cam211/$(date -d $filedate +%Y/%m/)"
 
-	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n"
-    # Set permissions of new directories to 775 and new files to 664. New directories will
-    # automatically be created.
-    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" \
-                        --chmod=D775,F664 \
-                        --remove-source-files \
-                        $file $SDCOPY:${PHOTO_DEST}${sub_dest}
+    # Create subdirectory if needed (needed for making new year directory)
+    ssh dataman@sdc-serv.usask.ca "mkdir -p -m 775 ${PHOTO_DEST}${sub_dest}"
+
+	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n" | tee --append $SUMMARY_FILE
+    # Set permissions of new files to 664. New directories will automatically be created.
+    rsync -av --rsh=ssh --chmod=F664 --remove-source-files $file $SDCOPY:${PHOTO_DEST}${sub_dest}
 done
 
 for file in $cam212_files; do
     filedate=$(basename $file | cut -d '.' -f 1)
     sub_dest="${RADAR_ID}cam212/$(date -d $filedate +%Y/%m/)"
 
-	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n"
-    # Set permissions of new directories to 775 and new files to 664. New directories will
-    # automatically be created.
-    rsync -av --rsh=ssh --rsync-path="umask 002 && rsync" \
-                        --chmod=D775,F664 \
-                        --remove-source-files \
-                        $file $SDCOPY:${PHOTO_DEST}${sub_dest}
+    # Create subdirectory if needed (needed for making new year directory)
+    ssh dataman@sdc-serv.usask.ca "mkdir -p -m 775 ${PHOTO_DEST}${sub_dest}"
+
+	printf "\nTransferring: ${file} to ${SDCOPY}:${PHOTO_DEST}${sub_dest}\n" | tee --append $SUMMARY_FILE
+    # Set permissions of new files to 664. New directories will automatically be created.
+    rsync -av --rsh=ssh --chmod=F664 --remove-source-files $file $SDCOPY:${PHOTO_DEST}${sub_dest}
 done
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
