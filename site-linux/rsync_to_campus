@@ -190,4 +190,7 @@ printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC"
 printf "Syncing $(basename $SUMMARY_FILE) to $TELEMETRY:$TELEMETRY_SCRIPT_DIR\n\n"
 rsync --archive --rsh="$TELEMETRY_RSH" $SUMMARY_FILE $TELEMETRY:$TELEMETRY_SCRIPT_DIR
 
+# Close the multiplexed SSH session
+ssh -O exit ${SDCOPY} <&-
+
 exit
