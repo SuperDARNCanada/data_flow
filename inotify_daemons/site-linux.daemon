@@ -48,6 +48,8 @@ do
         $HOME/data_flow/site-linux/plot_antennas_iq <&-
         printf "Executing rsync_to_campus...\n"
         $HOME/data_flow/site-linux/rsync_to_campus <&-
+        printf "Executing transfer_cam_photos...\n"
+        $HOME/data_flow/site-linux/transfer_cam_photos <&-
 
         # Reset flag by removing .borealis_flag, so inotify can be triggered again
         rm --verbose --force "${DIRECTORY}${FILE}"
