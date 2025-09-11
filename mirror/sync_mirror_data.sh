@@ -59,7 +59,7 @@ fi
 # Variables for Cedar user and paths
 # readonly cedar_user=saifm@robot.cedar.alliancecan.ca
 readonly cedar_user=rar129
-readonly cedar_login="${cedar_user}@robot.cedar.alliancecan.ca"
+readonly cedar_login="${cedar_user}@robot.fir.alliancecan.ca"
 
 # Add _test to Cedar paths for testing purposes
 #readonly CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/raw/
