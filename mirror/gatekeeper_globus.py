@@ -412,9 +412,10 @@ def main():
             # If failed, log error message, remove from files_to_upload, add to failed_files
             else:
                 try:
-                    dmap_stream = open(f"{gk.get_holding_dir()}/{unzipped_filename}", 'rb').read()
-                    reader = pydarnio.SDarnRead(dmap_stream, True)
-                    records = reader.read_rawacf()
+                    #dmap_stream = open(f"{gk.get_holding_dir()}/{unzipped_filename}", 'rb').read()
+                    #reader = pydarnio.SDarnRead(dmap_stream, True)
+                    #records = reader.read_rawacf()
+                    records = pydarnio.read_rawacf(f"{gk.get_holding_dir()}/{unzipped_filename}")
                 except Exception as error:
                     errstr = "Error. File {0} failed with error {1}".format(data_file,
                                                                             str(error).replace("\n",

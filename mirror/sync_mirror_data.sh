@@ -59,15 +59,16 @@ fi
 # Variables for Cedar user and paths
 # readonly cedar_user=saifm@robot.cedar.alliancecan.ca
 readonly cedar_user=rar129
-readonly cedar_login="${cedar_user}@robot.cedar.alliancecan.ca"
+#readonly cedar_user=saifm
+readonly cedar_login="${cedar_user}@robot.fir.alliancecan.ca"
 
 # Add _test to Cedar paths for testing purposes
 #readonly CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/raw/
 #readonly CEDAR_BLOCKLIST=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/
 #readonly CEDAR_FAILED=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt
-readonly CEDAR_HASHES="/home/${cedar_user}/projects/rrg-kam136-ad/sdarn/chroot/sddata/raw/"
-readonly CEDAR_BLOCKLIST="/home/${cedar_user}/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/"
-readonly CEDAR_FAILED="/home/${cedar_user}/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt"
+readonly CEDAR_HASHES="/project/rrg-kam136-ad/sdarn/chroot/sddata/raw/"
+readonly CEDAR_BLOCKLIST="/project/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/"
+readonly CEDAR_FAILED="/project/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt"
 
 # Date/time variables
 STARTTIME=$(date +%s)
@@ -168,7 +169,8 @@ done
 yyyy=$(echo "${YYYYMM}" | cut -b1-4)
 mm=$(echo "${YYYYMM}" | cut -b5-6)
 # Download hashes from Cedar via rsync. Note the use of an ssh key and automated MFA through Digital Research Alliance.
-rsync -avL --timeout=15 -e "ssh -i ~/.ssh/id_ed25519" ${cedar_login}:${CEDAR_HASHES}/"${yyyy}"/"${mm}"/"${YYYYMM}".hashes "${LOCALHASHDIR}"/
+#rsync -avL --timeout=15 -e "ssh -i ~/.ssh/id_ed25519" ${cedar_login}:${CEDAR_HASHES}/"${yyyy}"/"${mm}"/"${YYYYMM}".hashes "${LOCALHASHDIR}"/
+rsync -avL --timeout=15 -e "ssh -i ~/.ssh/id_${cedar_user}" ${cedar_login}:${CEDAR_HASHES}/"${yyyy}"/"${mm}"/"${YYYYMM}".hashes "${LOCALHASHDIR}"/
 RETURN_VALUE=$?
 echo "rsync get hashes returned: ${RETURN_VALUE}"
 if [[ ${RETURN_VALUE} -ne 0 ]]
@@ -177,7 +179,8 @@ then
   exit
 fi
 # Download blocklist directory from Cedar via rsync
-rsync -avL --timeout=20 -e "ssh -i ~/.ssh/id_ed25519" ${cedar_login}:${CEDAR_BLOCKLIST} "${LOCALBLDIR}"/
+#rsync -avL --timeout=20 -e "ssh -i ~/.ssh/id_ed25519" ${cedar_login}:${CEDAR_BLOCKLIST} "${LOCALBLDIR}"/
+rsync -avL --timeout=20 -e "ssh -i ~/.ssh/id_${cedar_user}" ${cedar_login}:${CEDAR_BLOCKLIST} "${LOCALBLDIR}"/
 RETURN_VALUE=$?
 echo "rsync get blocklist returned: ${RETURN_VALUE}"
 if [[ ${RETURN_VALUE} -ne 0 ]]
@@ -186,7 +189,8 @@ then
   exit
 fi
 # Download failed files list "all_failed.txt" from Cedar via rsync
-rsync -avL --timeout=15 -e "ssh -i ~/.ssh/id_ed25519" ${cedar_login}:${CEDAR_FAILED} "${LOCALFAILEDDIR}"/
+#rsync -avL --timeout=15 -e "ssh -i ~/.ssh/id_ed25519" ${cedar_login}:${CEDAR_FAILED} "${LOCALFAILEDDIR}"/
+rsync -avL --timeout=15 -e "ssh -i ~/.ssh/id_${cedar_user}" ${cedar_login}:${CEDAR_FAILED} "${LOCALFAILEDDIR}"/
 RETURN_VALUE=$?
 echo "rsync get failed returned: ${RETURN_VALUE}"
 if [[ ${RETURN_VALUE} -ne 0 ]]
