@@ -134,7 +134,4 @@ done
 
 printf "\nFinished $(basename $0). End time: $(date --utc "+%Y%m%d %H:%M:%S UTC")\n\n" | tee --append $SUMMARY_FILE
 
-# Close the multiplexed SSH session
-ssh -O exit ${SDCOPY} <&-
-
 exit
