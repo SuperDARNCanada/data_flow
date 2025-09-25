@@ -5,11 +5,11 @@
 #
 # This script distributes borealis rawacf dmap (bz2) and array (HDF5) data to the following 
 # organizations/locations:
-#   Backs up dmap and array data to campus NAS
+#   Backs up dmap and array data to sdc-nas0 on campus
 #   Verifies correctness of dmap files by reading them with pyDARNio
-#   Stages dmap and array data for the mirror
-#   Stages dmap data for sending to British Antarctic Survey (BAS), Virginia Tech (VT) and National 
-#       Space Science Center (NSSC)
+#   Stages dmap and array data for the SuperDARN mirror on Fir.alliancecan.ca
+#   Stages dmap data for sending to British Antarctic Survey (BAS) and Virginia Tech (VT) 
+#   Moves any non-standard experiments to a separate special experiments directory
 #
 # This script performs the following checks before distributing files:
 #   - dmap files are unzipped
@@ -27,8 +27,8 @@
 # Usage: ./distribute_borealis_data RADAR_ID
 # Parameter RADAR_ID: [sas, pgr, rkn, inv, cly]
 #
-# This script should be run on sdc-serv.usask.ca via an inotify daemon triggerring when the previous
-# data flow script finishes. To ensure only one instance runs for each site, use flock within the
+# This script should be run on sdc-serv.usask.ca via an inotify daemon triggering when the previous
+# data flow script finishes. To ensure only one instance runs for each site, use `flock` within the
 # inotify daemon code
 
 ###################################################################################################
@@ -52,13 +52,13 @@ if [[ ! " ${VALID_IDS[*]} " =~ " ${RADAR_ID} " ]]; then
 fi
 
 # Define directories
-readonly SOURCE="/sddata/${RADAR_ID}_data"          # Located on superdarn-data.usask.ca
-readonly NAS_DIR="/data/borealis_site_data"         # Located on superdarn-data.usask.ca
-readonly MIRROR_STAGING_DIR="/data/holding/globus"  # Located on superdarn-data.usask.ca
+readonly SOURCE="/sddata/${RADAR_ID}_data"                  # Located on sdc-nas0
+readonly NAS_DIR="/data/borealis_site_data"                 # Located on sdc-nas0
+readonly MIRROR_STAGING_DIR="/data/holding/globus"          # Located on sdc-nas0
 readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADAR_ID}"   # Located locally on sdc-serv
 readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADAR_ID}"   # Located locally on sdc-serv
-# readonly NSSC_STAGING_DIR="/home/nssc/outgoing/${RADAR_ID}"
-readonly PROBLEM_FILES_DEST="/sddata/conversion_failure"
+readonly PROBLEM_FILES_DEST="/sddata/conversion_failure"    # Located on sdc-nas0
+readonly SPECIAL_EXPERIMENTS="/sddata/special_experiments"  # Located on sdc-nas0
 
 # Data group for outgoing files
 readonly DATA_GROUP="sddata"
@@ -95,6 +95,8 @@ printf "Distributing to: \n\
         \tMirror: $MIRROR_STAGING_DIR\n\
         \tInstitutions: $BAS_STAGING_DIR\t$VT_STAGING_DIR\n\n" | tee --append $SUMMARY_FILE
 
+
+# Distribute DMAP files
 dmap_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.bz2")
 
 if [[ -n $dmap_files ]]; then
@@ -120,18 +122,10 @@ for file in $dmap_files; do
         continue    # Skip to next dmap file
     fi
 
-    # Test that file can be read by pyDARNio
-    unbzipped_file="${file%.bz2}"
-    printf "bunzip2 --verbose --keep ${file}\n"
-    bunzip2 --verbose --keep $file    # Unzips to new file, old file is unchanged
+    printf "python3 test_dmap_integrity.py $(basename ${file})\n"
+    file_cpid=$(python3 "${HOME}/data_flow/campus/test_dmap_integrity.py" $file)
 
-    printf "python3 test_dmap_integrity.py $(basename ${unbzipped_file})\n"
-    python3 "${HOME}/data_flow/campus/test_dmap_integrity.py" $unbzipped_file
-    dmap_ret=$?
-
-    rm $unbzipped_file   # Remove unzipped file, zipped file is still there.
-
-    if [[ $dmap_ret -ne 0 ]]; then  # The dmap file is not good
+    if [[ -z "$file_cpid" ]]; then  # If no CPID is returned, the file failed to open
         printf "DMAP integrity test failed: ${file}\n" | tee --append $SUMMARY_FILE
         printf "Not distributing ${file}\n"
         mv --verbose $file $PROBLEM_FILES_DEST
@@ -139,11 +133,23 @@ for file in $dmap_files; do
         continue    # Skip to next file in $dmap_files
     fi
 
+    # Check if experiment is one of the common experiments distributed to the SuperDARN community
+    if [[ ! " ${DISTRIBUTED_CPIDS[*]} " =~  " $file_cpid " ]]; then
+        # If not, it must be a special experiment, and should be moved accordingly
+        printf "File with CPID $file_cpid will not be distributed: ${file}\n" | tee --append $SUMMARY_FILE
+        printf "Moving to ${SPECIAL_EXPERIMENTS}\n"
+
+        # Move file to special_experiment directory so it isn't distributed
+        year=$(echo ${file_name} | cut --characters 1-4)
+        month=$(echo ${file_name} | cut --characters 5-6)
+        special_dir="${SPECIAL_EXPERIMENTS}/${RADAR_ID}/${year}/${month}/"
+        mkdir --parents $special_dir
+        mv --verbose $file $special_dir
+        continue
+    fi
+
     printf "Distributing ${file}\n"
-
     file_name=$(basename $file)
-
-    # TODO: Review changing of groups and permissions differring across destinations
 
     # Flag will be > 0 if any transfers fail since verify_transfer returns 1 for failed transfer
     transfer_flag=0
@@ -162,13 +168,7 @@ for file in $dmap_files; do
     return_value=$?
     transfer_flag=$(($transfer_flag + $return_value))
 
-    # Place file in NSSC outgoing - Uncommment this when NSSC is ready
-    # cp --preserve --verbose $file $NSSC_STAGING_DIR
-    # verify_transfer $file "${NSSC_STAGING_DIR}/${file_name}"
-    # return_value=$?
-    # transfer_flag=$(($transfer_flag + $return_value))
-
-    # Copy for staging to the mirror
+    # Copy for staging to the data mirror on Fir
     cp --preserve --verbose $file $MIRROR_STAGING_DIR
     verify_transfer $file "${MIRROR_STAGING_DIR}/${file_name}"
     return_value=$?
@@ -191,6 +191,8 @@ for file in $dmap_files; do
     fi
 done
 
+
+# Distribute array files
 borealis_files=$(find ${SOURCE} -maxdepth 1 -name "*rawacf.h*5")
 
 # Iterate over all array files and back them up to NAS
