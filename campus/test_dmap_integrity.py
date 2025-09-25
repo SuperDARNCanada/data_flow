@@ -16,6 +16,7 @@ Requires pydarnio v1.0.
 
 import argparse
 import pydarnio
+import sys
 
 
 if __name__ == '__main__':
@@ -23,7 +24,10 @@ if __name__ == '__main__':
     parser.add_argument('infile', help='Path to DMAP rawacf file', type=str)
     args = parser.parse_args()
 
-    records = pydarnio.read_rawacf(args.infile)
-
-    # If the file couldn't be read correctly, 1 is returned
-    # Otherwise if no errors are thrown, 0 is returned
+    try:
+        records = pydarnio.read_rawacf(args.infile)
+        cpid = records[0]['cp']
+        print(cpid)     # Returns the cpid of the file for use in the bash script
+        sys.exit(0)
+    except:
+        sys.exit(1)     # If file fails to read, returns no cpid

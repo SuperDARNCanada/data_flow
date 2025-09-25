@@ -37,3 +37,9 @@ readonly TELEMETRY="logman@${SDC_SERV_IP}"
 readonly TELEMETRY_RSH="ssh"
 
 ###################################################################################################
+
+# Define which experiment CPIDs are allowed to be distributed
+# 151 - Normalscan
+# 3503 - Twofsound
+# 157 - NormalSound
+readonly DISTRIBUTED_CPIDS=("151" "3503" "157")
