@@ -42,4 +42,4 @@ readonly TELEMETRY_RSH="ssh"
 # 151 - Normalscan
 # 3503 - Twofsound
 # 157 - NormalSound
-readonly DISTRIBUTED_CPIDS=("151", "3503", "157")
+readonly DISTRIBUTED_CPIDS=("151" "3503" "157")

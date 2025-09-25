@@ -114,6 +114,7 @@ for file in $dmap_files; do
     printf "\n"
     
     # Test that file can be unzipped
+    printf "bzip2 --test $(basename $file)\n"
     bzip2 --test $file
     if [[ $? -eq 2 ]]; then
         printf "DMAP file failed bzip2 test: ${file}\n" | tee --append $SUMMARY_FILE
@@ -134,7 +135,7 @@ for file in $dmap_files; do
     fi
 
     # Check if experiment is one of the common experiments distributed to the SuperDARN community
-    if [[ ! " ${DISTRIBUTED_CPIDS[*]} " =~  " $file_cpid " ]]; then
+    if [[ ! " ${DISTRIBUTED_CPIDS[*]} " =~ " $file_cpid " ]]; then
         # If not, it must be a special experiment, and should be moved accordingly
         printf "File with CPID $file_cpid will not be distributed: ${file}\n" | tee --append $SUMMARY_FILE
         printf "Moving to ${SPECIAL_EXPERIMENTS}\n"
@@ -157,19 +158,19 @@ for file in $dmap_files; do
     chgrp --verbose $DATA_GROUP $file
 
     # Place file in vtsd outgoing
-    cp --preserve --verbose $file $VT_STAGING_DIR
+    cp --preserve --verbose $file "${VT_STAGING_DIR}/${file_name}" 
     verify_transfer $file "${VT_STAGING_DIR}/${file_name}" 
     return_value=$?
     transfer_flag=$(($transfer_flag + $return_value))
 
     # Place file in BAS outgoing
-    cp --preserve --verbose $file $BAS_STAGING_DIR
+    cp --preserve --verbose $file "${BAS_STAGING_DIR}/${file_name}"
     verify_transfer $file "${BAS_STAGING_DIR}/${file_name}"
     return_value=$?
     transfer_flag=$(($transfer_flag + $return_value))
 
     # Copy for staging to the data mirror on Fir
-    cp --preserve --verbose $file $MIRROR_STAGING_DIR
+    cp --preserve --verbose $file "${MIRROR_STAGING_DIR}/${file_name}"
     verify_transfer $file "${MIRROR_STAGING_DIR}/${file_name}"
     return_value=$?
     transfer_flag=$(($transfer_flag + $return_value))
