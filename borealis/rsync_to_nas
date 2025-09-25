@@ -146,6 +146,9 @@ do
 		SPECIFIC_DEST="$RAWACF_DMAP_DEST"
 		needs_zip=1  # bzip rawacf DMAP files
 		backup=1  # backup rawacf files
+	elif [[ $file == *.rawacf.bz2 ]]; then
+		SPECIFIC_DEST="$RAWACF_DMAP_DEST"
+		backup=1  # backup rawacf files
 	elif [[ $file == *.rawacf.h5 ]]; then
 		SPECIFIC_DEST="$RAWACF_ARRAY_DEST"
 		backup=1  # backup rawacf files
