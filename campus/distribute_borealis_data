@@ -138,13 +138,14 @@ for file in $dmap_files; do
     if [[ ! " ${DISTRIBUTED_CPIDS[*]} " =~ " $file_cpid " ]]; then
         # If not, it must be a special experiment, and should be moved accordingly
         printf "File with CPID $file_cpid will not be distributed: ${file}\n" | tee --append $SUMMARY_FILE
-        printf "Moving to ${SPECIAL_EXPERIMENTS}\n"
 
         # Move file to special_experiment directory so it isn't distributed
         year=$(echo ${file_name} | cut --characters 1-4)
         month=$(echo ${file_name} | cut --characters 5-6)
         special_dir="${SPECIAL_EXPERIMENTS}/${year}/${month}/"
         mkdir --parents $special_dir
+
+        printf "Moving to ${special_dir}\n"
         mv --verbose $file $special_dir
         continue
     fi
@@ -176,11 +177,11 @@ for file in $dmap_files; do
     transfer_flag=$(($transfer_flag + $return_value))
 
     # Check that all files were copied successfully. If any transfers failed, leave file in 
-    # directory so tranfer can be attempted the next time the script runs
+    # directory so transfer can be attempted the next time the script runs
     if [[ "${transfer_flag}" -eq 0 ]]; then
         printf "File distribution successful: ${file}\n" | tee --append $SUMMARY_FILE
 
-        # Move file to campus NAS for long term storage
+        # Move file to campus NAS for long-term storage
         year=$(echo ${file_name} | cut --characters 1-4)
         month=$(echo ${file_name} | cut --characters 5-6)
         nas_site_dir="${NAS_DIR}/${RADAR_ID}_rawacf_dmap/${year}/${month}/"
