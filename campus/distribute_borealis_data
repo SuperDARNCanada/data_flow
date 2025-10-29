@@ -111,6 +111,7 @@ fi
 for file in $dmap_files; do
     chmod --verbose 664 $file   # Change file permissions to -rw-rw-r--
     borealis_file=$(get_borealis_name $file)  # HDF5 file corresponding to the current dmap file
+    file_name=$(basename $file)
     printf "\n"
     
     # Test that file can be unzipped
@@ -151,7 +152,6 @@ for file in $dmap_files; do
     fi
 
     printf "Distributing ${file}\n"
-    file_name=$(basename $file)
 
     # Flag will be > 0 if any transfers fail since verify_transfer returns 1 for failed transfer
     transfer_flag=0
