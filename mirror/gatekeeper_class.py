@@ -131,7 +131,7 @@ class Gatekeeper(object):
         self.mirror_root_dir = None
         self.sync_pattern = None
         # Add _test for testing purposes
-        self.mirror_failed_dir = '/project/6008057/sdarn/local_data/failed/'
+        self.mirror_failed_dir = 'local_data/failed/'
 
         self.cur_year = datetime.now().year
         self.cur_month = datetime.now().month
@@ -159,10 +159,10 @@ class Gatekeeper(object):
         # Get a transfer client
         # Note that this uuid is the new cedar globus version 5 uuid, and hardcoded here due to hacking
         # this shit together in a quick timeframe. Ideally this would be searched and found programmatically via the function below "get_superdarn_mirror_uuid, which works to get the correct uuid, but we need a transfer client to use it, but we need the uuid to get a transfer client... so yeah, chicken and egg"
-        self.mirror_uuid = '8dec4129-9ab4-451d-a45f-5b4b8471f7a3'
+        # self.mirror_uuid = '8dec4129-9ab4-451d-a45f-5b4b8471f7a3'
         # self.mirror_uuid = '88cd829c-75fa-44e6-84bb-42e6250afaea'
         # self.mirror_uuid = "bc9d5b7a-6592-4156-bfb8-aeb0fc4fb07e"
-        # self.mirror_uuid = '087f175e-9e9c-42cc-9efc-667d25b64fa0'  # SuperDARN Mirror (Cedar/Fir) UUID
+        self.mirror_uuid = '087f175e-9e9c-42cc-9efc-667d25b64fa0'  # SuperDARN Mirror (Cedar/Fir) UUID
         self.transfer_client = self.get_transfer_client()
 
         # Email information ##########################################################
