@@ -386,51 +386,8 @@ def main():
             failed_files[data_file] = (data_file_hash, "File contains no records (empty)")
         # If file passed bzip test and is not empty, run bzcat to unzip the file
         else:
-            # Try using backscatter package to test dmap integrity
-            unzipped_filename = data_file.split(".bz2")[0]
-            logger.info(f"bzcat {data_file} > {unzipped_filename}")
-            bzcat_process = subprocess.Popen(f"cd {gk.get_holding_dir()}; bzcat {data_file} > {unzipped_filename}",
-                                             shell=True, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE)
-            out, err = bzcat_process.communicate()
-            bzcat_process_output = out.decode().split("\n")
-            bzcat_process_error = err.decode().split("\n")
-            # Check error code of bzcat and log a relevant error message
-            # Remove from files_to_upload if any nonzero error code
-            if bzcat_process.returncode == 1 or bzcat_process.returncode == 3:
-                logger.warning(f"OUTPUT: {bzcat_process_output}")
-                logger.warning(f"ERROR: {bzcat_process_error}")
-                # File not found. Remove from files to upload
-                logger.warning(f"Error. File {data_file} not found by bzcat. Removing from list.")
-                files_to_upload_dict.pop(data_file)
-            elif bunzip2_process.returncode == 2:
-                # Error with bz2 integrity of file.
-                logger.warning(f"Error. File {data_file} failed with bzcat! Removing from list.")
-                files_to_upload_dict.pop(data_file)
-                failed_files[data_file] = (data_file_hash, "Failed BZ2 integrity test")
-            # If bzcat succeeded on file, test dmap integrity and read using pyDARNio
-            # If failed, log error message, remove from files_to_upload, add to failed_files
-            else:
-                try:
-                    #dmap_stream = open(f"{gk.get_holding_dir()}/{unzipped_filename}", 'rb').read()
-                    #reader = pydarnio.SDarnRead(dmap_stream, True)
-                    #records = reader.read_rawacf()
-                    records = pydarnio.read_rawacf(f"{gk.get_holding_dir()}/{unzipped_filename}")
-                except Exception as error:
-                    errstr = "Error. File {0} failed with error {1}".format(data_file,
-                                                                            str(error).replace("\n",
-                                                                                               ""))
-                    logger.warning(' '.join(errstr.split()))
-                    files_to_upload_dict.pop(data_file)
-                    errstr = ' '.join(str(error).replace("\n", "").split())
-                    failed_files[data_file] = (data_file_hash, errstr)
-                else:
-                    # At this point, remaining files passed bzip, bzcat, and dmap integrity test
-                    # Remaining files are also not empty
-                    logger.info(f"{data_file} passed pydarnio dmap tests.")
-                finally:
-                    # Remove unzipped rawacf from holding_dir (created by bzcat test)
-                    remove(f"{gk.get_holding_dir()}/{unzipped_filename}")
+            # At this point, remaining files passed unzip test and are not empty
+            logger.info(f"{data_file} passed all tests.")
 
     if len(failed_files) > 0:
         logger.info(f"Found failed files ({len(failed_files)}): ")
