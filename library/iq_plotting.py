@@ -59,7 +59,7 @@ def build_list_from_input(str_in: str):
 
 
 def plot_unaveraged_range_time_data(data_array, num_sequences_array, timestamps_array, dataset_descriptor,
-                                    plot_filename, vmax, vmin, start_sample, end_sample, figsize, experiment):
+                                    plot_filename, vmax, vmin, start_sample, end_sample, figsize, experiment, site):
     """
     Plots data as range time given an array with correct dimensions. Also
     plots SNR by finding the ratio of max power in the sequence to average
@@ -93,6 +93,8 @@ def plot_unaveraged_range_time_data(data_array, num_sequences_array, timestamps_
         The desired size (in inches) of the plotted figure.
     experiment: str
         Name of the experiment that collected the data.
+    site: str
+        Three-letter radar identifier (e.g. SAS)
     """
 
     start_time = dt.datetime.utcfromtimestamp(timestamps_array.values[0].astype(int) * 1e-9)
@@ -101,7 +103,7 @@ def plot_unaveraged_range_time_data(data_array, num_sequences_array, timestamps_
     kw = {'width_ratios': [97, 3], 'height_ratios': [1, 4]}
     fig, ((ax1, cax1), (ax2, cax2)) = plt.subplots(2, 2, figsize=figsize, gridspec_kw=kw, layout='constrained',
                                                    sharex='col')
-    fig.suptitle(f'{experiment}: {dataset_descriptor} Power - {start_time.strftime("%Y%m%d")} '
+    fig.suptitle(f'{site.upper()} - {experiment}: {dataset_descriptor} Power - {start_time.strftime("%Y%m%d")} '
                  f'{start_time.strftime("%H:%M:%S")} to {end_time.strftime("%H:%M:%S")} UTC')
 
     tstamp_values = timestamps_array.values
@@ -227,7 +229,7 @@ def plot_antennas_range_time(antennas_iq_file, antenna_nums=None, vmax=40.0, vmi
         antenna_data = data[antenna_idx, :, :]
         plot_filename = f'{directory_name}/{time_of_plot}.{antenna_name}_{start_sample}_{end_sample}.jpg'
         plot_unaveraged_range_time_data(antenna_data, sequences_data, timestamps_data, antenna_name, plot_filename,
-                                        vmax, vmin, start_sample, end_sample, figsize, experiment)
+                                        vmax, vmin, start_sample, end_sample, figsize, experiment, dset['station'].to_numpy().tobytes())
 
 
 def main():
