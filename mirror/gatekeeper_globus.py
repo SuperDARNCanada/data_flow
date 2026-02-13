@@ -70,6 +70,7 @@ def main():
                                                  'blocklisted, nomatch), and update the hash files accordingly.')
     parser.add_argument('-d', '--holding', type=str, default='', help='Path to local holding directory.')
     parser.add_argument('-m', '--mirror', type=str, default='', help='Path to root directory on mirror.')
+    parser.add_argument('-y', '--year_month', type=str, default='', help='Particular yyyymm to transfer.')
     parser.add_argument('-p', '--pattern', type=str, default="*rawacf.bz2",
                         help='Sync pattern of rawacf files, default is rawacf.bz2')
     args = parser.parse_args()
@@ -206,8 +207,15 @@ def main():
     # Step 5)
     # Hash holding directory and fill files_to_upload dictionary with relevant metadata
 
+    # If no yyyymm was given to the script, hash all files in holding directory
+    chosen_ym = args.year_month
+    if chosen_ym == '':
+        hash_command = gk.get_sync_pattern()
+    else:
+        hash_command = chosen_ym + gk.get_sync_pattern()
+
     # Do a sha1sum on all files in holding directory,
-    sha1sum_process = subprocess.Popen(f"cd {gk.get_holding_dir()}; sha1sum {gk.get_sync_pattern()}",
+    sha1sum_process = subprocess.Popen(f"cd {gk.get_holding_dir()}; sha1sum {hash_command}",
                                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = sha1sum_process.communicate()
     sha1sum_output = out.decode().split("\n")
