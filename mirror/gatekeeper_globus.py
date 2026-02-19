@@ -115,6 +115,7 @@ def main():
     # Set holding directory, mirror directory, and sync pattern from parsed arguments
     gk.set_holding_dir(args.holding)
     gk.set_mirror_root_dir(args.mirror)
+    chosen_ym = args.year_month
     gk.set_sync_pattern(args.pattern)
 
     logger.info("Checking for holding and mirror directories...\n")
@@ -135,7 +136,10 @@ def main():
     # Get list of files to upload from the holding directory
     # Create files to upload dictionary where keys are filenames and values are empty dictionaries
     # Values will be set in Step 5) after the holding directory is hashed
+    # If yyyymm is passed to script, only keep the corresponding files in the list
     files_to_upload = gk.list_of_files_to_upload()
+    if chosen_ym != '':
+        files_to_upload = [file for file in files_to_upload if chosen_ym in file]
     files_to_upload.sort()
     files_to_upload_dict = {file: {} for file in files_to_upload}
     if len(files_to_upload) == 0:
@@ -208,7 +212,6 @@ def main():
     # Hash holding directory and fill files_to_upload dictionary with relevant metadata
 
     # If no yyyymm was given to the script, hash all files in holding directory
-    chosen_ym = args.year_month
     if chosen_ym == '':
         hash_command = gk.get_sync_pattern()
     else:
@@ -612,10 +615,8 @@ def main():
         msg = f"Updating master hashes failed. {error}"
         gk.log_email_exit(logger.error, 1, 0, msg=msg)
 
-    finish_time_utc = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     finish_time = datetime.now().strftime("%s")
 
-    logger.info(f"Finished at: {finish_time_utc}")
     total_time = (int(finish_time) - int(start_time))/60
     logger.info(f"Script finished. Total time: {total_time} minutes")
 
