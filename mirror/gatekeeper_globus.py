@@ -71,6 +71,7 @@ def main():
     parser.add_argument('-d', '--holding', type=str, default='', help='Path to local holding directory.')
     parser.add_argument('-m', '--mirror', type=str, default='', help='Path to root directory on mirror.')
     parser.add_argument('-y', '--year_month', type=str, default='', help='Particular yyyymm to transfer.')
+    parser.add_argument('-r', '--radar', type=str, default='', help='Particular radar to transfer. e.g., sas, cly')
     parser.add_argument('-p', '--pattern', type=str, default="*rawacf.bz2",
                         help='Sync pattern of rawacf files, default is rawacf.bz2')
     args = parser.parse_args()
@@ -116,6 +117,7 @@ def main():
     gk.set_holding_dir(args.holding)
     gk.set_mirror_root_dir(args.mirror)
     chosen_ym = args.year_month
+    chosen_radar = args.radar
     gk.set_sync_pattern(args.pattern)
 
     logger.info("Checking for holding and mirror directories...\n")
@@ -140,6 +142,8 @@ def main():
     files_to_upload = gk.list_of_files_to_upload()
     if chosen_ym != '':
         files_to_upload = [file for file in files_to_upload if chosen_ym in file]
+    if chosen_radar != '':
+        files_to_upload = [file for file in files_to_upload if chosen_radar in file]
     files_to_upload.sort()
     files_to_upload_dict = {file: {} for file in files_to_upload}
     if len(files_to_upload) == 0:
@@ -212,10 +216,11 @@ def main():
     # Hash holding directory and fill files_to_upload dictionary with relevant metadata
 
     # If no yyyymm was given to the script, hash all files in holding directory
-    if chosen_ym == '':
-        hash_command = gk.get_sync_pattern()
-    else:
-        hash_command = chosen_ym + gk.get_sync_pattern()
+    hash_command = gk.get_sync_pattern()
+    if chosen_radar != '':
+        hash_command = f'*{chosen_radar}{hash_command}'
+    if chosen_ym != '':
+        hash_command = chosen_ym + hash_command
 
     # Do a sha1sum on all files in holding directory,
     sha1sum_process = subprocess.Popen(f"cd {gk.get_holding_dir()}; sha1sum {hash_command}",
