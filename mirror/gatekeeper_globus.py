@@ -12,10 +12,13 @@
  moved to an appropriate location, given the nature of the failure.
 
  Call the script like so with the following arguments:
- /path/to/script/gatekeeper_globus -d /path/to/local/holding/dir/ -m /path/to/mirror/root/ -p [pattern]
+ /path/to/script/gatekeeper_globus -d /path/to/local/holding/dir/ -m /path/to/mirror/root/
+ -y [yyyymm] -r [radar] -p [pattern]
  Argument 1 is a path to a local holding directory with data you wish to put on the mirror
  Argument 2 is a path to the root of data mirror under which appear the directories for data type
- Argument 3 is the optional pattern, omit to sync all rawacf files
+ Argument 3 is the year month to transfer to the mirror (passed as yyyymm), optional
+ Argument 4 is the radar to have its data transferred to the mirror, optional
+ Argument 5 is the optional pattern, omit to sync all rawacf files
  Run
  python /path/to/script/gatekeeper_globus -h for more information on the usage of this script.
 
@@ -67,7 +70,9 @@ def main():
     parser = argparse.ArgumentParser(description='Given a local holding directory and a mirror directory this program'
                                                  'will perform checks on all local rawacf files, transfer all files to'
                                                  'the mirror (or other designated location -- e.g., failed,'
-                                                 'blocklisted, nomatch), and update the hash files accordingly.')
+                                                 'blocklisted, nomatch), and update the hash files accordingly. One may'
+                                                 'pass a particular yearmonth or a particular radar (or both) to this'
+                                                 'script to only transfer the files that meet this criteria.')
     parser.add_argument('-d', '--holding', type=str, default='', help='Path to local holding directory.')
     parser.add_argument('-m', '--mirror', type=str, default='', help='Path to root directory on mirror.')
     parser.add_argument('-y', '--year_month', type=str, default='', help='Particular yyyymm to transfer.')
@@ -113,7 +118,7 @@ def main():
 
     logger.info(f"Args: {args.holding}  {args.mirror}  {args.pattern}")
 
-    # Set holding directory, mirror directory, and sync pattern from parsed arguments
+    # Set holding directory, mirror directory, yearmonth, radar, and sync pattern from parsed arguments
     gk.set_holding_dir(args.holding)
     gk.set_mirror_root_dir(args.mirror)
     chosen_ym = args.year_month
@@ -138,8 +143,12 @@ def main():
     # Get list of files to upload from the holding directory
     # Create files to upload dictionary where keys are filenames and values are empty dictionaries
     # Values will be set in Step 5) after the holding directory is hashed
-    # If yyyymm is passed to script, only keep the corresponding files in the list
     files_to_upload = gk.list_of_files_to_upload()
+    # If yyyymm is passed but radar is not, list will contain all radars for that month
+    # If radar is passed but yyyymm is not, list will contain all yearmonths for that radar
+    # If both yyyymm and radar are passed, list will contain files from only the given radar and yearmonth
+    # If neither yyyymm nor radar is passed, list will contain all radars for all months in holding dir (previously the
+    #   only possible behaviour of the gatekeeper)
     if chosen_ym != '':
         files_to_upload = [file for file in files_to_upload if chosen_ym in file]
     if chosen_radar != '':
@@ -216,11 +225,20 @@ def main():
     # Hash holding directory and fill files_to_upload dictionary with relevant metadata
 
     # If no yyyymm was given to the script, hash all files in holding directory
-    hash_command = gk.get_sync_pattern()
+    # If yyyymm is passed but radar is not, hash files from all radars for that month
+    # If radar is passed but yyyymm is not, hash files from all yearmonths for that radar
+    # If both yyyymm and radar are passed, hash files from the given radar and yearmonth
+    # If neither yyyymm nor radar is passed, hash files from all radars for all months in holding dir (previously the
+    #   only possible behaviour of the gatekeeper)
+    hash_command = gk.get_sync_pattern()  # *rawacf.bz2
     if chosen_radar != '':
-        hash_command = f'*{chosen_radar}{hash_command}'
+        hash_command = f'*{chosen_radar}{hash_command}'  # *radar*rawacf.bz2
     if chosen_ym != '':
-        hash_command = chosen_ym + hash_command
+        hash_command = chosen_ym + hash_command  # yyyymm*rawacf.bz2 OR yyyymm*radar*rawacf.bz2
+
+    # If neither yyyymm nor radar were given, hash_command = *rawacf.bz2, as was previously fixed for the gatekeeper
+    #   to hash all files in the holding directory. Now we can hash only the files corresponding to our list of files
+    #   to upload.
 
     # Do a sha1sum on all files in holding directory,
     sha1sum_process = subprocess.Popen(f"cd {gk.get_holding_dir()}; sha1sum {hash_command}",
