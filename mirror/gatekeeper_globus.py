@@ -44,7 +44,7 @@ import pydarnio
 import logging
 import argparse
 
-from gatekeeper_class import Gatekeeper, parse_data_filename
+from tools.gatekeeper_class import Gatekeeper, parse_data_filename
 
 # Make sure there is only one instance running of this script
 from tendo import singleton
