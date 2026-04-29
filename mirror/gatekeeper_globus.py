@@ -54,7 +54,7 @@ me = singleton.SingleInstance()
 HOME = expanduser("~")
 TRANSFER_RT_FILENAME = f"{HOME}/.globus_transfer_rt"
 PERSONAL_UUID_FILENAME = f"{HOME}/.globusonline/lta/client-id.txt"
-GATEKEEPER_APP_FILENAME = f"{HOME}/gatekeeper_app_id.txt"
+GATEKEEPER_APP_FILENAME = f"{HOME}/mirror_id_files/gatekeeper_app_id.txt"
 
 if isfile(PERSONAL_UUID_FILENAME):
     with open(PERSONAL_UUID_FILENAME) as f:
