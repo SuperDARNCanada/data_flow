@@ -7,8 +7,8 @@ This script is designed to log on to the University of Saskatchewan globus
 SuperDARN mirror in order to check for and remove files given a list of files
 
 Example of script call:
-python delete_files_globus.py -t 'raw' -r 'chroot/sddata/' -d 'local_data/deletions/'
-        -l '/home/dataman/logs/deletions_globus/' /home/dataman/mirror_blocklists/cve/${year}_cve_files_to_delete.txt
+python /path/to/delete_files_globus.py -t 'raw' -r 'chroot/sddata/' -d 'local_data/deletions/'
+        -l '~/logs/deletions_globus/' ~/mirror_blocklists/cve/${year}_cve_files_to_delete.txt
 
 See 'Removing Blocked Files from the Mirror' subsection of Data Flow section of SDARN wiki for more info
 """
@@ -20,8 +20,17 @@ import sys
 from datetime import datetime
 
 HOME = expanduser("~")
-TRANSFER_RT_FILENAME = HOME + "/.globus_transfer_rt"
-CLIENT_ID = 'e70228d0-56a2-4d85-bf63-7fbccc92dcd3'
+TRANSFER_RT_FILENAME = f"{HOME}/.globus_transfer_rt"
+GATEKEEPER_APP_FILENAME = f"{HOME}/mirror_id_files/gatekeeper_app_id.txt"
+
+# Client ID retrieved from https://auth.globus.org/v2/web/developers
+if isfile(GATEKEEPER_APP_FILENAME):
+    with open(GATEKEEPER_APP_FILENAME) as f:
+        file = f.readlines()
+    for line in file:
+        if "RR app" in line:
+            CLIENT_ID = line.split("=")[1].split()[0]
+
 data_types = ['raw', 'dat', 'fit', 'map', 'grid', 'summary']
 
 if __name__ == '__main__':

@@ -30,7 +30,7 @@ if isfile(PERSONAL_UUID_FILENAME):
 if isfile(MIRROR_UUID_FILENAME):
     with open(MIRROR_UUID_FILENAME) as f:
         file = f.readlines()
-    mirror_uuid = [line.split("=")[1].split()[0] for line in file if line][0]
+    MIRROR_UUID = [line.split("=")[1].split()[0] for line in file if line][0]
 
 
 def extendable_logger(log_name, file_name, level=logging.INFO):
@@ -167,13 +167,7 @@ class Gatekeeper(object):
         # Note that this uuid is the new cedar globus version 5 uuid, and hardcoded here due to hacking
         # this shit together in a quick timeframe. Ideally this would be searched and found programmatically via the function below "get_superdarn_mirror_uuid, which works to get the correct uuid, but we need a transfer client to use it, but we need the uuid to get a transfer client... so yeah, chicken and egg"
         # TO DO: Get the mirror_uuid using a function, so we don't have to read it from a file.
-        if isfile(GATEKEEPER_APP_FILENAME):
-            with open(GATEKEEPER_APP_FILENAME) as f:
-                file = f.readlines()
-            for line in file:
-                if "RR app" in line:
-                    gatekeeper_app_CLIENT_ID = line.split("=")[1].split()[0]
-        self.mirror_uuid = '087f175e-9e9c-42cc-9efc-667d25b64fa0'  # SuperDARN Mirror (Cedar/Fir) UUID
+        self.mirror_uuid = MIRROR_UUID
         self.transfer_client = self.get_transfer_client()
 
         # Email information ##########################################################

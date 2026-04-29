@@ -1,8 +1,9 @@
 import pydarnio
 import os
+import argparse
 """
 Script to check for and move local special experiment files to a subdirectory. Main usage is to move files out of the
-holding directory /data/holding/globus/ when special experiment files are not flagged earlier in the data flow chain
+holding directory when special experiment files are not flagged earlier in the data flow chain
 
 Usage:
 Call check_files(filepath) for a given path to see the list of files (if any) that are from special experiments.
@@ -17,6 +18,7 @@ Normal CPIDs:
     191  -> Interleavesound
     3503 -> Twofsound
 """
+
 
 # Function to find and move files with abnormal CPIDs at a given path to a subdirectory
 def move_files(filepath):
@@ -51,6 +53,10 @@ def check_files(filepath):
 
 
 if __name__ == "__main__":
-    filepath = "/data/holding/globus/"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--path", help="Directory to scan for special experiment files", default='')
+    args = parser.parse_args()
+    filepath = args.path
+
     check_files(filepath)
     # move_files(filepath)
