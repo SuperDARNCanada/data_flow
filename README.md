@@ -66,8 +66,8 @@ be super user). For example, the `borealis.daemon` is run with the following
 Description=Borealis data flow inotify daemon
 
 [Service]
-User=radar
-ExecStart=/home/radar/data_flow/inotify_daemons/borealis.daemon
+User=<user>
+ExecStart=/home/{USER}/data_flow/inotify_daemons/borealis.daemon
 Restart=always
 
 [Install]
@@ -106,12 +106,12 @@ HOST [address of the campus computer, either hostname or IP]
    where username and address are the same as those set in the config file. The output will be something like:
 ```
 Success:
-transfer@pgrdist205:~> ssh -N -f dataman@sdc-serv.usask.ca; ssh -O check dataman@sdc-serv.usask.ca
+site_user@site:~> ssh -N -f [username]@[address]; ssh -O check [username]@[address]
 Master running (pid=15739)
 
 Failure:
-transfer@pgrdist205:~> ssh -N -f dataman@sdc-serv.usask.ca; ssh -O check dataman@sdc-serv.usask.ca
-Control socket connect(/home/transfer/.ssh/controlmasters/3354587955ba492d0d5f595f8619d902ac0192a7): No such file or directory
+site_user@site:~> ssh -N -f [username]@[address]; ssh -O check [username]@[address]
+Control socket connect(/home/[site_user]/.ssh/controlmasters/3354587955ba492d0d5f595f8619d902ac0192a7): No such file or directory
 ```
 
 ### Installing data flow
@@ -127,8 +127,8 @@ is required for the sending of inotify flags between computers.
     `ssh-keygen -t ecdsa -b 521`
     - Copy the public key to the destination computer: `ssh-copy-id user@host`
     - Computers that must be linked: Borealis -> Site-Linux, Site-Linux -> sdc-serv
-    - For telemetry purposes, each data flow computer must also be linked to the logman user on
-      sdc-serv, so copy the ssh keys to logman@sdc-serv as well
+    - For telemetry purposes, each data flow computer must also be linked to a logging user on campus, so copy the 
+      ssh keys to that user on sdc-serv as well
 4. Install the inotify daemon for the respective computer (for example, install borealis.daemon 
 with borealis_dataflow.service on the Borealis computer). As super user, do the following:
     - Copy the correct `.service` file from `inotify_daemons/services/` to 
@@ -152,8 +152,8 @@ with borealis_dataflow.service on the Borealis computer). As super user, do the 
 7. For telemetry purposes, summary logs are availabe for each script in the 
 `~/logs/[script name]/summary/` directory. These logs contain the status of all operations on each
 file and easily parseable to monitor data flow operation. Each script rsyncs the summary files to
-logman@sdc-serv for uploading to the Engineering dashboard. SSH password-free connection must be
-setup between each computer and logman@sdc-serv for this to work correctly. 
+the logging user on sdc-serv for uploading to the Engineering dashboard. SSH password-free connection must be
+setup between each computer and logging user on sdc-serv for this to work correctly. 
 8. To modify the data flow easily, a `config.sh` file is provided. This file specifies:
     - If the data flow can use the NAS at a site
     - What Borealis filetypes are to be converted and restructured
