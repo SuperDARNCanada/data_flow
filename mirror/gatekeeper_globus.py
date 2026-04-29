@@ -54,14 +54,19 @@ me = singleton.SingleInstance()
 HOME = expanduser("~")
 TRANSFER_RT_FILENAME = f"{HOME}/.globus_transfer_rt"
 PERSONAL_UUID_FILENAME = f"{HOME}/.globusonline/lta/client-id.txt"
+GATEKEEPER_APP_FILENAME = f"{HOME}/gatekeeper_app_id.txt"
 
 if isfile(PERSONAL_UUID_FILENAME):
     with open(PERSONAL_UUID_FILENAME) as f:
         PERSONAL_UUID = f.readline().strip()
 
 # Client ID retrieved from https://auth.globus.org/v2/web/developers
-# gatekeeper_app_CLIENT_ID = 'bc9d5b7a-6592-4156-bfb8-aeb0fc4fb07e'  # Saif's app
-gatekeeper_app_CLIENT_ID = 'e70228d0-56a2-4d85-bf63-7fbccc92dcd3'  # Rem's app
+if isfile(GATEKEEPER_APP_FILENAME):
+    with open(GATEKEEPER_APP_FILENAME) as f:
+        file = f.readlines()
+    for line in file:
+        if "RR app" in line:
+            gatekeeper_app_CLIENT_ID = line.split("=")[1].split()[0]
 
 
 def main():
@@ -107,7 +112,7 @@ def main():
     # Check script arguments as well as existence of various directories
     logger = gk.logger
 
-    # Clear out working directory /home/dataman/tmp/* before use
+    # Clear out working directory ~/tmp/* before use
     if isdir(gk.get_working_dir()):
         shutil.rmtree(gk.get_working_dir())
         mkdir(gk.get_working_dir())
@@ -118,6 +123,7 @@ def main():
 
     logger.info(f"Args: {args.holding}  {args.mirror}  {args.pattern}")
 
+    # Set holding directory, mirror directory, yearmonth, radar, and sync pattern from parsed arguments
     # Set holding directory, mirror directory, yearmonth, radar, and sync pattern from parsed arguments
     gk.set_holding_dir(args.holding)
     gk.set_mirror_root_dir(args.mirror)
