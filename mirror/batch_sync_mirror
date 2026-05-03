@@ -10,6 +10,9 @@
 #   Compare our mirror to the BAS/NSSC mirror 1 month at a time going back to January 2006
 #   Download any rawacf files that we are missing. Runs monthly.
 
+readonly USER=$(whoami)
+readonly SCRIPTDIR=/home/${USER}/data_flow/mirror/
+
 # Valid MIRROR and MODE values
 readonly VALID_MIRRORS=("BAS" "NSSC")
 readonly VALID_MODES=("weekly" "monthly")
@@ -54,7 +57,7 @@ then
   while [ "$d" != "${enddate}" ]
   do
     yearmonth=$(date -d "$d" +%Y%m)
-    /home/dataman/data_flow/mirror/sync_mirror_data.sh ${HOLDING_DIR} ${MIRROR} ${yearmonth}
+    ${SCRIPTDIR}/sync_mirror_data.sh ${HOLDING_DIR} ${MIRROR} ${yearmonth}
     d=$(date -d "$d + 1 month" +%Y%m%d)
   done
 
@@ -72,13 +75,13 @@ then
   while [ "$d" != "${enddate}" ]
   do
     yearmonth=$(date -d "$d" +%Y%m)
-    /home/dataman/data_flow/mirror/sync_mirror_data.sh ${HOLDING_DIR} ${MIRROR} ${yearmonth}
+    ${SCRIPTDIR}/sync_mirror_data.sh ${HOLDING_DIR} ${MIRROR} ${yearmonth}
     d=$(date -d "$d + 1 month" +%Y%m%d)
   done
 
   # Update mirror comparison
-  HASHES_DIRS="/home/dataman/tmp_hashes_usask_${mirror}_cmp/${today}.*"
-  CMP_DIR=/home/dataman/Documents/mirror_comparison_${today}/
+  HASHES_DIRS="/home/${USER}/tmp_hashes_usask_${mirror}_cmp/${today}.*"
+  CMP_DIR=/home/${USER}/Documents/mirror_comparison_${today}/
   mkdir -p ${CMP_DIR}/sorted
 
   find ${HASHES_DIRS} -name '*data.different' -exec cat '{}' \; > ${CMP_DIR}/${mirror}.different
