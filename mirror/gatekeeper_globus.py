@@ -335,6 +335,14 @@ def main():
                 out, err = sha1sum_process.communicate()
                 sha1sum_decoded_output = out.decode().split("\n")
                 sha1sum_decoded_error = err.decode().split("\n")
+
+                # Only keep files chosen to be run (yyyymm and radar) in hash comparison output
+                # Only need to compare files in files_to_upload to yyyymm.hashes as the rest of the files in the
+                # holding directory won't be transferred to the mirror anyway
+                if chosen_radar != '':
+                    sha1sum_decoded_output = [x for x in sha1sum_decoded_output if chosen_radar in x.split(":")[0]]
+                if chosen_ym != '':
+                    sha1sum_decoded_output = [x for x in sha1sum_decoded_output if chosen_ym in x.split(":")[0]]
                 # Loop through result of sha1sum comparison for each file
                 # Only remove from files_to_upload if file exists both in holding_dir and hashfile in working_dir
                 # Need further investigation into "Failed open or read" and "" results
