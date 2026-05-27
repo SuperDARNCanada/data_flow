@@ -33,3 +33,13 @@ SuperDARN Canada Wiki for details:
 - **batch_sync_mirror** - 
 
 ### Tools
+- **delete_files_globus.py** - This script is designed to log on to the USask SuperDARN mirror via globus in order to 
+check for and remove files given a list of files. Run the script like:
+  - python `delete_files_globus.py -t 'raw' -r 'mirror_root_dir/' -d 'deletions_dir/'
+        -l '~/log_dir/' files_to_delete.txt`
+  - For usage instructions run python `delete_files_globus.py -h`
+
+- **flag_experiment_files.py** - Script to check for and move local special experiment files to a subdirectory. Main 
+usage is to move files out of the holding directory when special experiment files are not flagged earlier in the data 
+flow chain. Note that although this script will normally be run on the holding directory, it is capable of running
+on any directory with RAWACFs and will move all special experiment files to a subdirectory called `special_experiments`.
