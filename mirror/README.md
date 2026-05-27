@@ -30,7 +30,13 @@ SuperDARN Canada Wiki for details:
 
   - python `-u gatekeeper_globus.py -d holding_dir -m mirror_dir`
 
-- **batch_sync_mirror** - 
+- **batch_sync_mirror** - This script is run on both a weekly and monthly schedule for each of the NSSC and BAS servers.
+On the weekly run, the script syncs the previous 12 months between the USASK and NSSC (or BAS) mirrors. On
+the monthly run, the script syncs all data since 2006 between the USASK and NSSC (or BAS) mirrors. Run the script like:
+  - `flock nssc_filelock -c 'batch_sync_mirror NSSC weekly'` or `flock nssc_filelock -c 'batch_sync_mirror NSSC 
+monthly'` for syncing with NSSC and
+  - `flock bas_filelock -c 'batch_sync_mirror BAS weekly'` or `flock bas_filelock -c 'batch_sync_mirror BAS monthly'`
+for syncing with BAS
 
 ### Tools
 - **delete_files_globus.py** - This script is designed to log on to the USask SuperDARN mirror via globus in order to 
@@ -38,8 +44,12 @@ check for and remove files given a list of files. Run the script like:
   - python `delete_files_globus.py -t 'raw' -r 'mirror_root_dir/' -d 'deletions_dir/'
         -l '~/log_dir/' files_to_delete.txt`
   - For usage instructions run python `delete_files_globus.py -h`
-
 - **flag_experiment_files.py** - Script to check for and move local special experiment files to a subdirectory. Main 
 usage is to move files out of the holding directory when special experiment files are not flagged earlier in the data 
 flow chain. Note that although this script will normally be run on the holding directory, it is capable of running
-on any directory with RAWACFs and will move all special experiment files to a subdirectory called `special_experiments`.
+on any directory with RAWACFs and will move all special experiment files to a subdirectory called `special_experiments/`.
+- **gatekeeper_class.py** - This script contains utility functions for `gatekeeper_globus.py` as well as the
+'Gatekeeper' class that is instantiated at the beginning of `gatekeeper_globus.py` and whose methods are called
+throughout the script. This script should not be executed directly in the command line. Instead, simply import the
+'Gatekeeper' class and other functions into the running script. For example, both `gatekeeper_globus.py` and
+`delete_files_globus.py` import items from `gatekeeper_class.py` in this way.
