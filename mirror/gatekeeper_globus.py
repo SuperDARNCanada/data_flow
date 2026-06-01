@@ -328,46 +328,35 @@ def main():
                 yearmonth_dict.pop(ym)
             else:
                 logger.info(f"{ym} hash file retrieved from mirror.")
-                # sha1sum files in holding_dir and compare to yyyymm.hashes now in working dir (-c == compare)
-                command_string = f"cd {gk.get_holding_dir()}; sha1sum -c {gk.get_working_dir()}/{ym}.hashes"
-                sha1sum_process = subprocess.Popen(command_string, shell=True,
-                                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                out, err = sha1sum_process.communicate()
-                sha1sum_decoded_output = out.decode().split("\n")
-                sha1sum_decoded_error = err.decode().split("\n")
 
-                # Only keep files chosen to be run (yyyymm and radar) in hash comparison output
-                # Only need to compare files in files_to_upload to yyyymm.hashes as the rest of the files in the
-                # holding directory won't be transferred to the mirror anyway
-                if chosen_radar != '':
-                    sha1sum_decoded_output = [x for x in sha1sum_decoded_output if chosen_radar in x.split(":")[0]]
-                if chosen_ym != '':
-                    sha1sum_decoded_output = [x for x in sha1sum_decoded_output if chosen_ym in x.split(":")[0]]
-                # Loop through result of sha1sum comparison for each file
-                # Only remove from files_to_upload if file exists both in holding_dir and hashfile in working_dir
-                # Need further investigation into "Failed open or read" and "" results
-                for sha1sum_result in sha1sum_decoded_output:
-                    hashed_file = sha1sum_result.split(":")[0]
-                    if sha1sum_result.find("FAILED open or read") != -1:
-                        pass
-                    # If hashes do not match, add file to nonmatching files list, remove from files_to_upload
-                    elif sha1sum_result.find("FAILED") != -1:
-                        logger.warning(f"{hashed_file} hash doesn't match. Adding to no match list, and removing from list of files to upload.")
-                        non_matching_files.append(hashed_file)
-                        files_to_upload_dict.pop(hashed_file)
-                    # If hashes match, remove from files_to_upload as it is already on mirror
-                    elif sha1sum_result.find("OK") != -1:
-                        logger.info(f"{hashed_file} already exists on mirror and hash matches. Removing from files to upload.")
-                        files_to_upload_dict.pop(hashed_file)
-                        # Comment out removal of matching files from holding dir for testing purposes
-                        try:
-                            remove(f"{gk.get_holding_dir()}/{hashed_file}")
-                        except OSError as error:
-                            logger.error(f"Error trying to remove file: {error}.")
-                    elif sha1sum_result == "":
-                        pass
-                    else:
-                        logger.warning(f"Error, I don't know how to deal with: {sha1sum_result}.")
+                # Create dictionary to contain filenames as keys and hashes as values for ym.hashes of current iteration
+                ym_hashes = {}
+                with open(f"{gk.get_working_dir()}/{ym}.hashes", 'r') as hash_file:
+                    for line in hash_file:
+                        (val, key) = line.split()
+                        ym_hashes[key] = val
+
+                # loop over files in holding dir for ym of current iteration and compare hashes to ym.hashes
+                for holding_file in list(yearmonth_dict[ym].keys()):
+                    # Remove file from files to upload if this filename is already on the mirror
+                    # Compare hashes to see if the file should go to nomatch/ directory or just be removed from holding
+                    if holding_file in ym_hashes.keys():
+                        files_to_upload_dict.pop(holding_file)
+                        # If hashes do not match, add file to nonmatching files list (to be moved to nomatch/ directory)
+                        if files_to_upload_dict[holding_file]['hash'] != ym_hashes[holding_file]:
+                            logger.warning(f"{holding_file} hash doesn't match. Adding to no match list, and removing "
+                                           f"from list of files to upload.")
+                            non_matching_files.append(holding_file)
+                        # If hashes match, remove from holding directory
+                        else:
+                            logger.info(f"{holding_file} already exists on mirror and hash matches. Removing from files "
+                                        f"to upload.")
+                            # Comment out removal of matching files from holding dir for testing purposes
+                            try:
+                                remove(f"{gk.get_holding_dir()}/{holding_file}")
+                            except OSError as error:
+                                logger.error(f"Error trying to remove file: {error}.")
+
         # If yyyymm.hashes DNE, create it ONLY IF yyyymm is the current year and month
         else:
             # Need to check if this is the current month, otherwise error out
