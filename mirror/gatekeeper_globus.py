@@ -65,7 +65,7 @@ if isfile(GATEKEEPER_APP_FILENAME):
     with open(GATEKEEPER_APP_FILENAME) as f:
         file = f.readlines()
     for line in file:
-        if "RR app" in line:
+        if "CM app" in line:
             gatekeeper_app_CLIENT_ID = line.split("=")[1].split()[0]
 
 

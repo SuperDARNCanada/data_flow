@@ -30,7 +30,9 @@ if isfile(PERSONAL_UUID_FILENAME):
 if isfile(MIRROR_UUID_FILENAME):
     with open(MIRROR_UUID_FILENAME) as f:
         file = f.readlines()
-    MIRROR_UUID = [line.split("=")[1].split()[0] for line in file if line][0]
+    for line in file:
+        if "CM UUID" in line:
+            MIRROR_UUID = line.split("=")[1].split()[0]
 
 
 def extendable_logger(log_name, file_name, level=logging.INFO):

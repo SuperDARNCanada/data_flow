@@ -28,7 +28,7 @@ if isfile(GATEKEEPER_APP_FILENAME):
     with open(GATEKEEPER_APP_FILENAME) as f:
         file = f.readlines()
     for line in file:
-        if "RR app" in line:
+        if "CM app" in line:
             CLIENT_ID = line.split("=")[1].split()[0]
 
 data_types = ['raw', 'dat', 'fit', 'map', 'grid', 'summary']
