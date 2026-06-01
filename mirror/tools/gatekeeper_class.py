@@ -4,7 +4,7 @@ from globus_sdk.scopes import TransferScopes
 import inspect
 from datetime import datetime, timedelta
 from os.path import expanduser, isfile, getsize, isdir
-from os import listdir, mkdir, remove, rename, stat
+from os import listdir, mkdir, remove, rename, stat, getlogin
 import shutil
 import fnmatch
 import sys
@@ -20,10 +20,19 @@ import argparse
 HOME = expanduser("~")
 TRANSFER_RT_FILENAME = f"{HOME}/.globus_transfer_rt"
 PERSONAL_UUID_FILENAME = f"{HOME}/.globusonline/lta/client-id.txt"
+MIRROR_UUID_FILENAME = f"{HOME}/mirror_id_files/mirror_uuid.txt"
 
 if isfile(PERSONAL_UUID_FILENAME):
     with open(PERSONAL_UUID_FILENAME) as f:
         PERSONAL_UUID = f.readline().strip()
+
+# Get the UUID for our endpoint on FIR
+if isfile(MIRROR_UUID_FILENAME):
+    with open(MIRROR_UUID_FILENAME) as f:
+        file = f.readlines()
+    for line in file:
+        if "CM UUID" in line:
+            MIRROR_UUID = line.split("=")[1].split()[0]
 
 
 def extendable_logger(log_name, file_name, level=logging.INFO):
@@ -142,7 +151,7 @@ class Gatekeeper(object):
         self.possible_data_types = ['raw', 'dat']
 
         # Setup logger
-        logdir = "/home/dataman/logs/globus"  # Add _test for testing purposes
+        logdir = f"/{HOME}/logs/globus"  # Add _test for testing purposes
         logfile = (f"{logdir}/{self.cur_year:04d}/{self.cur_month:02d}/{self.cur_year:04d}{self.cur_month:02d}"
                    f"{self.cur_day:02d}.{self.cur_hour:02d}{self.cur_minute:02d}_globus_gatekeeper.log")
         # Make sure year and month directories for logfile exist
@@ -159,10 +168,8 @@ class Gatekeeper(object):
         # Get a transfer client
         # Note that this uuid is the new cedar globus version 5 uuid, and hardcoded here due to hacking
         # this shit together in a quick timeframe. Ideally this would be searched and found programmatically via the function below "get_superdarn_mirror_uuid, which works to get the correct uuid, but we need a transfer client to use it, but we need the uuid to get a transfer client... so yeah, chicken and egg"
-        # self.mirror_uuid = '8dec4129-9ab4-451d-a45f-5b4b8471f7a3'
-        # self.mirror_uuid = '88cd829c-75fa-44e6-84bb-42e6250afaea'
-        # self.mirror_uuid = "bc9d5b7a-6592-4156-bfb8-aeb0fc4fb07e"
-        self.mirror_uuid = '087f175e-9e9c-42cc-9efc-667d25b64fa0'  # SuperDARN Mirror (Cedar/Fir) UUID
+        # TO DO: Get the mirror_uuid using a function, so we don't have to read it from a file.
+        self.mirror_uuid = MIRROR_UUID
         self.transfer_client = self.get_transfer_client()
 
         # Email information ##########################################################
@@ -171,7 +178,7 @@ class Gatekeeper(object):
         # emailMessage is initialized to nothing here, and filled in with an
         #       appropriate message depending upon the reason for the email.
         self.email_recipients = ['superdarn_engineers@usask.ca']
-        self.email_from = 'dataman'
+        self.email_from = getlogin()
         self.current_time = datetime.now()
         self.email_subject = '[Gatekeeper Globus] ' + self.current_time.strftime("%Y%m%d.%H%M : ")
         self.smtp_server = 'localhost'
