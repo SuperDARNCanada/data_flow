@@ -4,7 +4,7 @@ from globus_sdk.scopes import TransferScopes
 import inspect
 from datetime import datetime, timedelta
 from os.path import expanduser, isfile, getsize, isdir
-from os import listdir, mkdir, remove, rename, stat, getlogin
+from os import listdir, mkdir, remove, rename, stat
 import shutil
 import fnmatch
 import sys
@@ -178,7 +178,7 @@ class Gatekeeper(object):
         # emailMessage is initialized to nothing here, and filled in with an
         #       appropriate message depending upon the reason for the email.
         self.email_recipients = ['superdarn_engineers@usask.ca']
-        self.email_from = getlogin()
+        self.email_from = 'dataman'
         self.current_time = datetime.now()
         self.email_subject = '[Gatekeeper Globus] ' + self.current_time.strftime("%Y%m%d.%H%M : ")
         self.smtp_server = 'localhost'
