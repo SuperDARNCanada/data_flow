@@ -19,7 +19,7 @@
 # 3) Find out which data files have been updated or added
 # 4) Remove any blocked files from the files to download
 # 5) Remove any previously failed files from the files to download
-# 6) Download remaining files not on usask, blocked or previously failed
+# 6) Download remaining files not on usask, not blocked, and not previously failed
 #
 # Emails are sent to indicate files that are different, files that are
 # missing on BAS/NSSC, files that are blocked or files that failed checks
@@ -28,6 +28,8 @@
 ##############################################################################
 # Initialize some variables
 ##############################################################################
+
+readonly USER=$(whoami)
 
 # Valid HOLDINGDIR and MIRROR values
 readonly VALID_DIRS=("/data/holding/BAS" "/data/holding/NSSC")  # Add /test/ for testing purposes
@@ -56,19 +58,14 @@ if [[ ! " ${VALID_MIRRORS[*]} " =~ " ${MIRROR} " ]]; then
     exit 1
 fi
 
-# Variables for Cedar user and paths
-# readonly cedar_user=saifm@robot.cedar.alliancecan.ca
-readonly cedar_user=rar129
-#readonly cedar_user=saifm
-readonly cedar_login="${cedar_user}@robot.fir.alliancecan.ca"
+# Variables for Cedar/Fir user and paths
+readonly cedar_user=${FIR_USER}
+readonly cedar_login=${FIR_LOGIN}
 
 # Add _test to Cedar paths for testing purposes
-#readonly CEDAR_HASHES=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/raw/
-#readonly CEDAR_BLOCKLIST=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/
-#readonly CEDAR_FAILED=/home/saifm/projects/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt
-readonly CEDAR_HASHES="/project/rrg-kam136-ad/sdarn/chroot/sddata/raw/"
-readonly CEDAR_BLOCKLIST="/project/rrg-kam136-ad/sdarn/chroot/sddata/.config/blocklist/"
-readonly CEDAR_FAILED="/project/rrg-kam136-ad/sdarn/chroot/sddata/.config/all_failed.txt"
+readonly CEDAR_HASHES="/project/${FIR_PROJECT_ID}/sdarn/chroot/sddata/raw/"
+readonly CEDAR_BLOCKLIST="/project/${FIR_PROJECT_ID}/sdarn/chroot/sddata/.config/blocklist/"
+readonly CEDAR_FAILED="/project/${FIR_PROJECT_ID}/sdarn/chroot/sddata/.config/all_failed.txt"
 
 # Date/time variables
 STARTTIME=$(date +%s)
@@ -83,13 +80,13 @@ mirror="${MIRROR,,}"
 # Set username, hostname, and path for sftp usage given the provided mirror
 if [[ "${MIRROR}" == "BAS" ]]
 then
-  USER=superdarn
-  REMOTEHOST=bslsuperdarnb.nerc-bas.ac.uk
+  REMOTEUSER=${BAS_USER}
+  REMOTEHOST=${BAS_HOST}
   REMOTEDIR=/data/superdarn/data/raw
 elif [[ "${MIRROR}" == "NSSC" ]]
 then
-  USER=dataman
-  REMOTEHOST=superdarn.mirror.nssdc.ac.cn
+  REMOTEUSER=${NSSC_USER}
+  REMOTEHOST=${NSSC_HOST}
   REMOTEDIR=/sddata/raw
 fi
 
@@ -98,7 +95,7 @@ HASHPROG=/usr/bin/sha1sum
 SFTP=/usr/bin/sftp
 
 # Setup logfile
-LOGDIR=/home/dataman/logs/${mirror}/${CURYEAR}/${CURMONTH}/  # Add _test for testing purposes
+LOGDIR=/home/${USER}/logs/${mirror}/${CURYEAR}/${CURMONTH}/  # Add _test for testing purposes
 LOGFILE=${LOGDIR}${DATE_TIME}_${mirror}.log
 # Make the log file directory if it doesn't exist
 mkdir -p "${LOGDIR}"
@@ -115,12 +112,12 @@ EMAILSUBJECT="sync_${mirror}_data - [${YYYYMM}]"
 # What is our holding directory for hashes files?
 # Double check that these directories are consistent between sync_mirror_data.sh and monthly batch_sync_mirror (for bas)
 # Add /test_mirror/ in all 4 of the below paths for testing purposes
-LOCALHASHDIR=/home/dataman/tmp_hashes_usask_${mirror}_cmp/$DATE_TIME
-MIRRORHASHDIR=/home/dataman/tmp_hashes_${mirror}/$DATE_TIME
+LOCALHASHDIR=/home/${USER}/tmp_hashes_usask_${mirror}_cmp/$DATE_TIME
+MIRRORHASHDIR=/home/${USER}/tmp_hashes_${mirror}/$DATE_TIME
 # What is our holding directory for blocked files?
-LOCALBLDIR=/home/dataman/tmp_blocklist/$DATE_TIME
+LOCALBLDIR=/home/${USER}/tmp_blocklist/$DATE_TIME
 # What is our holding directory for previously failed files?
-LOCALFAILEDDIR=/home/dataman/tmp_failed/$DATE_TIME
+LOCALFAILEDDIR=/home/${USER}/tmp_failed/$DATE_TIME
 # Make sure above paths exist
 mkdir -p "${LOCALHASHDIR}" "${MIRRORHASHDIR}" "${LOCALBLDIR}" "${LOCALFAILEDDIR}"
 
@@ -213,9 +210,9 @@ echo "exit" >> "${SFTPBATCH}"
 # Execute sftp batch file, logging errors to sftp error file
 # Add use of key for NSSC connection for migration
 if [[ "${MIRROR}" == "BAS" ]]; then
-  ${SFTP} -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
+  ${SFTP} -b "${SFTPBATCH}" ${REMOTEUSER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
 elif [[ "${MIRROR}" == "NSSC" ]]; then
-  ${SFTP} -i "~/.ssh/id_NSSC" -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
+  ${SFTP} -i "~/.ssh/id_NSSC" -b "${SFTPBATCH}" ${REMOTEUSER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
 fi
 
 if [[ -s $SFTPERRORS ]]
@@ -412,9 +409,9 @@ then
   echo "Getting files..."
   # Add use of key for NSSC connection for migration
   if [[ "${MIRROR}" == "BAS" ]]; then
-    ${SFTP} -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
+    ${SFTP} -b "${SFTPBATCH}" ${REMOTEUSER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
   elif [[ "${MIRROR}" == "NSSC" ]]; then
-    ${SFTP} -i "~/.ssh/id_NSSC" -b "${SFTPBATCH}" ${USER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
+    ${SFTP} -i "~/.ssh/id_NSSC" -b "${SFTPBATCH}" ${REMOTEUSER}@${REMOTEHOST} >> "${LOGFILE}" 2> "${SFTPERRORS}"
   fi
 else
   # The script already checked and exited if totalToDownload -eq 0

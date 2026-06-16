@@ -6,7 +6,7 @@
 # Modified from Kevin Sterne's script
 #
 # Directory structure of the VT server's holding area is:
-# /home/usask/outgoing/sas
+# /home/${REMOTEUSER}/outgoing/sas
 #		      /rkn
 #		      /hal
 #		      /bks
@@ -19,9 +19,9 @@
 # 
 # In order for public keys to work properly, permissions and owners must be
 # set up correctly.
-# For /home/usask/ The permissions must be 755
-# For /home/usask/.ssh the permissions must be 700
-# For /home/usask/authorized_keys the permissions must be 644
+# For /home/${REMOTEUSER}/ The permissions must be 755
+# For /home/${REMOTEUSER}/.ssh the permissions must be 700
+# For /home/${REMOTEUSER}/authorized_keys the permissions must be 644
 #
 # This script downloads any available radar rawacf data from Virginia
 # Tech's server's holding area.
@@ -45,6 +45,8 @@
 ##############################################################################
 # Initialize Some Variables
 ##############################################################################
+USER=$(whoami)
+
 # Valid 3-letter RADAR values
 readonly VALID_RADARS=("ade" "adw" "bks" "bpk" "cly" "cve" "cvw" "dce" "dcn" "fhe" "fhw" "fir" "gbr" "hal"
                        "han" "hkw" "hok" "ice" "icw" "inv" "jme" "kap" "ker" "kod" "ksr" "lyr" "mcm" "pgr"
@@ -79,7 +81,7 @@ CURYEAR=$(date +%Y)
 CURMONTH=$(date +%m)
 
 # Setup logfile
-LOGGINGDIR=/home/dataman/logs/vt/${CURYEAR}/${CURMONTH} # Add _test for testing purposes
+LOGGINGDIR=/home/${USER}/logs/vt/${CURYEAR}/${CURMONTH} # Add _test for testing purposes
 LOGFILE=${LOGGINGDIR}/${DATE}.${RADAR}.log
 # Make the log file directory if it doesn't exist
 mkdir -p ${LOGGINGDIR}
@@ -161,9 +163,9 @@ fi
 # Create shortcut for sftp command
 SFTP=/usr/bin/sftp
 # User, hostname and directory to connect to on VT server
-USER=usask
-REMOTEHOST=sd-data1.ece.vt.edu
-REMOTEDIRBASE=/home/usask/outgoing
+REMOTEUSER=${VT_USER}
+REMOTEHOST=${VT_HOST}
+REMOTEDIRBASE=/home/${REMOTEUSER}/outgoing
 REMOTEDIR=${REMOTEDIRBASE}/${RADAR}
 # Path to hashfile for files on VT server (e.g., /data/holding/sas/hashes.remote)
 HASHESFILE=hashes.remote
@@ -178,7 +180,7 @@ REMOTEHASHESSTART=$(date +%s)
 cd ${LOCALRADARDIR} || exit
 # This will write message to stderr if sha1sum fails
 # ssh into VT and hash the rawacf files for the given radar, output to hashes.remote
-ssh ${USER}@${REMOTEHOST} "cd ${REMOTEDIR}; ${HASHPROG} *${RADAR}*rawacf.bz2" > ${HASHESFILE} 2> ${HASHESERRORS}
+ssh ${REMOTEUSER}@${REMOTEHOST} "cd ${REMOTEDIR}; ${HASHPROG} *${RADAR}*rawacf.bz2" > ${HASHESFILE} 2> ${HASHESERRORS}
 # Capture return value from the above sha1sum
 RETURNVALUE=$?
 REMOTEHASHESEND=$(date +%s)
@@ -298,7 +300,7 @@ echo "Downloading files..."
 # Only execute sftp batch file if there is at least one file to download from VT
 if [[ ${totalFiles} -gt 0 ]]
 then
-  ${SFTP} -p -b ${SFTPBATCH} ${USER}@${REMOTEHOST} 2> ${SFTPERRORS}
+  ${SFTP} -p -b ${SFTPBATCH} ${REMOTEUSER}@${REMOTEHOST} 2> ${SFTPERRORS}
 fi
 DOWNLOADTIMEEND=$(date +%s)
 
@@ -381,7 +383,7 @@ echo "Deleting files..."
 # Only execute sftp batch file if there is at least one file to remove from VT 
 if [[ ${totalFilesDelete} -gt 0 ]]
 then
-  ${SFTP} -p -b ${SFTPBATCHDELETE} ${USER}@${REMOTEHOST} 2> ${SFTPERRORSDELETE}
+  ${SFTP} -p -b ${SFTPBATCHDELETE} ${REMOTEUSER}@${REMOTEHOST} 2> ${SFTPERRORSDELETE}
 fi
 DELETETIMEEND=$(date +%s)
 
