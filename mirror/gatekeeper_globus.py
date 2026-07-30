@@ -239,7 +239,7 @@ def main():
     # Fill files_to_upload dictionary with relevant metadata
     # If any rawacf fails to be hashed, remove it from dictionary and move on to next file
     failed_hashes = []
-    for filename in file_to_upload:
+    for filename in files_to_upload:
         try:
             data_hash = sha1hashing(gk.get_holding_dir(), filename)
         except Exception as e:
