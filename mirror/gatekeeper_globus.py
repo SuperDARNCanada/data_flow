@@ -329,10 +329,8 @@ def main():
 
                 # loop over files in holding dir for ym of current iteration and compare hashes to ym.hashes
                 for holding_file in list(yearmonth_dict[ym].keys()):
-                    # Remove file from files to upload if this filename is already on the mirror
                     # Compare hashes to see if the file should go to nomatch/ directory or just be removed from holding
                     if holding_file in ym_hashes.keys():
-                        files_to_upload_dict.pop(holding_file)
                         # If hashes do not match, add file to nonmatching files list (to be moved to nomatch/ directory)
                         if files_to_upload_dict[holding_file]['hash'] != ym_hashes[holding_file]:
                             logger.warning(f"{holding_file} hash doesn't match. Adding to no match list, and removing "
@@ -347,6 +345,8 @@ def main():
                                 remove(f"{gk.get_holding_dir()}/{holding_file}")
                             except OSError as error:
                                 logger.error(f"Error trying to remove file: {error}.")
+                        # Remove file from files to upload since this filename is already on the mirror
+                        files_to_upload_dict.pop(holding_file)
 
         # If yyyymm.hashes DNE, create it ONLY IF yyyymm is the current year and month
         else:
