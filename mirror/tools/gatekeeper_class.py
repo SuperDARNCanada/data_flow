@@ -16,6 +16,7 @@ from email.mime.text import MIMEText
 import pydarnio
 import logging
 import argparse
+import hashlib
 
 HOME = expanduser("~")
 TRANSFER_RT_FILENAME = f"{HOME}/.globus_transfer_rt"
@@ -111,6 +112,25 @@ def parse_data_filename(filename):
         return year, month, day, hour, minute, second, abbrev, data_type, channel
     else:
         return year, month, day, hour, minute, second, abbrev, data_type
+
+
+def sha1hashing(filepath, filename):
+    """
+    Building function to hash files in blocks to save memory -
+    if we switch to python 3.11, can use hashlib.file_digest instead
+    Needs python package 'hashlib'
+
+    :param filepath: String, path of rawacf to be hashed.
+                     example: "/data/holding/globus/"
+    :param filename: String, rawacf file to be hashed.
+                     example: "20200804.2200.01.mcm.a.rawacf.bz2"
+    :return: Sha1sum hash of given rawacf file
+    """
+    sha1 = hashlib.sha1()
+    with open(f'{filepath}/{filename}', 'rb') as file_to_hash:
+        while data := file_to_hash.read(65536):  # true until end of buffer
+            sha1.update(data)
+    return sha1.hexdigest()
 
 
 class Gatekeeper(object):
