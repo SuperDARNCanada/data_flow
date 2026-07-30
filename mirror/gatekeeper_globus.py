@@ -243,6 +243,7 @@ def main():
     for filename in files_to_upload:
         try:
             data_hash = sha1hashing(gk.get_holding_dir(), filename)
+            logger.warning(f"Successfully hashed {filename} in {gk.get_holding_dir()}: {data_hash}")
         except Exception as e:
             logger.warning(f"Failed to hash {filename} in {gk.get_holding_dir()} with error: {e}")
             files_to_upload_dict.pop(filename)
