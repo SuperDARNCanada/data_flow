@@ -43,6 +43,7 @@ from email.mime.text import MIMEText
 import pydarnio
 import logging
 import argparse
+import hashlib
 
 from tools.gatekeeper_class import Gatekeeper, parse_data_filename, sha1hashing
 
