@@ -44,7 +44,7 @@ import pydarnio
 import logging
 import argparse
 
-from tools.gatekeeper_class import Gatekeeper, parse_data_filename
+from tools.gatekeeper_class import Gatekeeper, parse_data_filename, sha1hashing
 
 # Make sure there is only one instance running of this script
 from tendo import singleton
@@ -122,6 +122,10 @@ def main():
         gk.log_email_exit(logger.error, 1, 1, sub=sub)
 
     logger.info(f"Args: {args.holding}  {args.mirror}  {args.pattern}")
+    if args.year_month:
+        logger.info(f"Gatekeeper processing rawacfs for {args.year_month}")
+    if args.radar:
+        logger.info(f"Gatekeeper processing rawacfs for {args.radar}")
 
     # Set holding directory, mirror directory, yearmonth, radar, and sync pattern from parsed arguments
     # Set holding directory, mirror directory, yearmonth, radar, and sync pattern from parsed arguments
@@ -219,49 +223,30 @@ def main():
     # Remove blocked files from files_to_upload
     # Make blocked dir in holding_dir, /holding_dir/blocked/cur_date/
     # Move blocked files to /holding_dir/blocked/cur_date/
+    # Update files_to_upload list after removing blocked files from dictionary
+
     if len(blocked_files_to_remove) > 0:
         logger.info(f"Found blocked files ({len(blocked_files_to_remove)}): {blocked_files_to_remove}")
         for file_to_remove in blocked_files_to_remove:
             files_to_upload_dict.pop(file_to_remove)
 
         gk.move_files_to_subdir("Blocked", blocked_files_to_remove)
+        files_to_upload = sorted(list(files_to_upload_dict.keys()))
 
     ###################################################################################################################
     # Step 5)
-    # Hash holding directory and fill files_to_upload dictionary with relevant metadata
-
-    # If no yyyymm was given to the script, hash all files in holding directory
-    # If yyyymm is passed but radar is not, hash files from all radars for that month
-    # If radar is passed but yyyymm is not, hash files from all yearmonths for that radar
-    # If both yyyymm and radar are passed, hash files from the given radar and yearmonth
-    # If neither yyyymm nor radar is passed, hash files from all radars for all months in holding dir (previously the
-    #   only possible behaviour of the gatekeeper)
-    hash_command = gk.get_sync_pattern()  # *rawacf.bz2
-    if chosen_radar != '':
-        hash_command = f'*{chosen_radar}{hash_command}'  # *radar*rawacf.bz2
-    if chosen_ym != '':
-        hash_command = chosen_ym + hash_command  # yyyymm*rawacf.bz2 OR yyyymm*radar*rawacf.bz2
-
-    # If neither yyyymm nor radar were given, hash_command = *rawacf.bz2, as was previously fixed for the gatekeeper
-    #   to hash all files in the holding directory. Now we can hash only the files corresponding to our list of files
-    #   to upload.
-
-    # Do a sha1sum on all files in holding directory,
-    sha1sum_process = subprocess.Popen(f"cd {gk.get_holding_dir()}; sha1sum {hash_command}",
-                                       shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = sha1sum_process.communicate()
-    sha1sum_output = out.decode().split("\n")
-    sha1sum_error = err.decode().split("\n")
-    # Remove empty items from the sha1sum output
-    sha1sum_output = [x for x in sha1sum_output if x]
-    if sha1sum_process.returncode != 0 or len(sha1sum_output) == 0:
-        msg = "Error hashing files. Exiting."
-        gk.log_email_exit(logger.error, 0, 1, msg=msg)
-
-    # Fill files_to_upload_dict with relevant metadata
-    for item in sha1sum_output:
-        filename = item.split()[1]
-        data_hash = item.split()[0]
+    # Hash each rawacf in files_to_upload list
+    # Fill files_to_upload dictionary with relevant metadata
+    # If any rawacf fails to be hashed, remove it from dictionary and move on to next file
+    failed_hashes = []
+    for filename in file_to_upload:
+        try:
+            data_hash = sha1hashing(gk.get_holding_dir(), filename)
+        except Exception as e:
+            logger.warning(f"Failed to hash {filename} in {gk.get_holding_dir()} with error: {e}")
+            files_to_upload_dict.pop(filename)
+            failed_hashes.append(filename)
+            continue
         elements = parse_data_filename(filename)
         radar = elements[6]
         data_type = elements[7]
@@ -270,6 +255,11 @@ def main():
         metadata = {'year': f'{elements[0]}', 'month': f'{elements[1]}', 'day': f'{elements[2]}',
                     'yearmonth': filename[0:6], 'hash': data_hash, 'type': data_type, 'radar': radar}
         files_to_upload_dict[filename].update(metadata)
+
+    # Update files_to_upload list if any files were removed from dictionary due to hash fail
+    if len(failed_hashes) > 0:
+        logger.info(f"Files failed to be hashed ({len(failed_hashes)}): {failed_hashes}")
+        files_to_upload = sorted(list(files_to_upload_dict.keys()))
 
     ###################################################################################################################
     # Step 5.5) Will remove this section once Cedar allocation is increased!
