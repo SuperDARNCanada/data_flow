@@ -25,7 +25,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     try:
-        records = pydarnio.read_rawacf(args.infile)
+        records = pydarnio.read_rawacf(args.infile, mode="strict")
         cpid = records[0]['cp']
         print(cpid)     # Returns the cpid of the file for use in the bash script
         sys.exit(0)

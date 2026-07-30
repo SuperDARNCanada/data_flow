@@ -59,6 +59,7 @@ readonly BAS_STAGING_DIR="/home/bas/outgoing/${RADAR_ID}"   # Link to /sddata/ba
 readonly VT_STAGING_DIR="/home/vtsd/outgoing/${RADAR_ID}"   # Link to /sddata/vtsd_outgoing
 readonly PROBLEM_FILES_DEST="/sddata/conversion_failure"    # Located on sdc-nas0
 readonly SPECIAL_EXPERIMENTS="/sddata/special_experiments"  # Located on sdc-nas0
+readonly WB2NARROW_EXPERIMENTS="/dataraid/wide2narrow"       # Located on sdc-serv
 
 # Data group for outgoing files
 readonly DATA_GROUP="sddata"
@@ -146,7 +147,18 @@ for file in $dmap_files; do
         special_dir="${SPECIAL_EXPERIMENTS}/${year}/${month}/"
         mkdir --parents $special_dir
 
-        printf "Moving to ${special_dir}\n"
+        if [[ " ${WIDEBEAM_CPIDS[@]} " =~ " $file_cpid " ]]; then
+            # File is a widebeam file, and we should downsample it before distributing
+            printf "File with CPID $file_cpid is a widebeam file, downsampling then distributing the result: ${file}\n" | tee --append $SUMMARY_FILE
+
+            wb2narrow_dir="${WB2NARROW_EXPERIMENTS}/${year}/${month}/"
+            mkdir --parents $wb2narrow_dir
+
+            printf "Downsampling to ${wb2narrow_dir}\n" | tee --append $SUMMARY_FILE
+	    python3 ~/borealis_postprocessors/scripts/downsampler.py --pattern="$(basename $file)" $(dirname $file) $wb2narrow_dir
+        fi
+        
+	printf "Moving to ${special_dir}\n"
         mv --verbose $file $special_dir
         continue
     fi

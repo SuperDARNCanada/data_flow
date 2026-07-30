@@ -42,4 +42,11 @@ readonly TELEMETRY_RSH="ssh"
 # 151 - Normalscan
 # 3503 - Twofsound
 # 157 - NormalSound
-readonly DISTRIBUTED_CPIDS=("151" "3503" "157")
+# 191 - InterleavedScan
+readonly DISTRIBUTED_CPIDS=("151" "3503" "157" "191")
+
+###################################################################################################
+
+# Define which CPIDs are widebeam experiments
+# 3800 - FullFOV
+readonly WIDEBEAM_CPIDS=("3800")
