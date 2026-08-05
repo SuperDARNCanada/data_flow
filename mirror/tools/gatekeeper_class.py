@@ -99,9 +99,9 @@ def parse_data_filename(filename):
     channel = None
     data_type = None
 
-    if len(elements) is 6:
+    if len(elements) == 6:
         data_type = elements[4]
-    elif len(elements) is 7:
+    elif len(elements) == 7:
         channel = elements[4]
         data_type = elements[5]
     else:  # We expect at least [yyyymmdd, hhmm, ss, rad, data_type, bz2] and optional channel
@@ -268,7 +268,7 @@ class Gatekeeper(object):
     def set_holding_dir(self, holding_dir):
         """ :param holding_dir: A directory where data files exist to be uploaded to mirror """
         self.holding_dir = holding_dir
-        if self.holding_dir[-1] is not '/':
+        if self.holding_dir[-1] != '/':
             self.holding_dir += "/"
 
     def set_mirror_root_dir(self, mirror_root_dir):
@@ -890,24 +890,29 @@ class Gatekeeper(object):
             if uuid is None:
                 uuid = self.mirror_uuid
             try:  # TODO: Check for error.code in case msg changes.
-                self.transfer_client.operation_ls(uuid, path=file_path)
-                return True  # This means it was not a file and it did exist
-            except globus_sdk.TransferAPIError as error:
-                if error.message.find("not found on endpoint") != -1:
-                    self.logger.error(error)
-                    return False  # This means it doesn't exist
-                elif error.message.find("is a file") != -1:
-                    return True  # Means it raised an exception, but msg said it is a single file
-                elif error.message.find("is not a directory") != -1:
-                    return True  # Means it raised an exception, but msg said it is not a directory
+                response = self.transfer_client.operation_stat(uuid, path=file_path)
+                if response["type"] == "file":
+                    self.logger.info(f"File {file_path} exists.")
+                    return True
+                else:
+                    self.logger.info(f"Directory {file_path} exists.")
+                    return True
+            except globus_sdk.TransferAPIError as err:
+                if err.http_status == 404:
+                    self.logger.warning(f"{file_path} does not exist.")
+                    return False
+                elif err.http_status == 403:
+                    self.logger.error(f"{file_path} access permission denied by endpoint.")
+                    return False
                 else:
                     # Not sure what this means so retry, then fail hard.
-                    errormsg = str(error)
+                    errormsg = str(err)
                     time.sleep(5)
                     retries += 1
-            except globus_sdk.NetworkError as error:
+            except globus_sdk.NetworkError as err:
                 # Not good, can't make assumptions about whether the file or directory exists
                 # Retry a few times, then fail hard.
+                errormsg = str(err)
                 time.sleep(5)
                 retries += 1
         msg = f"Checking for file existence failed after {retries} retries. Exiting!"
