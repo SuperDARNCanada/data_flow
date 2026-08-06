@@ -147,18 +147,18 @@ for file in $dmap_files; do
         special_dir="${SPECIAL_EXPERIMENTS}/${year}/${month}/"
         mkdir --parents $special_dir
 
-        if [[ " ${WIDEBEAM_CPIDS[@]} " =~ " $file_cpid " ]]; then
-            # File is a widebeam file, and we should downsample it before distributing
-            printf "File with CPID $file_cpid is a widebeam file, downsampling then distributing the result: ${file}\n" | tee --append $SUMMARY_FILE
-
-            wb2narrow_dir="${WB2NARROW_EXPERIMENTS}/${year}/${month}/"
-            mkdir --parents $wb2narrow_dir
-
-            printf "Downsampling to ${wb2narrow_dir}\n" | tee --append $SUMMARY_FILE
-	    python3 ~/borealis_postprocessors/scripts/downsampler.py --pattern="$(basename $file)" $(dirname $file) $wb2narrow_dir
-        fi
+#        if [[ " ${WIDEBEAM_CPIDS[@]} " =~ " $file_cpid " ]]; then
+#            # File is a widebeam file, and we should downsample it before distributing
+#            printf "File with CPID $file_cpid is a widebeam file, downsampling then distributing the result: ${file}\n" | tee --append $SUMMARY_FILE
+#
+#            wb2narrow_dir="${WB2NARROW_EXPERIMENTS}/${year}/${month}/"
+#            mkdir --parents $wb2narrow_dir
+#
+#            printf "Downsampling to ${wb2narrow_dir}\n" | tee --append $SUMMARY_FILE
+#	          python3 ~/borealis_postprocessors/scripts/downsampler.py --pattern="$(basename $file)" $(dirname $file) $wb2narrow_dir
+#        fi
         
-	printf "Moving to ${special_dir}\n"
+	      printf "Moving to ${special_dir}\n"
         mv --verbose $file $special_dir
         continue
     fi
