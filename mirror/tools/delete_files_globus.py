@@ -8,7 +8,7 @@ SuperDARN mirror in order to check for and remove files given a list of files
 
 Example of script call:
 python /path/to/delete_files_globus.py -t 'raw' -r 'chroot/sddata/' -d 'local_data/deletions/'
-        -l '~/logs/deletions_globus/' ~/mirror_blocklists/cve/${year}_cve_files_to_delete.txt
+        ~/mirror_blocklists/cve/${year}_cve_files_to_delete.txt
 
 See 'Removing Blocked Files from the Mirror' subsection of Data Flow section of SDARN wiki for more info
 """
