@@ -606,13 +606,10 @@ def main():
         rename(f"{gk.get_working_dir()}/{ym}.hashes",
                f"{raw_hash_dir}/{ym}.hashes")
         # From working_dir, hash yyyymm.hashes file in working_dir/raw/
-        hash_process = subprocess.Popen(f"cd {gk.get_working_dir()}; sha1sum ./raw/{ym}.hashes",
-                                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        hash_process_out, hash_process_err = hash_process.communicate()
-        hash_process_output = hash_process_out.decode().split("\n")
+        data_hash = sha1hashing(gk.get_working_dir(), f"./raw/{ym}.hashes")
 
         # Add yyyymm.hashes to dictionary if it doesn't exist, update existing hash o/w.
-        hashes[f"./raw/{ym}.hashes"] = hash_process_output[0].split()[0]
+        hashes[f"./raw/{ym}.hashes"] = data_hash
 
     # Overwrite entire master.hashes file with dictionary
     with open(f"{gk.get_working_dir()}/master.hashes", 'w') as master_file:
