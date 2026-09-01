@@ -138,7 +138,7 @@ class Gatekeeper(object):
     control data flow onto the mirror """
 
     # Add _test to 3rd argument in constructor below for testing purposes
-    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=f"{HOME}/tmp/"):
+    def __init__(self, client_id, client_secret=None, transfer_rt=None, working_dir=f"{HOME}/tmp/", mode='normal'):
         """ Initialize member variables, check arguments, etc..
 
         :param client_id: retrieved from "Manage Apps" section of
@@ -147,7 +147,11 @@ class Gatekeeper(object):
         :param transfer_rt: is given by manually authenticating via the get_auth_with_login
         function. Defaults to None. str
         :param working_dir: A temporary working directory for the script. Defaults to tmp in the
-        home directory. Cleared upon init. str"""
+        home directory. Cleared upon init. str
+        :param mode: Operating mode of gatekeeper. 'normal' for regular operation (holding dir to mirror), default.
+        'block' for removing blocklisted files from mirror. This tells gatekeeper to write the logfile to a separate
+        directory. """
+
         self.CLIENT_ID = client_id
         self.CLIENT_SECRET = client_secret
         self.TRANSFER_RT = transfer_rt
@@ -171,9 +175,16 @@ class Gatekeeper(object):
         self.possible_data_types = ['raw', 'dat']
 
         # Setup logger
-        logdir = f"/{HOME}/logs/globus"  # Add _test for testing purposes
-        logfile = (f"{logdir}/{self.cur_year:04d}/{self.cur_month:02d}/{self.cur_year:04d}{self.cur_month:02d}"
-                   f"{self.cur_day:02d}.{self.cur_hour:02d}{self.cur_minute:02d}_globus_gatekeeper.log")
+        # Regular operation, write logs to ~/logs/globus/
+        if mode == 'normal':
+            logdir = f"/{HOME}/logs/globus"  # Add _test for testing purposes
+            logfile = (f"{logdir}/{self.cur_year:04d}/{self.cur_month:02d}/{self.cur_year:04d}{self.cur_month:02d}"
+                       f"{self.cur_day:02d}.{self.cur_hour:02d}{self.cur_minute:02d}_globus_gatekeeper.log")
+        # Removing blocklisted files, write logs to ~/logs/deletions_globus/
+        elif mode == 'block':
+            logdir = f"/{HOME}/logs/deletions_globus"  # Add _test for testing purposes
+            logfile = (f"{logdir}/{self.cur_year:04d}/{self.cur_month:02d}/{self.cur_year:04d}{self.cur_month:02d}"
+                       f"{self.cur_day:02d}.{self.cur_hour:02d}{self.cur_minute:02d}.log")
         # Make sure year and month directories for logfile exist
         if not isdir(f"{logdir}/{self.cur_year:04d}/"):
             mkdir(f"{logdir}/{self.cur_year:04d}/")
