@@ -46,6 +46,7 @@ import argparse
 import hashlib
 
 from tools.gatekeeper_class import Gatekeeper, parse_data_filename, sha1hashing
+from tools.rawacf_file_check import bzip2_integrity_check, file_size_check
 
 # Make sure there is only one instance running of this script
 from tendo import singleton
@@ -381,39 +382,27 @@ def main():
         data_file = filename
         data_file_hash = files_to_upload_dict[filename]['hash']
         logger.info(f"bunzip -t {data_file}")
-        # Perform bzip test on data file (-t == test)
-        bunzip2_process = subprocess.Popen(f"cd {gk.get_holding_dir()}; bunzip2 -t {data_file}",
-                                           shell=True, stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE)
-        out, err = bunzip2_process.communicate()
-        bunzip2_process_output = out.decode().split("\n")
-        bunzip2_process_error = err.decode().split("\n")
 
-        filesize = getsize(f"{gk.get_holding_dir()}{data_file}")
-        # Check error code of bzip test and log a relevant error message
+        # Check bzip2 integrity
+        bzip_return_code = bzip2_integrity_check(data_file, gk.get_holding_dir())
         # Remove from files_to_upload if any nonzero error code
-        if bunzip2_process.returncode == 1 or bunzip2_process.returncode == 3:
-            logger.warning(f"OUTPUT: {bunzip2_process_output}")
-            logger.warning(f"ERROR: {bunzip2_process_error}")
+        if bzip_return_code == 1 or bzip_return_code == 3:
             # File not found. Remove from files to upload
             logger.warning(f"Error. File {data_file} not found by bunzip2 test. Removing from list.")
             files_to_upload_dict.pop(data_file)
-        elif bunzip2_process.returncode == 2:
+        elif bzip_return_code == 2:
             # Error with bz2 integrity of file.
             logger.warning(f"Error. File {data_file} failed the bzip2 test! Removing from list.")
             files_to_upload_dict.pop(data_file)
             failed_files[data_file] = (data_file_hash, "Failed BZ2 integrity test")
-        elif filesize == 14 or filesize == 0:
-            # Data file is empty (header of rawacf is 14 bytes)
-            logger.warning(f"File {data_file} empty. Removing from list.")
+
+        # Check file size
+        size_check = file_size_check(data_file, gk.get_holding_dir())
+        if size_check == 1:
+            # Data file is empty (header of rawacf is 55 bytes) or too small
+            logger.warning(f"File {data_file} empty or too small. Removing from list.")
             files_to_upload_dict.pop(data_file)
             failed_files[data_file] = (data_file_hash, "File contains no records (empty)")
-        elif filesize < 14:
-            # Data file is smaller than the header (14 bytes)
-            logger.warning(f"File {data_file} too small. Removing from list.")
-            files_to_upload_dict.pop(data_file)
-            failed_files[data_file] = (data_file_hash, "File contains no records (empty)")
-        # If file passed bzip test and is not empty, run bzcat to unzip the file
         else:
             # At this point, remaining files passed unzip test and are not empty
             logger.info(f"{data_file} passed all tests.")
