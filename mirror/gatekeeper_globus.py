@@ -384,28 +384,31 @@ def main():
         logger.info(f"bunzip -t {data_file}")
 
         # Check bzip2 integrity
-        bzip_return_code = bzip2_integrity_check(data_file, gk.get_holding_dir())
+        return_code, log_msg = bzip2_integrity_check(data_file, gk.get_holding_dir())
         # Remove from files_to_upload if any nonzero error code
-        if bzip_return_code == 1 or bzip_return_code == 3:
-            # File not found. Remove from files to upload
-            logger.warning(f"Error. File {data_file} not found by bunzip2 test. Removing from list.")
+        if return_code == 2:
+            # File not found. Remove from files to upload.
+            logger.warning(f"{log_msg} Removing from list.")
             files_to_upload_dict.pop(data_file)
-        elif bzip_return_code == 2:
+        elif return_code == 1:
             # Error with bz2 integrity of file.
-            logger.warning(f"Error. File {data_file} failed the bzip2 test! Removing from list.")
+            logger.warning(f"{log_msg} Removing from list.")
             files_to_upload_dict.pop(data_file)
             failed_files[data_file] = (data_file_hash, "Failed BZ2 integrity test")
+        else:
+            # Return code is 0, file passed bzip2 integrity
+            logger.info(log_msg)
 
         # Check file size
-        size_check = file_size_check(data_file, gk.get_holding_dir())
-        if size_check == 1:
+        return_code, log_msg = file_size_check(data_file, gk.get_holding_dir())
+        if return_code == 1:
             # Data file is empty (header of rawacf is 55 bytes) or too small
-            logger.warning(f"File {data_file} empty or too small. Removing from list.")
+            logger.warning(f"{log_msg} Removing from list.")
             files_to_upload_dict.pop(data_file)
             failed_files[data_file] = (data_file_hash, "File contains no records (empty)")
         else:
-            # At this point, remaining files passed unzip test and are not empty
-            logger.info(f"{data_file} passed all tests.")
+            # Return code is 0, file not empty
+            logger.info(log_msg)
 
     if len(failed_files) > 0:
         logger.info(f"Found failed files ({len(failed_files)}): ")
