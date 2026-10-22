@@ -9,9 +9,42 @@ from os.path import getsize
 # See details below.
 
 
+# Function to check if current rawacf file is in blocklist (get from DDWG github)
+# Return 0 if not in blocklist, 1 if in blocklist
+def blocklist_check(file, blocklist):
+    """
+    Parameters
+    ----------
+    file (Str): Name of rawacf file to be checked
+    blocklist (Str): Blocklist file along with its local path. (/path/to/blocklist.txt)
+
+    Returns
+    -------
+    return_code (Int): 1 if file found in blocklist
+                       0 if file not found in blocklist
+    log_msg (Str): Log message stating whether the file exists in the blocklist.
+    """
+    with open(blocklist, 'r') as bl:
+        blocklist_files = bl.readlines()
+
+    if file in blocklist_files:
+        log_msg = f"File {file} found in blocklist."
+        return_code = 1
+    else:
+        log_msg = f"File {file} not found in blocklist."
+        return_code = 0
+
+    return return_code, log_msg
+
+
+# Function to compare sha1sum hash of rawacf file with yyyymm.hashes.
+# Return 0 if dne on mirror, 1 if hashes match, 2 if hashes don't match
+def hash_check(file, filepath, hashfile, hashfile_path)
+
+
+
 def bzip2_integrity_check(file, filepath):
     """
-
     Parameters
     ----------
     file (Str): Name of rawacf file to be checked
@@ -47,7 +80,6 @@ def bzip2_integrity_check(file, filepath):
 
 def file_size_check(file, filepath):
     """
-
     Parameters
     ----------
     file (Str): Name of rawacf file to be checked
@@ -61,6 +93,7 @@ def file_size_check(file, filepath):
     """
     filesize = getsize(f"{filepath}{file}")
 
+    # Should this be 14 or 55 bytes?
     if filesize <= 55:
         # BZ2 header is 55 bytes
         log_msg = f"Error. File {file} is empty or smaller than bz2 header file."
