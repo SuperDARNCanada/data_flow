@@ -196,42 +196,23 @@ def main():
 
     ###################################################################################################################
     # Step 4)
-    # Make a list of blocked data files from the blocklist/ directory obtained above
     # Remove all blocked data files from files_to_upload
     # Log the list of blocked files in holding_dir and move them to holding_dir/blocked
 
-    # Store all txt files from blocklist directory
-    blocklist_files = []
-    for f in listdir(f"{gk.get_working_dir()}/blocklist/"):
-        if fnmatch.fnmatch(f, "*.txt"):
-            blocklist_files.append(f)
-
-    # Store the filenames within the txt files
-    # Append filename from beginning of line
-    blocked_data = []
-    for f in blocklist_files:
-        with open(f"{gk.get_working_dir()}/blocklist/{f}") as blocklist_file:
-            for line in blocklist_file:
-                blocked_data.append(line.strip('\n').strip('\r'))
-
-    # If file in files_to_upload appears in the blocklist, add file to blocked_files_to_remove to be removed below
     blocked_files_to_remove = []
-    for data_file in sorted(files_to_upload):
-        for blocked_file in blocked_data:
-            if data_file in blocked_file:
-                blocked_files_to_remove.append(data_file)
-    blocked_files_to_remove = sorted(list(set(blocked_files_to_remove)))
+    # Get 'blocklist_all.txt' from SuperDARN DDWG github to home directory of server running this script
+    for file in files_to_upload:
+        block_out, block_msg = blocklist_check(file, f"{HOME}/blocklist_all.txt")
+        if block_out == 1:  # File found in blocklist
+            blocked_files_to_remove.append(file)
+            files_to_upload_dict.pop(file)
+            logger.warning(block_msg)
 
-    # Remove blocked files from files_to_upload
     # Make blocked dir in holding_dir, /holding_dir/blocked/cur_date/
     # Move blocked files to /holding_dir/blocked/cur_date/
     # Update files_to_upload list after removing blocked files from dictionary
-
     if len(blocked_files_to_remove) > 0:
         logger.info(f"Found blocked files ({len(blocked_files_to_remove)}): {blocked_files_to_remove}")
-        for file_to_remove in blocked_files_to_remove:
-            files_to_upload_dict.pop(file_to_remove)
-
         gk.move_files_to_subdir("Blocked", blocked_files_to_remove)
         files_to_upload = sorted(list(files_to_upload_dict.keys()))
 
