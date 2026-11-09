@@ -46,7 +46,7 @@ import argparse
 import hashlib
 
 from tools.gatekeeper_class import Gatekeeper, parse_data_filename, sha1hashing
-from tools.rawacf_file_check import bzip2_integrity_check, file_size_check
+from tools.rawacf_file_check import blocklist_check, hash_check, bzip2_integrity_check, file_size_check
 
 # Make sure there is only one instance running of this script
 from tendo import singleton
@@ -237,32 +237,17 @@ def main():
 
     ###################################################################################################################
     # Step 5)
-    # Hash each rawacf in files_to_upload list
     # Fill files_to_upload dictionary with relevant metadata
-    # If any rawacf fails to be hashed, remove it from dictionary and move on to next file
     failed_hashes = []
     for filename in files_to_upload:
-        try:
-            data_hash = sha1hashing(gk.get_holding_dir(), filename)
-            logger.info(f"Successfully hashed {filename} in {gk.get_holding_dir()}: {data_hash}")
-        except Exception as e:
-            logger.warning(f"Failed to hash {filename} in {gk.get_holding_dir()} with error: {e}")
-            files_to_upload_dict.pop(filename)
-            failed_hashes.append(filename)
-            continue
         elements = parse_data_filename(filename)
         radar = elements[6]
         data_type = elements[7]
         if data_type == "rawacf":
             data_type = "raw"
         metadata = {'year': f'{elements[0]}', 'month': f'{elements[1]}', 'day': f'{elements[2]}',
-                    'yearmonth': filename[0:6], 'hash': data_hash, 'type': data_type, 'radar': radar}
+                    'yearmonth': filename[0:6], 'type': data_type, 'radar': radar}
         files_to_upload_dict[filename].update(metadata)
-
-    # Update files_to_upload list if any files were removed from dictionary due to hash fail
-    if len(failed_hashes) > 0:
-        logger.info(f"Files failed to be hashed ({len(failed_hashes)}): {failed_hashes}")
-        files_to_upload = sorted(list(files_to_upload_dict.keys()))
 
     ###################################################################################################################
     # Step 5.5) Will remove this section once Cedar allocation is increased!
@@ -322,33 +307,24 @@ def main():
             else:
                 logger.info(f"{ym} hash file retrieved from mirror.")
 
-                # Create dictionary to contain filenames as keys and hashes as values for ym.hashes of current iteration
-                ym_hashes = {}
-                with open(f"{gk.get_working_dir()}/{ym}.hashes", 'r') as hash_file:
-                    for line in hash_file:
-                        (val, key) = line.split()
-                        ym_hashes[key] = val
-
                 # loop over files in holding dir for ym of current iteration and compare hashes to ym.hashes
                 for holding_file in list(yearmonth_dict[ym].keys()):
-                    # Compare hashes to see if the file should go to nomatch/ directory or just be removed from holding
-                    if holding_file in ym_hashes.keys():
-                        # If hashes do not match, add file to nonmatching files list (to be moved to nomatch/ directory)
-                        if files_to_upload_dict[holding_file]['hash'] != ym_hashes[holding_file]:
-                            logger.warning(f"{holding_file} hash doesn't match. Adding to no match list, and removing "
-                                           f"from list of files to upload.")
+                    hash_out, hash_msg = hash_check(holding_file, gk.get_holding_dir(),
+                                                    f"{ym}.hashes", gk.get_working_dir())
+
+                    if hash_out != 0:  # Failed to be hashed or already exists on mirror
+                        files_to_upload_dict.pop(holding_file)
+                        if hash_out == 2:  # Exists on mirror, nonmatching hash
                             non_matching_files.append(holding_file)
-                        # If hashes match, remove from holding directory
-                        else:
-                            logger.info(f"{holding_file} already exists on mirror and hash matches. Removing from files "
-                                        f"to upload.")
+                        elif hash_out == 1:  # Exists on mirror, hash matches. Remove from holding dir
                             # Comment out removal of matching files from holding dir for testing purposes
                             try:
                                 remove(f"{gk.get_holding_dir()}/{holding_file}")
                             except OSError as error:
                                 logger.error(f"Error trying to remove file: {error}.")
-                        # Remove file from files to upload since this filename is already on the mirror
-                        files_to_upload_dict.pop(holding_file)
+                        logger.warning(hash_msg)
+                    else:  # Hash succeeded and not on mirror (new data)
+                        logger.info(hash_msg)
 
         # If yyyymm.hashes DNE, create it ONLY IF yyyymm is the current year and month
         else:
