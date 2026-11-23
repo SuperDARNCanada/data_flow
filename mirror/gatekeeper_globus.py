@@ -202,7 +202,7 @@ def main():
     blocked_files_to_remove = []
     # Get 'blocklist_all.txt' from SuperDARN DDWG github to home directory of server running this script
     for file in files_to_upload:
-        block_out, block_msg = blocklist_check(file, f"{HOME}/blocklist_all.txt")
+        block_out, block_msg = blocklist_check(file, f"{HOME}/mirror_blocklists/DDWG/blocklist_all.txt")
         if block_out == 1:  # File found in blocklist
             blocked_files_to_remove.append(file)
             files_to_upload_dict.pop(file)
