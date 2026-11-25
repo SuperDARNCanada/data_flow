@@ -1,3 +1,4 @@
+from os.path import expanduser
 import subprocess as sp
 
 HOME = expanduser("~")
