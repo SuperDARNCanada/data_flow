@@ -79,6 +79,7 @@ def hash_check(file, filepath, hashfile, hashfile_path):
 
     Returns
     -------
+    hash (Str): Sha1sum hash of given rawacf file
     return_code (Int): 3 if file failed to be hashed in sha1hashing() function
                        2 if file exists on mirror but hashes don't match
                        1 if file exists on mirror and hashes do match
@@ -110,7 +111,7 @@ def hash_check(file, filepath, hashfile, hashfile_path):
             log_msg = f"File {file} does not exist on mirror. New rawacf data!"
             return_code = 0
 
-    return return_code, log_msg
+    return hash, return_code, log_msg
 
 
 def bzip2_integrity_check(file, filepath):

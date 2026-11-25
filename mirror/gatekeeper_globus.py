@@ -220,7 +220,7 @@ def main():
         if data_type == "rawacf":
             data_type = "raw"
         metadata = {'year': f'{elements[0]}', 'month': f'{elements[1]}', 'day': f'{elements[2]}',
-                    'yearmonth': filename[0:6], 'type': data_type, 'radar': radar}
+                    'yearmonth': filename[0:6], 'hash': '', 'type': data_type, 'radar': radar}
         files_to_upload_dict[filename].update(metadata)
 
     ###################################################################################################################
@@ -283,8 +283,8 @@ def main():
 
                 # loop over files in holding dir for ym of current iteration and compare hashes to ym.hashes
                 for holding_file in list(yearmonth_dict[ym].keys()):
-                    hash_out, hash_msg = hash_check(holding_file, gk.get_holding_dir(),
-                                                    f"{ym}.hashes", gk.get_working_dir())
+                    hash, hash_out, hash_msg = hash_check(holding_file, gk.get_holding_dir(),
+                                                          f"{ym}.hashes", gk.get_working_dir())
 
                     if hash_out != 0:  # Failed to be hashed or already exists on mirror
                         files_to_upload_dict.pop(holding_file)
@@ -297,8 +297,9 @@ def main():
                             except OSError as error:
                                 logger.error(f"Error trying to remove file: {error}.")
                         logger.warning(hash_msg)
-                    else:  # Hash succeeded and not on mirror (new data)
+                    else:  # Hash succeeded and not on mirror (new data). Update dictionary with hash value
                         logger.info(hash_msg)
+                        files_to_upload_dict[holding_file]['hash'] = hash
 
         # If yyyymm.hashes DNE, create it ONLY IF yyyymm is the current year and month
         else:
