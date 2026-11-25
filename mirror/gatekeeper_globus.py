@@ -187,13 +187,6 @@ def main():
         msg = "get_failed timeout. Exiting."
         gk.log_email_exit(logger.error, 0, 1, msg=msg)
 
-    # Recursively get blocklist folder and generate list of blocked files
-    logger.info("Getting blocklist directory...\n")
-    gk.get_blocklist(dest_path=f"{gk.get_working_dir()}/blocklist/")
-    if not gk.wait_for_last_task(timeout_s=300):
-        msg = "get_blocklist timeout. Exiting"
-        gk.log_email_exit(logger.error, 0, 1, msg=msg)
-
     ###################################################################################################################
     # Step 4)
     # Remove all blocked data files from files_to_upload
@@ -202,7 +195,7 @@ def main():
     blocked_files_to_remove = []
     # Get 'blocklist_all.txt' from SuperDARN DDWG github to home directory of server running this script
     for file in files_to_upload:
-        block_out, block_msg = blocklist_check(file, f"{HOME}/mirror_blocklists/DDWG/blocklist_all.txt")
+        block_out, block_msg = blocklist_check(file, f"{HOME}/mirror_blocklists/DDWG/Blocklist/blocklist_all.txt")
         if block_out == 1:  # File found in blocklist
             blocked_files_to_remove.append(file)
             files_to_upload_dict.pop(file)
