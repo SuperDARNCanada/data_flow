@@ -64,7 +64,7 @@ readonly cedar_login=${FIR_LOGIN}
 
 # Add _test to Cedar paths for testing purposes
 readonly CEDAR_HASHES="/project/${FIR_PROJECT_ID}/sdarn/chroot/sddata/raw/"
-readonly CEDAR_BLOCKLIST="/project/${FIR_PROJECT_ID}/sdarn/chroot/sddata/.config/blocklist/"
+# readonly CEDAR_BLOCKLIST="/project/${FIR_PROJECT_ID}/sdarn/chroot/sddata/.config/blocklist/"
 readonly CEDAR_FAILED="/project/${FIR_PROJECT_ID}/sdarn/chroot/sddata/.config/all_failed.txt"
 
 # Date/time variables
@@ -177,7 +177,8 @@ then
 fi
 # Download blocklist directory from Cedar via rsync
 #rsync -avL --timeout=20 -e "ssh -i ~/.ssh/id_ed25519" ${cedar_login}:${CEDAR_BLOCKLIST} "${LOCALBLDIR}"/
-rsync -avL --timeout=20 -e "ssh -i ~/.ssh/id_${cedar_user}" ${cedar_login}:${CEDAR_BLOCKLIST} "${LOCALBLDIR}"/
+#rsync -avL --timeout=20 -e "ssh -i ~/.ssh/id_${cedar_user}" ${cedar_login}:${CEDAR_BLOCKLIST} "${LOCALBLDIR}"/
+rsync -avL --timeout=20 /home/${USER}/mirror_blocklists/DDWG/Blocklist/blocklist_all.txt "${LOCALBLDIR}"/
 RETURN_VALUE=$?
 echo "rsync get blocklist returned: ${RETURN_VALUE}"
 if [[ ${RETURN_VALUE} -ne 0 ]]
